@@ -1,0 +1,12 @@
+{
+  "mote":     { "name": "Mote",     "hp": 18,  "speed": 26, "bounty": 3,  "shape": "circ",   "size": 4, "color": "RED",        "armor": 0, "unlock_wave": 1,  "cost": 1 },
+  "dasher":   { "name": "Dasher",   "hp": 12,  "speed": 54, "bounty": 4,  "shape": "tri",    "size": 5, "color": "ORANGE",     "armor": 0, "unlock_wave": 2,  "cost": 1, "spin": 6 },
+  "hulk":     { "name": "Hulk",     "hp": 95,  "speed": 16, "bounty": 11, "shape": "circ",   "size": 8, "color": "PEACH",      "armor": 1, "unlock_wave": 3,  "cost": 3 },
+  "splitter": { "name": "Splitter", "hp": 42,  "speed": 22, "bounty": 7,  "shape": "penta",  "size": 6, "color": "GREEN",      "armor": 0, "unlock_wave": 4,  "cost": 2, "spin": 3, "split": { "type": "mote", "count": 2 } },
+  "brute":    { "name": "Brute",    "hp": 150, "speed": 14, "bounty": 16, "shape": "square", "size": 8, "color": "BROWN",      "armor": 3, "unlock_wave": 6,  "cost": 4 },
+  "wisp":     { "name": "Wisp",     "hp": 22,  "speed": 46, "bounty": 5,  "shape": "tri",    "size": 4, "color": "INDIGO",     "armor": 0, "unlock_wave": 7,  "cost": 2, "spin": 7, "fly": true },
+  "mender":   { "name": "Mender",   "hp": 60,  "speed": 20, "bounty": 9,  "shape": "circ",   "size": 6, "color": "DARK_GREEN", "armor": 0, "unlock_wave": 8,  "cost": 3, "regen": 9 },
+  "ward":     { "name": "Ward",     "hp": 70,  "speed": 19, "bounty": 14, "shape": "hex",    "size": 7, "color": "LIGHT_GRAY", "armor": 0, "unlock_wave": 11, "cost": 4, "spin": 2, "shield": 50, "shield_regen": 12 },
+  "raider":   { "name": "Raider",   "hp": 80,  "speed": 34, "bounty": 13, "shape": "diamond","size": 6, "color": "PINK",       "armor": 0, "unlock_wave": 12, "cost": 4, "spin": 4, "fly": true },
+  "swarm":    { "name": "Swarm",    "hp": 10,  "speed": 60, "bounty": 3,  "shape": "tri",    "size": 3, "color": "PINK",       "armor": 0, "unlock_wave": 13, "cost": 1, "spin": 9 }
+}

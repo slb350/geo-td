@@ -1,0 +1,27 @@
+{
+  "prism": {
+    "name": "Prism", "hp": 660, "speed": 18, "bounty": 90, "size": 15, "color": "PINK", "shape": "tri",
+    "shockwave_every": 3.2, "shockwave_radius": 46, "shockwave_disable": 2.5,
+    "phase2_at": 0.5, "phase2_speed_mult": 1.6,
+    "spawn_type": "dasher", "spawn_every": 2.2, "spawn_phase": "phase2",
+    "on_death_split": { "type": "mote", "count": 8 }
+  },
+  "bulwark": {
+    "name": "Bulwark", "hp": 900, "speed": 13, "bounty": 110, "size": 16, "color": "LIGHT_GRAY", "shape": "hex",
+    "armor": 4, "shield": 300, "shield_regen": 40,
+    "phase2_at": 0.4, "phase2_speed_mult": 1.5,
+    "on_death_split": { "type": "brute", "count": 2 }
+  },
+  "hydra": {
+    "name": "Hydra", "hp": 520, "speed": 20, "bounty": 120, "size": 14, "color": "DARK_GREEN", "shape": "penta",
+    "regen": 12,
+    "spawn_type": "swarm", "spawn_every": 1.1, "spawn_phase": "always",
+    "on_death_split": { "type": "swarm", "count": 14 }
+  },
+  "specter": {
+    "name": "Specter", "hp": 700, "speed": 26, "bounty": 130, "size": 13, "color": "INDIGO", "shape": "diamond",
+    "invuln_every": 3.5, "invuln_time": 1.2,
+    "phase2_at": 0.5, "phase2_speed_mult": 1.4,
+    "on_death_split": { "type": "wisp", "count": 6 }
+  }
+}

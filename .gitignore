@@ -1,0 +1,40 @@
+# Usagi build output
+export/
+
+# Local agent / dev context (kept out of the public repo)
+CLAUDE.md
+AGENTS.md
+docs/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+Icon?
+*.icloud
+
+# Editors / IDE
+.vscode/
+.idea/
+.zed/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+
+# Lua
+*.luac
+luac.out
+
+# Misc
+*.log
+*.tmp
+.tmp/

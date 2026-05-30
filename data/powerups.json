@@ -1,0 +1,13 @@
+{
+  "dmg":      { "name": "Overcharge",  "desc": "damage",       "kind": "dmg_mult",      "value": 0.18 },
+  "rate":     { "name": "Overdrive",   "desc": "fire rate",    "kind": "rate_mult",     "value": 0.15 },
+  "range":    { "name": "Optics",      "desc": "range",        "kind": "range_mult",    "value": 0.12 },
+  "proj":     { "name": "Velocity",    "desc": "shot speed",   "kind": "proj_mult",     "value": 0.20 },
+  "bounty":   { "name": "Salvage",     "desc": "kill bounty",  "kind": "bounty_mult",   "value": 0.20 },
+  "cost":     { "name": "Efficiency",  "desc": "cost",         "kind": "cost_mult",     "value": 0.10 },
+  "splash":   { "name": "Demolition",  "desc": "splash size",  "kind": "splash_mult",   "value": 0.25 },
+  "lives":    { "name": "Reinforce",   "desc": "lives",        "kind": "add_lives",     "value": 3 },
+  "crit":     { "name": "Precision",   "desc": "crit",         "kind": "crit_chance",   "value": 0.06, "min_rarity": 2 },
+  "interest": { "name": "Investment",  "desc": "interest/wave","kind": "interest",      "value": 0.04, "min_rarity": 2 },
+  "bastion":  { "name": "Bastion",     "desc": "life/wave",    "kind": "life_per_wave", "value": 1,    "min_rarity": 3 }
+}
