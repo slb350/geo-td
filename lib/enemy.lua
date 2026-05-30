@@ -3,10 +3,11 @@
 -- allocated fresh and dropped on removal (projectiles hold references to them;
 -- pooling would alias a recycled table onto a stale projectile target).
 
-local pal   = require("lib.palette")
-local path  = require("lib.path")
-local fx    = require("lib.fx")
-local shape = require("lib.shape")
+local pal    = require("lib.palette")
+local path   = require("lib.path")
+local fx     = require("lib.fx")
+local shape  = require("lib.shape")
+local combat = require("lib.combat")
 
 local DEFS = usagi.read_json("enemies.json")
 
@@ -35,6 +36,7 @@ function M.spawn(run, kind, hp_scale, speed_scale, start_d)
   e.shield = e.shield_max
   e.shield_regen = def.shield_regen or 0
   e.shield_hit_t = 0
+  e.shield_hit_delay = 0.5
   e.color = pal.resolve(def.color)
   e.shape = def.shape
   e.spin = def.spin or 0
@@ -59,22 +61,10 @@ function M.spawn(run, kind, hp_scale, speed_scale, start_d)
   return e
 end
 
--- Damage order: shield pool first, then armor-reduced hp.
+-- Damage order: shield pool first, then armor-reduced hp (shared with bosses).
 function M.damage(run, e, dmg)
   if e.dead then return end
-  local remaining = dmg
-  if e.shield > 0 then
-    local absorbed = math.min(e.shield, remaining)
-    e.shield = e.shield - absorbed
-    remaining = remaining - absorbed
-    e.shield_hit_t = 0.5
-  end
-  if remaining > 0 then
-    local real = remaining - e.armor
-    if real < 1 then real = 1 end
-    e.hp = e.hp - real
-  end
-  if e.hp <= 0 then
+  if combat.apply_damage(e, dmg) then
     M.kill(run, e)
   end
 end
@@ -113,16 +103,7 @@ function M.update(run, dt)
       e.slow_t = e.slow_t - dt
       if e.slow_t <= 0 then e.slow_factor = 1 end
     end
-    if e.regen > 0 and e.hp < e.maxhp then
-      e.hp = math.min(e.maxhp, e.hp + e.regen * dt)
-    end
-    if e.shield_max > 0 then
-      if e.shield_hit_t > 0 then
-        e.shield_hit_t = e.shield_hit_t - dt
-      elseif e.shield < e.shield_max then
-        e.shield = math.min(e.shield_max, e.shield + e.shield_regen * dt)
-      end
-    end
+    combat.tick_regen(e, dt)
     if not e.dead then
       e.d = e.d + e.base_speed * e.slow_factor * dt
       if e.fly then

@@ -4,12 +4,13 @@
 -- Towers target it via tower.acquire; projectiles route damage here (the
 -- target carries is_boss = true). Bosses cycle by wave (M.for_wave).
 
-local C     = require("lib.const")
-local pal   = require("lib.palette")
-local path  = require("lib.path")
-local enemy = require("lib.enemy")
-local fx    = require("lib.fx")
-local shape = require("lib.shape")
+local C      = require("lib.const")
+local pal    = require("lib.palette")
+local path   = require("lib.path")
+local enemy  = require("lib.enemy")
+local fx     = require("lib.fx")
+local shape  = require("lib.shape")
+local combat = require("lib.combat")
 
 local DEFS = usagi.read_json("bosses.json")
 
@@ -33,7 +34,7 @@ function M.spawn(run, kind, hp_scale)
     color = pal.resolve(def.color), shape = def.shape or "tri",
     armor = def.armor or 0, regen = def.regen or 0,
     shield_max = def.shield or 0, shield = def.shield or 0,
-    shield_regen = def.shield_regen or 0, shield_hit_t = 0,
+    shield_regen = def.shield_regen or 0, shield_hit_t = 0, shield_hit_delay = 0.6,
     phase = 1, angle = 0,
     shock_t = def.shockwave_every or 0,
     spawn_t = def.spawn_every or 0,
@@ -50,23 +51,12 @@ function M.hurt(run, dmg)
   local b = run.boss
   if not b or b.dead then return end
   if b.invuln_t > 0 then return end -- phased out; immune
-  local remaining = dmg
-  if b.shield > 0 then
-    local absorbed = math.min(b.shield, remaining)
-    b.shield = b.shield - absorbed
-    remaining = remaining - absorbed
-    b.shield_hit_t = 0.6
-  end
-  if remaining > 0 then
-    local real = remaining - b.armor
-    if real < 1 then real = 1 end
-    b.hp = b.hp - real
-  end
+  local killed = combat.apply_damage(b, dmg)
   fx.boss_hit()
   if b.phase == 1 and b.def.phase2_at and b.hp <= b.maxhp * b.def.phase2_at then
     b.phase = 2
   end
-  if b.hp <= 0 then M.kill(run) end
+  if killed then M.kill(run) end
 end
 
 function M.kill(run)
@@ -97,16 +87,7 @@ function M.update(run, dt)
   if not b or b.dead then return end
   b.angle = b.angle + dt * 1.5
 
-  if b.regen > 0 and b.hp < b.maxhp then
-    b.hp = math.min(b.maxhp, b.hp + b.regen * dt)
-  end
-  if b.shield_max > 0 then
-    if b.shield_hit_t > 0 then
-      b.shield_hit_t = b.shield_hit_t - dt
-    elseif b.shield < b.shield_max then
-      b.shield = math.min(b.shield_max, b.shield + b.shield_regen * dt)
-    end
-  end
+  combat.tick_regen(b, dt)
   -- invulnerability windows
   if b.def.invuln_every then
     if b.invuln_t > 0 then

@@ -5,6 +5,8 @@
 local C     = require("lib.const")
 local pal   = require("lib.palette")
 local tower = require("lib.tower")
+local shape = require("lib.shape")
+local ui    = require("lib.ui")
 
 local M = {}
 
@@ -24,10 +26,6 @@ end
 local start_btn = { x = BX, y = C.GAME_H - 46, w = BW, h = 18 }
 local sell_btn  = { x = BX, y = C.GAME_H - 24, w = BW, h = 18 }
 
-local function in_rect(px, py, r)
-  return px >= r.x and px < r.x + r.w and py >= r.y and py < r.y + r.h
-end
-
 -- Greedy word-wrap to a pixel width, using the real font metrics.
 local function wrap(text, max_w)
   local lines, cur = {}, ""
@@ -44,39 +42,33 @@ local function wrap(text, max_w)
   return lines
 end
 
+-- The hint text changes rarely, so cache the wrap result across frames.
+local last_hint, last_lines
+local function wrap_cached(text, max_w)
+  if text ~= last_hint then
+    last_hint, last_lines = text, wrap(text, max_w)
+  end
+  return last_lines
+end
+
 -- Returns an action for a sidebar click, or nil. Actions:
 --   { type = "select", kind = <towerkind> }
 --   { type = "start" }
 --   { type = "sell" }
 function M.button_at(run, mx, my)
   for i = 1, #btns do
-    if in_rect(mx, my, btns[i]) then
+    if ui.in_rect(mx, my, btns[i]) then
       return { type = "select", kind = btns[i].kind }
     end
   end
-  if in_rect(mx, my, start_btn) then return { type = "start" } end
-  if in_rect(mx, my, sell_btn) then return { type = "sell" } end
+  if ui.in_rect(mx, my, start_btn) then return { type = "start" } end
+  if ui.in_rect(mx, my, sell_btn) then return { type = "sell" } end
   return nil
 end
 
 -- Mini geometric icon for a tower kind, centered at (cx, cy).
 local function icon(kind, cx, cy, color)
-  local r = 5
-  local shape = tower.DEFS[kind].shape
-  if shape == "diamond" then
-    gfx.tri_fill(cx, cy - r, cx - r, cy, cx + r, cy, color)
-    gfx.tri_fill(cx, cy + r, cx - r, cy, cx + r, cy, color)
-  elseif shape == "hex" then
-    local px, py
-    for k = 0, 6 do
-      local a = (k / 6) * math.pi * 2
-      local nx, ny = cx + math.cos(a) * r, cy + math.sin(a) * r
-      if k > 0 then gfx.tri_fill(cx, cy, px, py, nx, ny, color) end
-      px, py = nx, ny
-    end
-  else
-    gfx.rect_fill(cx - r, cy - r, r * 2, r * 2, color)
-  end
+  shape.fill(tower.DEFS[kind].shape, cx, cy, 5, color)
 end
 
 function M.draw(run, meta, ui)
@@ -125,7 +117,7 @@ function M.draw(run, meta, ui)
     hint = "Pick a tower to build"
   end
   local hy = btns[#btns].y + btns[#btns].h + 6
-  local lines = wrap(hint, BW)
+  local lines = wrap_cached(hint, BW)
   for i = 1, #lines do
     gfx.text(lines[i], BX, hy + (i - 1) * 11, pal.TEXT_DIM)
   end

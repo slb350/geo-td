@@ -8,6 +8,7 @@ local C       = require("lib.const")
 local pal     = require("lib.palette")
 local powerup = require("lib.powerup")
 local fx      = require("lib.fx")
+local ui      = require("lib.ui")
 
 local M = {}
 
@@ -19,10 +20,6 @@ do
   for i = 1, n do
     cards[i] = { x = x0 + (i - 1) * (w + gap), y = 92, w = w, h = h }
   end
-end
-
-local function in_rect(px, py, r)
-  return px >= r.x and px < r.x + r.w and py >= r.y and py < r.y + r.h
 end
 
 function M.init()
@@ -55,23 +52,17 @@ function M.update(dt)
   if input.mouse_pressed(input.MOUSE_LEFT) then
     local mx, my = input.mouse()
     for i = 1, #cards do
-      if run.draft[i] and in_rect(mx, my, cards[i]) then
+      if run.draft[i] and ui.in_rect(mx, my, cards[i]) then
         return choose(i)
       end
     end
   end
 end
 
-local function center_text(text, y, color, scale)
-  scale = scale or 1
-  local w = usagi.measure_text(text) * scale
-  gfx.text_ex(text, (C.GAME_W - w) * 0.5, y, scale, 0, color, 1)
-end
-
 function M.draw(dt)
   gfx.clear(pal.BG)
-  center_text("WAVE " .. State.run.wave_index .. " CLEARED", 38, gfx.COLOR_GREEN, 2)
-  center_text("choose an upgrade", 70, pal.TEXT_DIM, 1)
+  ui.center_text("WAVE " .. State.run.wave_index .. " CLEARED", 38, gfx.COLOR_GREEN, 2)
+  ui.center_text("choose an upgrade", 70, pal.TEXT_DIM, 1)
 
   local draft = State.run.draft or {}
   for i = 1, #cards do

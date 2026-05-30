@@ -6,6 +6,7 @@ local pal  = require("lib.palette")
 local run  = require("lib.run")
 local meta = require("lib.meta")
 local fx   = require("lib.fx")
+local ui   = require("lib.ui")
 
 local M = {}
 
@@ -19,10 +20,6 @@ do
     rows[i] = { id = meta.SHOP[i].id, x = 96, y = y, w = 288, h = 22 }
     y = y + 26
   end
-end
-
-local function in_rect(px, py, r)
-  return px >= r.x and px < r.x + r.w and py >= r.y and py < r.y + r.h
 end
 
 local function start_run()
@@ -43,37 +40,31 @@ function M.update(dt)
   end
   if input.mouse_pressed(input.MOUSE_LEFT) then
     local mx, my = input.mouse()
-    if in_rect(mx, my, start_btn) then
+    if ui.in_rect(mx, my, start_btn) then
       start_run()
       return
     end
     for i = 1, #rows do
-      if in_rect(mx, my, rows[i]) and meta.can_buy(State.meta, rows[i].id) then
+      if ui.in_rect(mx, my, rows[i]) and meta.can_buy(State.meta, rows[i].id) then
         meta.buy(State.meta, rows[i].id)
       end
     end
   end
 end
 
-local function center_text(text, y, color, scale)
-  scale = scale or 1
-  local w = usagi.measure_text(text) * scale
-  gfx.text_ex(text, (C.GAME_W - w) * 0.5, y, scale, 0, color, 1)
-end
-
 function M.draw(dt)
   gfx.clear(pal.BG)
-  center_text("USAGI GEO TD", 34, gfx.COLOR_WHITE, 2)
-  center_text("a geometric tower defense", 64, pal.TEXT_DIM, 1)
+  ui.center_text("USAGI GEO TD", 34, gfx.COLOR_WHITE, 2)
+  ui.center_text("a geometric tower defense", 64, pal.TEXT_DIM, 1)
 
   local m = State.meta
-  center_text("best wave " .. m.best_wave .. "    bank " .. m.currency, 84, pal.TEXT_DIM, 1)
+  ui.center_text("best wave " .. m.best_wave .. "    bank " .. m.currency, 84, pal.TEXT_DIM, 1)
 
   -- start button
   gfx.rect_fill(start_btn.x, start_btn.y, start_btn.w, start_btn.h, pal.GOOD)
-  center_text("START RUN", start_btn.y + 8, gfx.COLOR_BLACK, 1)
+  ui.center_text("START RUN", start_btn.y + 8, gfx.COLOR_BLACK, 1)
 
-  center_text("UNLOCKS", 148, pal.TEXT, 1)
+  ui.center_text("UNLOCKS", 148, pal.TEXT, 1)
   for i = 1, #meta.SHOP do
     local it = meta.SHOP[i]
     local r = rows[i]
@@ -89,7 +80,7 @@ function M.draw(dt)
     gfx.text(it.desc, r.x + 8, r.y + 13, pal.TEXT_DIM)
   end
 
-  center_text("click START or press Z / Space", C.GAME_H - 12, pal.TEXT_DIM, 1)
+  ui.center_text("click START or press Z / Space", C.GAME_H - 12, pal.TEXT_DIM, 1)
 end
 
 return M

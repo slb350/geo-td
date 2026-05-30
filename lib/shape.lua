@@ -30,20 +30,23 @@ local function poly_line(x, y, r, sides, rot, color)
 end
 M.poly_line = poly_line
 
+-- Regular-polygon shapes, defined once: sides, radius multiplier, rotation offset.
+local POLY = {
+  diamond = { sides = 4, rmult = 1.2,  roff = 0 },
+  tri     = { sides = 3, rmult = 1.25, roff = -math.pi / 2 },
+  hex     = { sides = 6, rmult = 1.0,  roff = 0 },
+  penta   = { sides = 5, rmult = 1.0,  roff = -math.pi / 2 },
+}
+
 function M.fill(kind, x, y, r, color, rot)
   rot = rot or 0
-  if kind == "circ" then
-    gfx.circ_fill(x, y, r, color)
-  elseif kind == "square" then
+  if kind == "square" then
     gfx.rect_fill(x - r, y - r, r * 2, r * 2, color)
-  elseif kind == "diamond" then
-    poly_fill(x, y, r * 1.2, 4, rot, color)
-  elseif kind == "tri" then
-    poly_fill(x, y, r * 1.25, 3, rot - math.pi / 2, color)
-  elseif kind == "hex" then
-    poly_fill(x, y, r, 6, rot, color)
-  elseif kind == "penta" then
-    poly_fill(x, y, r, 5, rot - math.pi / 2, color)
+    return
+  end
+  local p = POLY[kind]
+  if p then
+    poly_fill(x, y, r * p.rmult, p.sides, rot + p.roff, color)
   else
     gfx.circ_fill(x, y, r, color)
   end
@@ -51,18 +54,13 @@ end
 
 function M.line(kind, x, y, r, color, rot)
   rot = rot or 0
-  if kind == "circ" then
-    gfx.circ(x, y, r, color)
-  elseif kind == "square" then
+  if kind == "square" then
     gfx.rect(x - r, y - r, r * 2, r * 2, color)
-  elseif kind == "diamond" then
-    poly_line(x, y, r * 1.2, 4, rot, color)
-  elseif kind == "tri" then
-    poly_line(x, y, r * 1.25, 3, rot - math.pi / 2, color)
-  elseif kind == "hex" then
-    poly_line(x, y, r, 6, rot, color)
-  elseif kind == "penta" then
-    poly_line(x, y, r, 5, rot - math.pi / 2, color)
+    return
+  end
+  local p = POLY[kind]
+  if p then
+    poly_line(x, y, r * p.rmult, p.sides, rot + p.roff, color)
   else
     gfx.circ(x, y, r, color)
   end
