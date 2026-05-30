@@ -36,9 +36,9 @@ C.SPAWN_MIN       = 0.18   -- floor on spawn interval at high waves
 -- top of the per-wave growth, so deep runs spike hard. HP carries most of the
 -- load (cheaper than raw enemy count for perf).
 C.TIER_STEP        = 10
-C.HP_TIER_MULT     = 2.3    -- enemy hp x this per tier
-C.BUDGET_TIER_MULT = 1.25   -- enemy count budget x this per tier
-C.SPEED_TIER_ADD   = 0.06   -- +6% enemy speed per tier
+C.HP_TIER_MULT     = 2.105  -- enemy hp x this per tier
+C.BUDGET_TIER_MULT = 1.2125 -- enemy count budget x this per tier
+C.SPEED_TIER_ADD   = 0.051  -- +5.1% enemy speed per tier
 
 -- Meta progression
 C.META_PER_WAVE = 2        -- meta-currency awarded per wave reached

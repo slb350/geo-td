@@ -82,16 +82,21 @@ local PALETTE = {
   "PINK", "PEACH",
 }
 for i, name in ipairs(PALETTE) do gfx["COLOR_" .. name] = i end
+local gfx_calls = {}
 for _, fn in ipairs({
   "clear", "text", "text_ex", "rect", "rect_fill", "rect_ex", "circ", "circ_fill",
   "circ_ex", "line", "line_ex", "tri", "tri_fill", "px", "spr", "spr_ex",
   "shader_set", "shader_uniform",
-}) do gfx[fn] = function() end end
+}) do
+  gfx[fn] = function(...)
+    gfx_calls[#gfx_calls + 1] = { fn = fn, args = { ... } }
+  end
+end
 
 local SAVE
 usagi = {
   GAME_W = 480, GAME_H = 270, SPRITE_SIZE = 16, PLATFORM = "test", IS_DEV = true, elapsed = 0,
-  measure_text = function(s) return #s * 4, 8 end,
+  measure_text = function(s) return #s * 4, 12 end,
   read_json = function(p)
     local f = assert(io.open("data/" .. p, "r"))
     local s = f:read("*a"); f:close()
@@ -111,6 +116,7 @@ package.path = "./?.lua;" .. package.path
 
 -- ---------------------------------------------------------------- the modules
 local meta    = require("lib.meta")
+local C       = require("lib.const")
 local run_mod = require("lib.run")
 local wave    = require("lib.wave")
 local enemy   = require("lib.enemy")
@@ -127,6 +133,17 @@ local function check(cond, msg)
     print("  FAIL: " .. msg)
   end
 end
+
+local function near(a, b)
+  return math.abs(a - b) < 0.000001
+end
+
+-- First balance pass cut each tier-spike *component* (the part above the
+-- per-wave baseline of 1.0) by 15%. Encode the derivation so the test verifies
+-- the intent rather than mirroring the literal back at itself.
+check(near(C.HP_TIER_MULT, 1 + (2.3 - 1) * 0.85), "hp tier-spike cut 15% (2.3 -> 2.105)")
+check(near(C.BUDGET_TIER_MULT, 1 + (1.25 - 1) * 0.85), "budget tier-spike cut 15% (1.25 -> 1.2125)")
+check(near(C.SPEED_TIER_ADD, 0.06 * 0.85), "speed tier-spike cut 15% (0.06 -> 0.051)")
 
 -- ----------------------------------------------------------------- meta/save
 local m = meta.default()
@@ -322,6 +339,32 @@ local upgrade_s  = require("scenes.upgrade")
 local gameover_s = require("scenes.gameover")
 
 menu_s.update(1 / 60); menu_s.draw(1 / 60)
+gfx_calls = {}
+menu_s.draw(1 / 60)
+for i = 1, #gfx_calls do
+  local call = gfx_calls[i]
+  if call.fn == "text" then
+    local text, x, y = call.args[1], call.args[2], call.args[3]
+    for j = 1, #meta.SHOP do
+      local it = meta.SHOP[j]
+      if text == it.name or text == it.desc or text == it.cost .. " bank" or text == "OWNED" then
+        local box
+        for k = i - 1, 1, -1 do
+          local prior = gfx_calls[k]
+          if prior.fn == "rect_fill" then
+            local args = prior.args
+            if args[1] <= x and x < args[1] + args[3] and args[2] <= y and y < args[2] + args[4] then
+              box = args
+              break
+            end
+          end
+        end
+        local _, h = usagi.measure_text(text)
+        check(box ~= nil and y + h <= box[2] + box[4], text .. " fits inside menu unlock row")
+      end
+    end
+  end
+end
 
 State.run = run_mod.new(State.meta, 9); State.run.money = 9999
 game_s.init()
