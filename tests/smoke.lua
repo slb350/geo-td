@@ -539,6 +539,11 @@ upgrade_s.draw(1 / 60)
 -- installed above.
 require("tests.smoke_report").run(check, near)
 
+-- ------------------------------------------------------ behavior cards (M2)
+-- Pierce/ricochet chaining, brittle, splash rings, and flyer bursts live in
+-- tests/smoke_cards.lua (same LOC-split rationale as the report suite).
+require("tests.smoke_cards").run(check, near)
+
 -- ----------------------------------------------------------------- result
 print(("smoke: %d checks, %d failures"):format(checks, fails))
 os.exit(fails == 0 and 0 or 1)

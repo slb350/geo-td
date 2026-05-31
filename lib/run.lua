@@ -36,6 +36,7 @@ function M.new(meta, seed, path_name)
     kills = 0,
     leaked = 0,            -- enemies + bosses that reached the core (report stat)
     money_spent = 0,       -- gross spend on towers + orbital strikes (report stat)
+    bursting = false,      -- re-entrancy guard for the flyer-death burst (M2)
     hp_scale = 1,
     speed_scale = 1,
     towers = {},
@@ -43,6 +44,7 @@ function M.new(meta, seed, path_name)
     tower_stats = {},      -- [id] = { kind, damage } -- applied damage per tower
     enemies = { n = 0 },
     projectiles = { n = 0 },
+    rings = { n = 0 },     -- lingering splash damage zones (M2 "Aftershock" card)
     boss = nil,
     bosses_killed = 0,
     spawn_queue = { n = 0, i = 0 },
@@ -52,8 +54,20 @@ function M.new(meta, seed, path_name)
     mods = {
       dmg_mult = 1, rate_mult = 1, range_mult = 1, bounty_mult = 1, cost_mult = 1,
       proj_mult = 1, splash_mult = 1, crit_chance = 0, interest = 0, life_per_wave = 0,
+      -- behavior draft cards (M2): pierce/ricochet are extra-hit counts; brittle,
+      -- ring, flyer_burst are scaled fractions. 0 = card not taken.
+      pierce = 0, ricochet = 0, brittle = 0, ring = 0, flyer_burst = 0,
     },
   }
+end
+
+-- Credit applied damage to a tower's run-level stat entry (seeded at placement,
+-- kept through a sell). Shared by projectile hits and splash rings so the M1
+-- run-report attribution stays in one place. A nil/no-op amount credits nothing.
+function M.credit_damage(run, tower_id, applied)
+  if not applied or applied <= 0 or not tower_id then return end
+  local s = run.tower_stats[tower_id]
+  if s then s.damage = s.damage + applied end
 end
 
 function M.alive(run)

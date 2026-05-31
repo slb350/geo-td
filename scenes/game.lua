@@ -8,6 +8,7 @@ local path = require("lib.path")
 local enemy = require("lib.enemy")
 local tower = require("lib.tower")
 local proj  = require("lib.projectile")
+local ring  = require("lib.ring")
 local wave  = require("lib.wave")
 local boss  = require("lib.boss")
 local fx    = require("lib.fx")
@@ -129,6 +130,7 @@ function M.update(dt)
     if boss_wave then boss.update(run, dt) end
     tower.update(run, dt)
     proj.update(run, dt)
+    ring.update(run, dt)
     local cleared = run.enemies.n == 0 and (not run.boss or run.boss.dead)
     if spawns_done and cleared then
       run.phase = "building"
@@ -137,6 +139,7 @@ function M.update(dt)
     end
   else
     proj.update(run, dt)
+    ring.update(run, dt)
   end
 
   if run.lives <= 0 then
@@ -157,6 +160,7 @@ function M.draw(dt)
   gfx.clear(pal.BG)
   field.draw(pal, usagi.elapsed)
   path.draw(run.path, pal, C.PATH_WIDTH, usagi.elapsed)
+  ring.draw(run)   -- ground-layer splash rings, under towers/enemies
 
   for i = 1, #run.towers do
     tower.draw(run, run.towers[i], false)

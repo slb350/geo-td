@@ -9,5 +9,10 @@
   "lives":    { "name": "Reinforce",   "desc": "lives",        "kind": "add_lives",     "value": 3 },
   "crit":     { "name": "Precision",   "desc": "crit",         "kind": "crit_chance",   "value": 0.06, "min_rarity": 2 },
   "interest": { "name": "Investment",  "desc": "interest/wave","kind": "interest",      "value": 0.04, "min_rarity": 2 },
-  "bastion":  { "name": "Bastion",     "desc": "life/wave",    "kind": "life_per_wave", "value": 1,    "min_rarity": 3 }
+  "bastion":  { "name": "Bastion",     "desc": "life/wave",    "kind": "life_per_wave", "value": 1,    "min_rarity": 3 },
+  "pierce":   { "name": "Lance",       "desc": "pierce",       "kind": "pierce",        "value": 1,    "min_rarity": 3 },
+  "ricochet": { "name": "Rebound",     "desc": "ricochet",     "kind": "ricochet",      "value": 1,    "min_rarity": 2 },
+  "brittle":  { "name": "Shatter",     "desc": "dmg to slowed","kind": "brittle",       "value": 0.25, "min_rarity": 2 },
+  "ring":     { "name": "Aftershock",  "desc": "splash ring",  "kind": "ring",          "value": 0.5,  "min_rarity": 2 },
+  "airburst": { "name": "Flak Burst",  "desc": "flyer burst",  "kind": "flyer_burst",   "value": 0.5,  "min_rarity": 2 }
 }

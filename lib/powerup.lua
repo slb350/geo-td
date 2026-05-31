@@ -78,6 +78,16 @@ function M.describe(card)
     return ("+%d%% crit"):format(math.floor(v * 100 + 0.5))
   elseif k == "interest" then
     return ("+%d%% interest / wave"):format(math.floor(v * 100 + 0.5))
+  elseif k == "pierce" then
+    return "shots pierce +1 enemy"
+  elseif k == "ricochet" then
+    return "shots ricochet +1"
+  elseif k == "ring" then
+    return "splash leaves a dmg ring"
+  elseif k == "flyer_burst" then
+    return "flyers burst on death"
+  elseif k == "brittle" then
+    return ("+%d%% dmg to slowed"):format(math.floor(v * 100 + 0.5))
   else
     return ("+%d%% %s"):format(math.floor(v * 100 + 0.5), d.desc)
   end
@@ -111,6 +121,18 @@ function M.apply(run, card)
     run.lives = run.lives + math.floor(v + 0.5)
   elseif k == "life_per_wave" then
     mods.life_per_wave = mods.life_per_wave + math.floor(v + 0.5)
+  -- behavior cards (M2): pierce/ricochet are flat +1 extra-hit unlocks (gated by
+  -- min_rarity, magnitude not rarity-scaled); brittle/ring/flyer_burst scale.
+  elseif k == "pierce" then
+    mods.pierce = mods.pierce + 1
+  elseif k == "ricochet" then
+    mods.ricochet = mods.ricochet + 1
+  elseif k == "brittle" then
+    mods.brittle = mods.brittle + v
+  elseif k == "ring" then
+    mods.ring = mods.ring + v
+  elseif k == "flyer_burst" then
+    mods.flyer_burst = mods.flyer_burst + v
   end
   run.powerups[#run.powerups + 1] = card.key
 end

@@ -3,6 +3,7 @@
 -- allocated fresh and dropped on removal (projectiles hold references to them;
 -- pooling would alias a recycled table onto a stale projectile target).
 
+local C      = require("lib.const")
 local pal    = require("lib.palette")
 local path   = require("lib.path")
 local fx     = require("lib.fx")
@@ -64,9 +65,13 @@ end
 
 -- Damage order: shield pool first, then armor-reduced hp (shared with bosses).
 -- Returns `died, applied` (applied = effective durability removed) so callers
--- can attribute damage to the firing tower.
+-- can attribute damage to the firing tower. The brittle card (M2) lives here --
+-- the single point every enemy takes damage -- so a slowed enemy takes the bonus
+-- from ANY source (shots, splash, rings, bursts), not just direct projectile hits.
 function M.damage(run, e, dmg)
   if e.dead then return false, 0 end
+  local b = run.mods.brittle
+  if b > 0 and e.slow_factor < 1 then dmg = dmg * (1 + b) end
   local died, applied = combat.apply_damage(e, dmg)
   if died then M.kill(run, e) end
   return died, applied
@@ -87,6 +92,24 @@ function M.kill(run, e)
     for k = 1, split.count do
       M.spawn(run, split.type, run.hp_scale, run.speed_scale, math.max(0, e.d - k * 3))
     end
+  end
+  -- flyer burst (M2 "Flak Burst" card): a dying flyer detonates, damaging nearby
+  -- flyers. run.bursting guards against a chain of burst-kills recursing forever.
+  if e.fly and run.mods.flyer_burst > 0 and not run.bursting then
+    run.bursting = true
+    local r2 = C.FLYER_BURST_R * C.FLYER_BURST_R
+    local dmg = e.maxhp * run.mods.flyer_burst
+    local list = run.enemies
+    local n = list.n
+    for i = 1, n do
+      local o = list[i]
+      if o ~= e and not o.dead and o.fly then
+        local dx, dy = o.x - e.x, o.y - e.y
+        if dx * dx + dy * dy <= r2 then M.damage(run, o, dmg) end
+      end
+    end
+    run.bursting = false
+    fx.burst(e.x, e.y, e.color, 12)
   end
 end
 

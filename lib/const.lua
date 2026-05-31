@@ -49,4 +49,11 @@ C.SPEED_TIER_ADD   = 0.051  -- +5.1% enemy speed per tier
 -- Meta progression
 C.META_PER_WAVE = 2        -- meta-currency awarded per wave reached
 
+-- Behavior draft cards (M2). Pierce/ricochet "chain" a shot to extra targets;
+-- ring is a lingering splash zone; flyer_burst is an on-death AoE for flyers.
+C.CHAIN_RANGE    = 60      -- max px a pierce/ricochet shot hops to its next target
+C.RING_TICKS     = 3       -- damage ticks a splash ring deals before it fades
+C.RING_INTERVAL  = 0.2     -- seconds between ring ticks
+C.FLYER_BURST_R  = 42      -- radius (px) of a flyer's on-death burst
+
 return C

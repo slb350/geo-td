@@ -17,28 +17,12 @@ local wave     = require("lib.wave")
 local powerup  = require("lib.powerup")
 local report   = require("lib.report")
 local gameover = require("scenes.gameover")
+local helpers  = require("tests.helpers")
 
 local M = {}
 
--- A stationary, durable ground target so attribution math is not muddied by
--- death, movement, armor, or shields (each test overrides as needed).
-local function dummy(r, x, y, hp_scale)
-  local e = enemy.spawn(r, "hulk", hp_scale or 20, 1, 10)
-  e.x, e.y = x, y
-  e.armor, e.shield, e.shield_max = 0, 0, 0
-  return e
-end
-
--- Fire one shot from tower t and settle every projectile to impact. enemy.update
--- is intentionally NOT called, so targets stay put and the shot lands.
-local function fire_and_settle(r, t)
-  t.cooldown = 0
-  tower.update(r, 1 / 60)
-  for _ = 1, 300 do
-    if r.projectiles.n == 0 then break end
-    proj.update(r, 1 / 60)
-  end
-end
+local dummy = helpers.dummy                     -- durable stationary target
+local fire_and_settle = helpers.fire_and_settle -- fire one shot, settle to impact
 
 function M.run(check, near)
   local m = meta.default()
