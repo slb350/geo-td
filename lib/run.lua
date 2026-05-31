@@ -14,6 +14,7 @@ local boss  = require("lib.boss")
 local resource = require("lib.resource")
 local contracts = require("lib.contracts")
 local affix = require("lib.affix")
+local mastery = require("lib.mastery")
 
 local M = {}
 
@@ -94,6 +95,7 @@ function M.new(meta, seed, path_name, mode_id)
       pierce = 0, ricochet = 0, brittle = 0, ring = 0, flyer_burst = 0,
     },
   }
+  mastery.apply(run, meta)   -- fold owned mastery buffs into start money/lives + mods (M7)
   resource.spawn_nodes(run)
   return run
 end

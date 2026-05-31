@@ -105,7 +105,8 @@ function M.run(check, near)
   check(rep.contracts == 2 and rep.bank_shards == 2, "report carries contracts signed + bank shards")
   local pm = meta.default()
   local award = meta.finish_run(pm, 5, 0, nil, 3)
-  check(award == 5 * C.META_PER_WAVE + 3 * C.BANK_SHARD_VALUE, "finish_run folds bank shards into the award")
+  check(award == 5 * C.META_PER_WAVE, "finish_run award is wave bonus (shards are a separate currency now)")
+  check(pm.bank_shards == 3, "finish_run banks shards as the premium currency (M7)")
 
   -- --------------------------------------------------------- contract scene
   do

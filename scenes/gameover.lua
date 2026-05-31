@@ -11,6 +11,7 @@ local ui     = require("lib.ui")
 local audio  = require("lib.audio")
 local report = require("lib.report")
 local tower  = require("lib.tower")
+local metacontract = require("lib.metacontract")
 
 local M = {}
 
@@ -24,8 +25,15 @@ function M.init()
   local stats = report.build(run)
   local award, unlocked = meta.finish_run(State.meta, stats.wave, stats.bosses_killed,
     run.path_name, stats.bank_shards)
+  -- M7: score the run against the meta-contract board (reads the report stats),
+  -- paying shards + badges and refilling the board. Persist the result.
+  local done = metacontract.evaluate(State.meta, stats)
+  meta.save(State.meta)
   stats.award = award
   stats.bank = State.meta.currency
+  stats.shards_total = State.meta.bank_shards
+  stats.contracts_done = {}
+  for i = 1, #done do stats.contracts_done[i] = metacontract.DEFS[done[i]].name end
   stats.unlocked = unlocked and maps.get(unlocked).name or nil
   State.summary = stats
   effect.stop()
@@ -84,8 +92,13 @@ function M.draw(dt)
   end
 
   ui.center_text("+" .. s.award .. " bank   (total " .. s.bank .. ")", y + 6, gfx.COLOR_YELLOW, 1)
+  local ny = y + 18
   if s.unlocked then
-    ui.center_text("NEW MAP UNLOCKED  -  " .. s.unlocked, y + 24, gfx.COLOR_GREEN, 1)
+    ui.center_text("NEW MAP UNLOCKED  -  " .. s.unlocked, ny, gfx.COLOR_GREEN, 1); ny = ny + 14
+  end
+  -- M7: meta-contracts completed by this run (shards + badges earned)
+  if s.contracts_done and #s.contracts_done > 0 then
+    ui.center_text("CONTRACT  -  " .. table.concat(s.contracts_done, ", "), ny, gfx.COLOR_PINK, 1)
   end
   ui.center_text("click to return to menu", C.GAME_H - 14, pal.TEXT_DIM, 1)
 end

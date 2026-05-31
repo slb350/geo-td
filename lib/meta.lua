@@ -6,7 +6,7 @@ local C    = require("lib.const")
 local maps = require("lib.maps")
 
 local M = {}
-local SAVE_VERSION = 1
+local SAVE_VERSION = 2
 
 function M.default()
   return {
@@ -17,14 +17,24 @@ function M.default()
     unlocks = { tower_rail = false, tower_flak = false, start_bonus = false },
     map_unlocked = { [maps.first] = true },  -- easiest map open from the start
     map_best = {},                           -- per-map best wave reached
+    -- V2-M7 meta progression:
+    bank_shards = 0,            -- premium currency earned from wave contracts
+    mastery = {},               -- [node id] = true (permanent run buffs)
+    badges = {},                -- [badge id] = true (achievements)
+    contract_board = {},        -- active meta-contract ids (the 3-goal board)
+    completed_contracts = {},   -- [meta-contract id] = true (done at least once)
+    daily = {},                 -- { day = <n>, done = bool, best = wave }
   }
 end
 
-function M.load()
-  local data = usagi.load()
-  if type(data) ~= "table" or data.version ~= SAVE_VERSION then
-    return M.default()
-  end
+-- Ensure every field exists on a loaded save (covers a v1->v2 migration and any
+-- partially-written v2 save). Never drops existing currency/unlocks/records.
+local function backfill(data)
+  -- core fields (present since v1, but guard a truncated/hand-edited v2 save so a
+  -- missing one can't crash finish_run's arithmetic or the menu's concatenation)
+  data.currency = data.currency or 0
+  data.best_wave = data.best_wave or 0
+  data.total_runs = data.total_runs or 0
   data.unlocks = data.unlocks or {}
   if data.unlocks.tower_rail == nil then data.unlocks.tower_rail = false end
   if data.unlocks.tower_flak == nil then data.unlocks.tower_flak = false end
@@ -32,7 +42,24 @@ function M.load()
   data.map_unlocked = data.map_unlocked or {}
   data.map_unlocked[maps.first] = true       -- first map is always available
   data.map_best = data.map_best or {}
+  data.bank_shards = data.bank_shards or 0
+  data.mastery = data.mastery or {}
+  data.badges = data.badges or {}
+  data.contract_board = data.contract_board or {}
+  data.completed_contracts = data.completed_contracts or {}
+  data.daily = data.daily or {}
   return data
+end
+
+function M.load()
+  local data = usagi.load()
+  if type(data) ~= "table" then return M.default() end
+  if data.version == 1 then
+    data.version = SAVE_VERSION            -- migrate v1 -> v2 (fields added by backfill)
+  elseif data.version ~= SAVE_VERSION then
+    return M.default()                     -- unknown/future version: safe default
+  end
+  return backfill(data)
 end
 
 function M.is_map_unlocked(meta, name)
@@ -78,8 +105,8 @@ end
 -- UNLOCK_WAVE finish. Persists. Returns: award, newly_unlocked_map_or_nil.
 function M.finish_run(meta, wave_reached, bosses_killed, map_name, bank_shards)
   local award = wave_reached * C.META_PER_WAVE + (bosses_killed or 0) * 8
-    + (bank_shards or 0) * C.BANK_SHARD_VALUE
   meta.currency = meta.currency + award
+  meta.bank_shards = (meta.bank_shards or 0) + (bank_shards or 0)   -- premium currency (M7)
   meta.total_runs = meta.total_runs + 1
   if wave_reached > meta.best_wave then meta.best_wave = wave_reached end
 

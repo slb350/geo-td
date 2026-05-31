@@ -43,6 +43,8 @@ require("tests.smoke_resonance").run(check, near)
 require("tests.smoke_affix").run(check, near)
 require("tests.smoke_arena").run(check, near)
 require("tests.smoke_tactical").run(check, near)
+require("tests.smoke_mastery").run(check, near)
+require("tests.smoke_daily").run(check, near)
 require("tests.smoke_sim").run(check, near)
 require("tests.smoke_balance").run(check, near)
 

@@ -37,10 +37,15 @@ function M.init()
   audio.set("menu")
 end
 
-local function start_map(name)
-  local t = os.time and os.time() or 0
-  local seed = t + State.meta.total_runs * 7919 + math.floor(usagi.elapsed * 1000)
-  State.run = run.new(State.meta, seed, name, State.ui.mode)
+-- Launch a run on a map. mode_id falls back to the picker's current mode; an
+-- explicit seed (e.g. a daily challenge) overrides the wall-clock seed. Exposed on
+-- the module so the menu's Daily tab reuses the one true run-launch path (M7).
+function M.start_map(name, mode_id, seed)
+  if not seed then
+    local t = os.time and os.time() or 0
+    seed = t + State.meta.total_runs * 7919 + math.floor(usagi.elapsed * 1000)
+  end
+  State.run = run.new(State.meta, seed, name, mode_id or State.ui.mode)
   State.ui.selected = "pellet"
   State.ui.sell_mode = false
   fx.click_sfx()
@@ -60,7 +65,7 @@ function M.update(dt)
     end
     for i = 1, #tiles do
       if ui.in_rect(mx, my, tiles[i]) and meta.is_map_unlocked(State.meta, tiles[i].name) then
-        start_map(tiles[i].name)
+        M.start_map(tiles[i].name)
         return
       end
     end

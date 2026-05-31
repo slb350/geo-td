@@ -107,8 +107,8 @@ C.AFFIX_CHANCE = 0.7    -- chance a qualifying wave actually gets an affix
 
 -- Wave contracts (V2-M3). An optional risk/reward signed before some waves (never
 -- a boss wave). The risk applies to that one wave; the reward is granted only on
--- wave clear (not on death).
+-- wave clear (not on death). Bank shards earned this way are a first-class premium
+-- meta currency (M7) -- banked on run end and spent on premium mastery nodes.
 C.CONTRACT_EVERY   = 3     -- a contract is offered before every Nth wave
-C.BANK_SHARD_VALUE = 5     -- meta-currency per bank shard earned from contracts
 
 return C

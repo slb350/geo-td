@@ -1,0 +1,11 @@
+{
+  "first_blood":   { "name": "First Blood",   "desc": "Reach wave 8 in a run.",           "shards": 2, "badge": "veteran",  "require": [ { "stat": "wave", "op": "gte", "value": 8 } ] },
+  "boss_trio":     { "name": "Boss Trio",      "desc": "Kill 3 bosses in one run.",        "shards": 2, "badge": "slayer",   "require": [ { "stat": "bosses_killed", "op": "gte", "value": 3 } ] },
+  "centurion":     { "name": "Centurion",      "desc": "Score 1500+ in a run.",            "shards": 2, "badge": "centurion","require": [ { "stat": "score", "op": "gte", "value": 1500 } ] },
+  "broker":        { "name": "Broker",         "desc": "Sign 3 wave contracts in a run.",  "shards": 2, "badge": "broker",   "require": [ { "stat": "contracts", "op": "gte", "value": 3 } ] },
+  "affix_breaker": { "name": "Affix Breaker",  "desc": "Survive 3 affix waves in a run.",  "shards": 3, "badge": "breaker",  "require": [ { "stat": "affixes", "op": "gte", "value": 3 } ] },
+  "arena_wrecker": { "name": "Arena Wrecker",  "desc": "Destroy 10 arena objects.",        "shards": 3, "badge": "wrecker",  "require": [ { "stat": "arena_kills", "op": "gte", "value": 10 } ] },
+  "chicane_climb": { "name": "Chicane Climb",  "desc": "Reach wave 12 on Chicane.",        "shards": 3, "badge": "chicane",  "require": [ { "stat": "wave", "op": "gte", "value": 12 }, { "stat": "map", "op": "eq", "value": "Chicane" } ] },
+  "ironclad":      { "name": "Ironclad",       "desc": "Reach wave 10 with No Rail.",      "shards": 3, "badge": "ironclad", "require": [ { "stat": "wave", "op": "gte", "value": 10 }, { "stat": "mode", "op": "eq", "value": "No Rail" } ] },
+  "lattice_seen":  { "name": "The Lattice",    "desc": "Reach the wave-25 final boss.",    "shards": 4, "badge": "lattice",  "require": [ { "stat": "final_boss", "op": "eq", "value": true } ] }
+}

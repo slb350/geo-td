@@ -1,0 +1,8 @@
+{
+  "builder_economy":   { "track": "Builder",  "name": "Surveyor",  "cost": 20, "effect": { "kind": "money",    "value": 30 },   "desc": "+30 start money." },
+  "builder_interest":  { "track": "Builder",  "name": "Investor",  "cost": 32, "shards": 2, "effect": { "kind": "interest", "value": 0.02 }, "desc": "+2% interest / wave." },
+  "arsenal_caliber":   { "track": "Arsenal",  "name": "Caliber",   "cost": 26, "effect": { "kind": "dmg",      "value": 0.06 }, "desc": "+6% tower damage." },
+  "arsenal_precision": { "track": "Arsenal",  "name": "Precision", "cost": 36, "shards": 3, "effect": { "kind": "crit",     "value": 0.05 }, "desc": "+5% crit chance." },
+  "survival_bulwark":  { "track": "Survival", "name": "Bulwark",   "cost": 20, "effect": { "kind": "lives",    "value": 5 },    "desc": "+5 start lives." },
+  "survival_salvage":  { "track": "Survival", "name": "Salvage",   "cost": 30, "shards": 2, "effect": { "kind": "bounty",   "value": 0.1 },  "desc": "+10% kill bounty." }
+}
