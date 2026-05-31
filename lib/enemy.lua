@@ -45,6 +45,7 @@ function M.spawn(run, kind, hp_scale, speed_scale, start_d)
   e.dead = false
   e.leaked = false
   e.fly = def.fly == true
+  e.trail = def.trail == true
   if e.fly then
     -- flyers beeline straight from spawn to core, ignoring the path
     local nodes = run.path.nodes
@@ -141,9 +142,25 @@ function M.draw(run)
       gfx.circ_fill(e.x, e.y + 1, s * 0.8, gfx.COLOR_BLACK)
       by = e.y - 5 - math.sin(t * 5 + e.phase) * 1.5
     end
+    -- motion trail for fast movers: a couple of shrinking ghosts behind
+    if e.trail then
+      for k = 1, 2 do
+        local td = e.d - k * (s + 1)
+        if td > 0 then
+          local gx, gy
+          if e.fly then gx, gy = e.sx + e.fly_ux * td, e.sy + e.fly_uy * td - 5
+          else gx, gy = path.point_at(run.path, td) end
+          shape.fill(e.shape, gx, gy, s - k, gfx.COLOR_DARK_GRAY, rot)
+        end
+      end
+    end
     shape.fill(e.shape, e.x, by, s, e.color, rot)
-    -- bright core dot for a touch of glow
-    gfx.circ_fill(e.x, by, math.max(1, s * 0.35), gfx.COLOR_WHITE)
+    -- inner counter-rotating facet: a glowing cut-gem core (catches the bloom)
+    if s >= 4 then
+      shape.fill(e.shape, e.x, by, s * 0.4, gfx.COLOR_WHITE, -rot * 1.5)
+    else
+      gfx.circ_fill(e.x, by, math.max(1, s * 0.4), gfx.COLOR_WHITE)
+    end
     -- armor: outline ring
     if e.armor > 0 then
       shape.line(e.shape, e.x, by, s + 1, gfx.COLOR_LIGHT_GRAY, rot)

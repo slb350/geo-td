@@ -214,13 +214,18 @@ function M.draw(run, t, show_range)
   shape.line(t.shape, t.x, t.y, r + 1, gfx.COLOR_DARK_GRAY, body_rot)
   shape.fill(t.shape, t.x, t.y, r, color, body_rot)
   if not disabled then
-    local bl = r + 4
-    gfx.line_ex(t.x, t.y, t.x + math.cos(t.aim) * bl, t.y + math.sin(t.aim) * bl, 2, gfx.COLOR_WHITE)
-    if t.flash > 0 then
-      gfx.circ_fill(t.x + math.cos(t.aim) * bl, t.y + math.sin(t.aim) * bl, 2.5, gfx.COLOR_YELLOW)
+    local blen = t.def.barrel_len
+    if blen and blen > 0 then
+      local bw = t.def.barrel_w or 2
+      local ex, ey = t.x + math.cos(t.aim) * blen, t.y + math.sin(t.aim) * blen
+      gfx.line_ex(t.x, t.y, ex, ey, bw, gfx.COLOR_WHITE)
+      if t.flash > 0 then gfx.circ_fill(ex, ey, bw + 1, gfx.COLOR_YELLOW) end
+    elseif t.flash > 0 then
+      gfx.circ(t.x, t.y, r + 2, gfx.COLOR_YELLOW)   -- barrel-less field tower pulse
     end
   end
-  gfx.circ_fill(t.x, t.y, 2, gfx.COLOR_WHITE)
+  -- inner counter-rotating facet: a constructed-turret core
+  shape.fill(t.shape, t.x, t.y, r * 0.4, gfx.COLOR_WHITE, -body_rot)
   if disabled then
     gfx.circ(t.x, t.y, r + 2, gfx.COLOR_RED)
   end
