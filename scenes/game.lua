@@ -16,12 +16,15 @@ local hud   = require("lib.hud")
 local field = require("lib.field")
 local audio = require("lib.audio")
 local run_lib = require("lib.run")
+local inspect = require("lib.inspect")
+local modifier = require("lib.modifier")
 
 local M = {}
 
 local function start_wave(run)
   local n = run.wave_index + 1
   run.phase = "combat"
+  State.ui.inspect = nil   -- close the tower-inspect panel when combat starts
   fx.wave_sfx()
   audio.set(wave.is_boss(n) and "boss" or "combat")
   -- start-of-wave economy from upgrades
@@ -53,15 +56,31 @@ end
 local function handle_field_click(run, ui, meta, mx, my)
   if ui.sell_mode then
     local t = tower.at(run, mx, my)
-    if t then tower.sell(run, t) end
+    if t then
+      if ui.inspect == t then ui.inspect = nil end
+      tower.sell(run, t)
+    end
   elseif ui.selected then
     if tower.can_place(run, mx, my, ui.selected) then
       tower.place(run, mx, my, ui.selected)
     end
+  elseif run.phase == "building" then
+    -- inspect a placed tower (or click empty space to close the panel)
+    ui.inspect = tower.at(run, mx, my)
   end
 end
 
 local function handle_hud_click(run, ui, meta, mx, my)
+  -- while inspecting, the sidebar is the inspect panel: clicks buy upgrades/modules
+  if ui.inspect then
+    local act = inspect.button_at(run, ui.inspect, mx, my)
+    if act and act.type == "upgrade" then
+      if modifier.buy_upgrade(run, ui.inspect, act.id) then fx.place_sfx() end
+    elseif act and act.type == "module" then
+      if modifier.socket_module(run, ui.inspect, act.id) then fx.place_sfx() end
+    end
+    return
+  end
   local act = hud.button_at(run, mx, my)
   if not act then return end
   if act.type == "select" then
@@ -90,21 +109,21 @@ function M.update(dt)
     and tower.can_place(run, mx, my, ui.selected)
 
   -- keyboard shortcuts
-  if input.key_pressed(input.KEY_1) then ui.selected = "pellet"; ui.sell_mode = false end
-  if input.key_pressed(input.KEY_2) then ui.selected = "splash"; ui.sell_mode = false end
+  if input.key_pressed(input.KEY_1) then ui.selected = "pellet"; ui.sell_mode = false; ui.inspect = nil end
+  if input.key_pressed(input.KEY_2) then ui.selected = "splash"; ui.sell_mode = false; ui.inspect = nil end
   if input.key_pressed(input.KEY_3) and tower.available(meta, "frost") then
-    ui.selected = "frost"; ui.sell_mode = false
+    ui.selected = "frost"; ui.sell_mode = false; ui.inspect = nil
   end
   if input.key_pressed(input.KEY_4) and tower.available(meta, "rail") then
-    ui.selected = "rail"; ui.sell_mode = false
+    ui.selected = "rail"; ui.sell_mode = false; ui.inspect = nil
   end
   if input.key_pressed(input.KEY_5) and tower.available(meta, "flak") then
-    ui.selected = "flak"; ui.sell_mode = false
+    ui.selected = "flak"; ui.sell_mode = false; ui.inspect = nil
   end
   if input.key_pressed(input.KEY_O) then
     if run_lib.orbital_strike(run) then fx.orbital() end
   end
-  if input.key_pressed(input.KEY_S) then ui.sell_mode = not ui.sell_mode; ui.selected = nil end
+  if input.key_pressed(input.KEY_S) then ui.sell_mode = not ui.sell_mode; ui.selected = nil; ui.inspect = nil end
   if (input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER))
     and run.phase == "building" then
     start_wave(run)
@@ -119,7 +138,7 @@ function M.update(dt)
     end
   end
   if input.mouse_pressed(input.MOUSE_RIGHT) then
-    ui.selected = nil; ui.sell_mode = false
+    ui.selected = nil; ui.sell_mode = false; ui.inspect = nil
   end
 
   -- simulation
@@ -190,7 +209,11 @@ function M.draw(dt)
   end
   gfx.text(banner, 6, C.GAME_H - 14, pal.TEXT_DIM)
 
-  hud.draw(run, State.meta, ui)
+  if ui.inspect then
+    inspect.draw(run, ui.inspect)
+  else
+    hud.draw(run, State.meta, ui)
+  end
 end
 
 return M

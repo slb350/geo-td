@@ -6,7 +6,6 @@
 
 local C       = require("lib.const")
 local meta    = require("lib.meta")
-local run_mod = require("lib.run")
 local enemy   = require("lib.enemy")
 local tower   = require("lib.tower")
 local ring    = require("lib.ring")
@@ -20,7 +19,7 @@ local settle = helpers.settle   -- advance projectiles to impact
 
 function M.run(check, near)
   local m = meta.default()
-  local function fresh(seed) local r = run_mod.new(m, seed or 1, "serpentine"); r.money = 99999; return r end
+  local function fresh(seed) return helpers.fresh(m, seed) end
 
   -- ---------------------------------------------------------- card application
   do

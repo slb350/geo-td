@@ -56,4 +56,8 @@ C.RING_TICKS     = 3       -- damage ticks a splash ring deals before it fades
 C.RING_INTERVAL  = 0.2     -- seconds between ring ticks
 C.FLYER_BURST_R  = 42      -- radius (px) of a flyer's on-death burst
 
+-- Per-tower modifiers (M3). Upgrades are leveled numeric lines (data in
+-- data/upgrades.json); a geometry module is a one-per-tower qualitative socket.
+C.MODULE_COST    = 60      -- in-run cost to socket a geometry module on a tower
+
 return C

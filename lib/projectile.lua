@@ -34,13 +34,15 @@ function M.spawn(run, x, y, target, opts)
   p.tower = opts.tower
   p.tower_id = opts.tower and opts.tower.id or nil
   -- chain: pierce hops to a target ahead of the shot, ricochet to any nearest.
-  -- Pierce wins if both cards are held. `hits` is a reused set so a chained shot
-  -- never re-hits the same enemy.
-  local mods = run.mods
-  if mods.pierce > 0 then
-    p.chain, p.chain_ahead = mods.pierce, true
-  elseif mods.ricochet > 0 then
-    p.chain, p.chain_ahead = mods.ricochet, false
+  -- The firing tower passes the effective counts (global cards + its module
+  -- socket); pierce wins if both are present. `hits` is a reused set so a
+  -- chained shot never re-hits the same enemy.
+  local pierce = opts.pierce or 0
+  local ricochet = opts.ricochet or 0
+  if pierce > 0 then
+    p.chain, p.chain_ahead = pierce, true
+  elseif ricochet > 0 then
+    p.chain, p.chain_ahead = ricochet, false
   else
     p.chain, p.chain_ahead = 0, false
   end

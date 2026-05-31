@@ -544,6 +544,11 @@ require("tests.smoke_report").run(check, near)
 -- tests/smoke_cards.lua (same LOC-split rationale as the report suite).
 require("tests.smoke_cards").run(check, near)
 
+-- ----------------------------------------------------- per-tower modifiers (M3)
+-- Effective-stat substrate, upgrades + geometry modules, and the inspect panel
+-- live in tests/smoke_modifier.lua (same LOC-split rationale).
+require("tests.smoke_modifier").run(check, near)
+
 -- ----------------------------------------------------------------- result
 print(("smoke: %d checks, %d failures"):format(checks, fails))
 os.exit(fails == 0 and 0 or 1)

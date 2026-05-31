@@ -2,11 +2,19 @@
 -- engine-stub harness must already be installed (modules read JSON at require
 -- time), which smoke.lua guarantees by requiring tests.harness first.
 
-local enemy = require("lib.enemy")
-local proj  = require("lib.projectile")
-local tower = require("lib.tower")
+local enemy   = require("lib.enemy")
+local proj    = require("lib.projectile")
+local tower   = require("lib.tower")
+local run_mod = require("lib.run")
 
 local M = {}
+
+-- A fresh serpentine run with money to spare (the common test starting point).
+function M.fresh(meta, seed)
+  local r = run_mod.new(meta, seed or 1, "serpentine")
+  r.money = 99999
+  return r
+end
 
 -- A stationary, durable, no-armor ground target so damage math is not muddied
 -- by death, movement, armor, or shields. Big default hp so direct/chain hits

@@ -1,0 +1,27 @@
+{
+  "pellet": [
+    { "id": "dmg",   "name": "Caliber",    "stat": "dmg_mult",   "per_level": 0.25, "base_cost": 30, "max_level": 4 },
+    { "id": "rate",  "name": "Autoloader", "stat": "rate_mult",  "per_level": 0.20, "base_cost": 35, "max_level": 4 },
+    { "id": "range", "name": "Optics",     "stat": "range_mult", "per_level": 0.15, "base_cost": 25, "max_level": 3 }
+  ],
+  "splash": [
+    { "id": "dmg",    "name": "Payload",  "stat": "dmg_mult",    "per_level": 0.25, "base_cost": 40, "max_level": 4 },
+    { "id": "radius", "name": "Ordnance", "stat": "splash_mult", "per_level": 0.20, "base_cost": 45, "max_level": 3 },
+    { "id": "range",  "name": "Optics",   "stat": "range_mult",  "per_level": 0.15, "base_cost": 30, "max_level": 3 }
+  ],
+  "frost": [
+    { "id": "dmg",   "name": "Glaciate", "stat": "dmg_mult",   "per_level": 0.25, "base_cost": 35, "max_level": 4 },
+    { "id": "rate",  "name": "Cycle",    "stat": "rate_mult",  "per_level": 0.20, "base_cost": 35, "max_level": 4 },
+    { "id": "range", "name": "Optics",   "stat": "range_mult", "per_level": 0.15, "base_cost": 30, "max_level": 3 }
+  ],
+  "rail": [
+    { "id": "dmg",   "name": "Overvolt",  "stat": "dmg_mult",   "per_level": 0.30, "base_cost": 60, "max_level": 4 },
+    { "id": "rate",  "name": "Capacitor", "stat": "rate_mult",  "per_level": 0.20, "base_cost": 70, "max_level": 3 },
+    { "id": "range", "name": "Optics",    "stat": "range_mult", "per_level": 0.15, "base_cost": 50, "max_level": 3 }
+  ],
+  "flak": [
+    { "id": "dmg",   "name": "Frag", "stat": "dmg_mult",   "per_level": 0.25, "base_cost": 45, "max_level": 4 },
+    { "id": "rate",  "name": "Feed", "stat": "rate_mult",  "per_level": 0.20, "base_cost": 50, "max_level": 3 },
+    { "id": "range", "name": "Optics", "stat": "range_mult", "per_level": 0.15, "base_cost": 40, "max_level": 3 }
+  ]
+}

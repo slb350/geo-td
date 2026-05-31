@@ -8,6 +8,7 @@ local path  = require("lib.path")
 local proj  = require("lib.projectile")
 local fx    = require("lib.fx")
 local shape = require("lib.shape")
+local modifier = require("lib.modifier")
 
 local DEFS = usagi.read_json("towers.json")
 
@@ -70,6 +71,9 @@ function M.place(run, x, y, kind)
     cooldown = 0, disabled_t = 0, aim = 0, flash = 0,
     color = pal.resolve(def.color),
     shape = def.shape,
+    upgrades = {},   -- [upgrade id] = level  (per-tower in-run progression, M3)
+    module = nil,    -- one socketed geometry module id, or nil
+    eff = {},        -- reused effective-stats scratch (no per-frame allocation)
   }
   run.towers[#run.towers + 1] = t
   local cost = M.cost(run, kind)
@@ -180,29 +184,32 @@ function M.update(run, dt)
       t.disabled_t = t.disabled_t - dt
     else
       local def = t.def
-      local range = def.range * mods.range_mult
-      local target = acquire(run, t, range)
+      local eff = modifier.effective(run, t, t.eff)
+      local target = acquire(run, t, eff.range)
       if target then
         -- two-arg atan gives the heading (Lua 5.3+/Usagi 5.5)
         t.aim = math.atan(target.y - t.y, target.x - t.x)
       end
       t.cooldown = t.cooldown - dt
       if t.cooldown <= 0 and target then
-        local dmg = def.damage * mods.dmg_mult
-        if mods.crit_chance > 0 and run.rng:chance(mods.crit_chance) then
+        local dmg = eff.damage
+        local crit = mods.crit_chance + eff.crit   -- global crit + module crit
+        if crit > 0 and run.rng:chance(crit) then
           dmg = dmg * 2
         end
         proj.spawn(run, t.x, t.y, target, {
           damage = dmg,
-          speed = def.proj_speed * mods.proj_mult,
+          speed = eff.proj_speed,
           radius = def.proj_r,
           color = t.color,
-          splash_radius = (def.splash_radius or 0) * mods.splash_mult,
+          splash_radius = eff.splash_radius,
           slow_factor = def.slow_factor,
           slow_time = def.slow_time,
           tower = t,
+          pierce = mods.pierce + eff.pierce,        -- global card + module socket
+          ricochet = mods.ricochet + eff.ricochet,
         })
-        t.cooldown = 1 / (def.fire_rate * mods.rate_mult)
+        t.cooldown = 1 / eff.fire_rate
         t.flash = 0.06
         fx.shoot_sfx()
       end
@@ -215,7 +222,7 @@ function M.draw(run, t, show_range)
   local disabled = t.disabled_t > 0
   local color = disabled and gfx.COLOR_DARK_GRAY or t.color
   if show_range then
-    gfx.circ(t.x, t.y, t.def.range * run.mods.range_mult, pal.RANGE)
+    gfx.circ(t.x, t.y, modifier.effective(run, t, t.eff).range, pal.RANGE)
   end
   local body_rot = t.shape == "hex" and (usagi.elapsed * 0.6) or 0
   shape.line(t.shape, t.x, t.y, r + 1, gfx.COLOR_DARK_GRAY, body_rot)
