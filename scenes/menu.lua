@@ -24,7 +24,7 @@ local SHOP_TEXT_X_PAD = 8
 local row_text_h
 local function layout_rows()
   if row_text_h then return row_text_h end
-  local _, text_h = usagi.measure_text("Ag")
+  local text_h = ui.text_height()
   local row_h = text_h * 2 + SHOP_PAD * 2
   local y = SHOP_Y
   for i = 1, #meta.SHOP do

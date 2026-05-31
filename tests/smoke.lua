@@ -124,6 +124,7 @@ local tower   = require("lib.tower")
 local proj    = require("lib.projectile")
 local boss    = require("lib.boss")
 local powerup = require("lib.powerup")
+local ui      = require("lib.ui")
 
 local checks, fails = 0, 0
 local function check(cond, msg)
@@ -144,6 +145,12 @@ end
 check(near(C.HP_TIER_MULT, 1 + (2.3 - 1) * 0.85), "hp tier-spike cut 15% (2.3 -> 2.105)")
 check(near(C.BUDGET_TIER_MULT, 1 + (1.25 - 1) * 0.85), "budget tier-spike cut 15% (1.25 -> 1.2125)")
 check(near(C.SPEED_TIER_ADD, 0.06 * 0.85), "speed tier-spike cut 15% (0.06 -> 0.051)")
+
+-- ui.text_height returns the measured font line height, scaled, for stacked
+-- text layouts. The mock reports a 12px line height like the real engine.
+local _, mock_h = usagi.measure_text("Ag")
+check(near(ui.text_height(), mock_h), "text_height = measured line height")
+check(near(ui.text_height(2), mock_h * 2), "text_height scales by the given factor")
 
 -- ----------------------------------------------------------------- meta/save
 local m = meta.default()
