@@ -9,7 +9,9 @@ local fx    = require("lib.fx")
 
 local M = {}
 
--- opts: damage, speed, radius, color, splash_radius?, slow_factor?, slow_time?
+-- opts: damage, speed, radius, color, splash_radius?, slow_factor?, slow_time?,
+-- tower? (the firing tower, for damage attribution -- pooled tables must reset
+-- both tower fields every spawn)
 function M.spawn(run, x, y, target, opts)
   local list = run.projectiles
   list.n = list.n + 1
@@ -24,17 +26,31 @@ function M.spawn(run, x, y, target, opts)
   p.splash = opts.splash_radius or 0
   p.slow_factor = opts.slow_factor
   p.slow_time = opts.slow_time
+  p.tower = opts.tower
+  p.tower_id = opts.tower and opts.tower.id or nil
   p.life = 2.0
   p.dead = false
   return p
 end
 
+-- Credit applied damage to the firing tower's run-level stat entry. tower.place
+-- always seeds the entry, and tower.sell deliberately keeps it, so a sold
+-- tower's damage survives. A no-op hit or a projectile with no source tower
+-- (tower_id nil) credits nothing.
+local function credit(run, p, applied)
+  if not applied or applied <= 0 or not p.tower_id then return end
+  local s = run.tower_stats[p.tower_id]
+  s.damage = s.damage + applied
+end
+
 local function resolve_hit(run, p)
   local t = p.target
   if t.is_boss then
-    boss.hurt(run, p.damage)
+    local _, applied = boss.hurt(run, p.damage)
+    credit(run, p, applied)
   else
-    enemy.damage(run, t, p.damage)
+    local _, applied = enemy.damage(run, t, p.damage)
+    credit(run, p, applied)
     if p.slow_factor then
       enemy.slow(t, p.slow_factor, p.slow_time)
     end
@@ -48,7 +64,8 @@ local function resolve_hit(run, p)
       if e ~= t and not e.dead then
         local dx, dy = e.x - p.x, e.y - p.y
         if dx * dx + dy * dy <= r2 then
-          enemy.damage(run, e, p.damage)
+          local _, applied = enemy.damage(run, e, p.damage)
+          credit(run, p, applied)
           if p.slow_factor then enemy.slow(e, p.slow_factor, p.slow_time) end
         end
       end

@@ -34,9 +34,13 @@ function M.new(meta, seed, path_name)
     lives = lives,
     score = 0,
     kills = 0,
+    leaked = 0,            -- enemies + bosses that reached the core (report stat)
+    money_spent = 0,       -- gross spend on towers + orbital strikes (report stat)
     hp_scale = 1,
     speed_scale = 1,
     towers = {},
+    tower_seq = 0,         -- monotonic id source for placed towers
+    tower_stats = {},      -- [id] = { kind, damage } -- applied damage per tower
     enemies = { n = 0 },
     projectiles = { n = 0 },
     boss = nil,
@@ -77,6 +81,7 @@ end
 function M.orbital_strike(run)
   if not M.can_orbital(run) then return false end
   run.money = run.money - C.ORBITAL_COST
+  run.money_spent = run.money_spent + C.ORBITAL_COST
   local list = run.enemies
   for i = 1, list.n do
     enemy.vaporize(list[i])

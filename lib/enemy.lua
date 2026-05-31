@@ -63,11 +63,13 @@ function M.spawn(run, kind, hp_scale, speed_scale, start_d)
 end
 
 -- Damage order: shield pool first, then armor-reduced hp (shared with bosses).
+-- Returns `died, applied` (applied = effective durability removed) so callers
+-- can attribute damage to the firing tower.
 function M.damage(run, e, dmg)
-  if e.dead then return end
-  if combat.apply_damage(e, dmg) then
-    M.kill(run, e)
-  end
+  if e.dead then return false, 0 end
+  local died, applied = combat.apply_damage(e, dmg)
+  if died then M.kill(run, e) end
+  return died, applied
 end
 
 function M.kill(run, e)
@@ -127,6 +129,7 @@ function M.update(run, dt)
     if e.dead or e.leaked then
       if e.leaked then
         run.lives = run.lives - 1
+        run.leaked = run.leaked + 1
         fx.life_lost()
       end
       list[i] = list[list.n]

@@ -456,7 +456,7 @@ local menu_s     = require("scenes.menu")
 local select_s   = require("scenes.select")
 local game_s     = require("scenes.game")
 local upgrade_s  = require("scenes.upgrade")
-local gameover_s = require("scenes.gameover")
+-- the gameover scene is exercised by tests/smoke_report.lua (the report suite)
 
 menu_s.update(1 / 60); menu_s.draw(1 / 60)
 harness.reset_gfx()
@@ -532,9 +532,12 @@ check(#State.run.powerups == pw0 + 1, "upgrade applied exactly one powerup on cl
 check(State.pending == "game", "upgrade returns to game after a choice")
 upgrade_s.draw(1 / 60)
 
-State.run.final_wave = State.run.wave_index
-gameover_s.init(); gameover_s.update(1 / 60); gameover_s.draw(1 / 60)
-check(State.summary ~= nil, "gameover produced a summary")
+-- ------------------------------------------------------- report + stats (M1)
+-- Report aggregation, damage/leak/spend instrumentation, and the gameover panel
+-- live in tests/smoke_report.lua to keep this file under the LOC soft limit; it
+-- shares these check counters and the scene globals (State/SwitchScene/input)
+-- installed above.
+require("tests.smoke_report").run(check, near)
 
 -- ----------------------------------------------------------------- result
 print(("smoke: %d checks, %d failures"):format(checks, fails))

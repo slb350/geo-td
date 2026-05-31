@@ -47,16 +47,19 @@ function M.spawn(run, kind, hp_scale)
   return b
 end
 
+-- Returns `died, applied` (applied = effective durability removed) for tower
+-- damage attribution; an invuln or already-dead boss reports 0 applied.
 function M.hurt(run, dmg)
   local b = run.boss
-  if not b or b.dead then return end
-  if b.invuln_t > 0 then return end -- phased out; immune
-  local killed = combat.apply_damage(b, dmg)
+  if not b or b.dead then return false, 0 end
+  if b.invuln_t > 0 then return false, 0 end -- phased out; immune
+  local killed, applied = combat.apply_damage(b, dmg)
   fx.boss_hit()
   if b.phase == 1 and b.def.phase2_at and b.hp <= b.maxhp * b.def.phase2_at then
     b.phase = 2
   end
   if killed then M.kill(run) end
+  return killed, applied
 end
 
 function M.kill(run)
@@ -110,6 +113,7 @@ function M.update(run, dt)
     b.leaked = true
     b.dead = true
     run.lives = run.lives - 5
+    run.leaked = run.leaked + 1
     fx.life_lost()
     return
   end

@@ -63,14 +63,20 @@ end
 
 function M.place(run, x, y, kind)
   local def = DEFS[kind]
+  run.tower_seq = run.tower_seq + 1
   local t = {
     kind = kind, def = def, x = x, y = y,
+    id = run.tower_seq,
     cooldown = 0, disabled_t = 0, aim = 0, flash = 0,
     color = pal.resolve(def.color),
     shape = def.shape,
   }
   run.towers[#run.towers + 1] = t
-  run.money = run.money - M.cost(run, kind)
+  local cost = M.cost(run, kind)
+  run.money = run.money - cost
+  run.money_spent = run.money_spent + cost
+  -- per-tower damage stat lives on the run (keyed by id), so it survives a sell
+  run.tower_stats[t.id] = { kind = kind, damage = 0 }
   fx.place_sfx()
   return t
 end
@@ -194,6 +200,7 @@ function M.update(run, dt)
           splash_radius = (def.splash_radius or 0) * mods.splash_mult,
           slow_factor = def.slow_factor,
           slow_time = def.slow_time,
+          tower = t,
         })
         t.cooldown = 1 / (def.fire_rate * mods.rate_mult)
         t.flash = 0.06

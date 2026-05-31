@@ -1,31 +1,32 @@
 -- Game over: award meta-currency for the run (once, in init), persist via
--- lib/meta, show the summary, and return to the menu on click/key.
+-- lib/meta, then show a run-report stat sheet (lib/report aggregates the run's
+-- instrumented counters). Returns to the menu on click/key.
 
-local C     = require("lib.const")
-local pal   = require("lib.palette")
-local meta  = require("lib.meta")
-local maps  = require("lib.maps")
-local fx    = require("lib.fx")
-local ui    = require("lib.ui")
-local audio = require("lib.audio")
+local C      = require("lib.const")
+local pal    = require("lib.palette")
+local meta   = require("lib.meta")
+local maps   = require("lib.maps")
+local fx     = require("lib.fx")
+local ui     = require("lib.ui")
+local audio  = require("lib.audio")
+local report = require("lib.report")
+local tower  = require("lib.tower")
 
 local M = {}
+
+-- Label / value columns for the centered stat sheet.
+local LX, VX = 150, 250
 
 function M.init()
   audio.set("menu")
   local run = State.run
   if not run then SwitchScene("menu"); return end
-  local wave_reached = run.final_wave or run.wave_index
-  local award, unlocked = meta.finish_run(State.meta, wave_reached, run.bosses_killed or 0, run.path_name)
-  State.summary = {
-    wave = wave_reached,
-    score = run.score,
-    kills = run.kills,
-    award = award,
-    bank = State.meta.currency,
-    map = run.map_name,
-    unlocked = unlocked and maps.get(unlocked).name or nil,
-  }
+  local stats = report.build(run)
+  local award, unlocked = meta.finish_run(State.meta, stats.wave, stats.bosses_killed, run.path_name)
+  stats.award = award
+  stats.bank = State.meta.currency
+  stats.unlocked = unlocked and maps.get(unlocked).name or nil
+  State.summary = stats
   effect.stop()
   fx.clear()
   fx.over_sfx()
@@ -40,19 +41,48 @@ function M.update(dt)
   end
 end
 
+local function row(y, label, value, color)
+  gfx.text(label, LX, y, pal.TEXT_DIM)
+  gfx.text(value, VX, y, color or pal.TEXT)
+end
+
 function M.draw(dt)
   gfx.clear(pal.BG)
-  local s = State.summary or { wave = 0, score = 0, kills = 0, award = 0, bank = 0 }
-  ui.center_text("RUN OVER", 44, gfx.COLOR_RED, 2)
-  local wl = "reached wave " .. s.wave
-  if s.map then wl = wl .. "  on  " .. s.map end
-  ui.center_text(wl, 80, pal.TEXT, 1)
-  ui.center_text("score " .. s.score .. "    kills " .. s.kills, 98, pal.TEXT_DIM, 1)
-  ui.center_text("+" .. s.award .. " bank  (total " .. s.bank .. ")", 124, gfx.COLOR_YELLOW, 1)
-  if s.unlocked then
-    ui.center_text("NEW MAP UNLOCKED  -  " .. s.unlocked, 146, gfx.COLOR_GREEN, 1)
+  local s = State.summary
+  if not s then
+    ui.center_text("RUN OVER", 120, gfx.COLOR_RED, 2)
+    return
   end
-  ui.center_text("click to return to menu", C.GAME_H - 16, pal.TEXT_DIM, 1)
+
+  ui.center_text("RUN OVER", 24, gfx.COLOR_RED, 2)
+  local sub = "wave " .. s.wave
+  if s.map then sub = sub .. "  on  " .. s.map end
+  ui.center_text(sub, 52, pal.TEXT, 1)
+
+  local y = 74
+  row(y, "bosses", tostring(s.bosses_killed)); y = y + 15
+  row(y, "kills", tostring(s.kills)); y = y + 15
+  row(y, "leaked", tostring(s.leaked), gfx.COLOR_RED); y = y + 15
+  row(y, "spent", "$" .. s.money_spent, gfx.COLOR_YELLOW); y = y + 15
+  row(y, "score", tostring(s.score)); y = y + 15
+
+  -- top tower: color swatch + name + applied damage (or "none")
+  gfx.text("top tower", LX, y, pal.TEXT_DIM)
+  if s.top_tower then
+    local def = tower.DEFS[s.top_tower.kind]
+    gfx.rect_fill(VX, y, 6, 6, pal.resolve(def.color))
+    gfx.text(def.name .. "  " .. math.floor(s.top_tower.damage + 0.5), VX + 10, y, pal.TEXT)
+  else
+    gfx.text("none", VX, y, pal.TEXT_DIM)
+  end
+  y = y + 15
+  row(y, "favorite", s.favorite_name or "none"); y = y + 15
+
+  ui.center_text("+" .. s.award .. " bank   (total " .. s.bank .. ")", y + 6, gfx.COLOR_YELLOW, 1)
+  if s.unlocked then
+    ui.center_text("NEW MAP UNLOCKED  -  " .. s.unlocked, y + 24, gfx.COLOR_GREEN, 1)
+  end
+  ui.center_text("click to return to menu", C.GAME_H - 14, pal.TEXT_DIM, 1)
 end
 
 return M

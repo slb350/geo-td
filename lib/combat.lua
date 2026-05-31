@@ -5,22 +5,28 @@
 
 local M = {}
 
--- Apply `dmg` through the shield pool, then armor, then hp. Returns true if the
--- entity's hp dropped to 0 (caller handles death/fx/split).
+-- Apply `dmg` through the shield pool, then armor, then hp. Returns
+-- `died, applied`: `died` is true if hp dropped to 0 (caller handles
+-- death/fx/split); `applied` is the effective durability removed -- shield
+-- absorbed plus the armor-reduced hp actually taken off, capped at the hp on
+-- hand so overkill is not credited. Used for honest per-tower damage attribution.
 function M.apply_damage(ent, dmg)
   local remaining = dmg
+  local applied = 0
   if ent.shield and ent.shield > 0 then
     local absorbed = math.min(ent.shield, remaining)
     ent.shield = ent.shield - absorbed
     remaining = remaining - absorbed
+    applied = applied + absorbed
     ent.shield_hit_t = ent.shield_hit_delay or 0.5
   end
   if remaining > 0 then
     local real = remaining - (ent.armor or 0)
     if real < 1 then real = 1 end
+    applied = applied + math.min(real, math.max(0, ent.hp))
     ent.hp = ent.hp - real
   end
-  return ent.hp <= 0
+  return ent.hp <= 0, applied
 end
 
 -- Tick hp regen and shield regen. Shield regen pauses for `shield_hit_delay`
