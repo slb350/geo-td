@@ -8,12 +8,16 @@ local tower   = require("lib.tower")
 local shape   = require("lib.shape")
 local ui      = require("lib.ui")
 local run_lib = require("lib.run")
+local speed   = require("lib.speed")
 
 local M = {}
 
 local PAD = 6
 local BX = C.HUD_X + PAD
 local BW = C.HUD_W - PAD * 2
+
+-- Speed toggle (M1), right-aligned on the WAVE stat line (combat + build phases).
+local speed_btn = { x = C.HUD_X + C.HUD_W - PAD - 22, y = 6, w = 22, h = 13 }
 
 -- Tower palette buttons (vertical list). Single-line rows (icon + name left,
 -- cost right) keep the full 5-tower palette compact above the action buttons.
@@ -64,6 +68,7 @@ end
 --   { type = "orbital" }  -- the same button while in combat
 --   { type = "sell" }
 function M.button_at(run, mx, my)
+  if ui.in_rect(mx, my, speed_btn) then return { type = "speed" } end
   for i = 1, #btns do
     if ui.in_rect(mx, my, btns[i]) then
       return { type = "select", kind = btns[i].kind }
@@ -91,6 +96,11 @@ function M.draw(run, meta, ui)
   gfx.text("$" .. run.money, BX, 26, pal.MONEY)
   gfx.text("LIVES " .. run.lives, BX, 42, pal.LIVES)
   gfx.text("SCORE " .. run.score, BX, 58, pal.TEXT_DIM)
+
+  -- speed toggle: lit when faster than 1x
+  local spd = speed.clamp(ui.speed or 1)
+  gfx.rect_fill(speed_btn.x, speed_btn.y, speed_btn.w, speed_btn.h, pal.HUD_PANEL)
+  gfx.text(speed.label(spd), speed_btn.x + 4, speed_btn.y + 3, spd > 1 and pal.MONEY or pal.TEXT_DIM)
 
   -- tower palette
   for i = 1, #btns do

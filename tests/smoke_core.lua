@@ -411,13 +411,16 @@ function M.run(check, near)
   -- (the lib-only tests above never touched scenes/).
   local clicks = { left = false, mx = 0, my = 0 }
   input = {
-    KEY_1 = 1, KEY_2 = 2, KEY_3 = 3, KEY_S = 4, KEY_SPACE = 5, KEY_ENTER = 6,
+    KEY_1 = 1, KEY_2 = 2, KEY_3 = 3, KEY_4 = 7, KEY_5 = 8, KEY_S = 4, KEY_O = 9,
+    KEY_F = 10, KEY_SPACE = 5, KEY_ENTER = 6,
     MOUSE_LEFT = 1, MOUSE_RIGHT = 2, MOUSE_MIDDLE = 3, BTN1 = 1,
+    _keys = {},      -- settable simulated key-press state (tests toggle entries)
+    _clicks = clicks, -- shared click state, so later suites can drive HUD clicks
     mouse = function() return clicks.mx, clicks.my end,
     mouse_pressed = function(b) return clicks.left and b == 1 end,
     mouse_released = function() return false end,
     mouse_held = function() return false end,
-    key_pressed = function() return false end,
+    key_pressed = function(k) return k ~= nil and input._keys[k] == true end,
     key_held = function() return false end,
     key_released = function() return false end,
     pressed = function() return false end,
@@ -426,7 +429,7 @@ function M.run(check, near)
   }
   State = {
     meta = meta.default(), run = nil,
-    ui = { selected = nil, sell_mode = false, hover_x = 0, hover_y = 0, hover_valid = false },
+    ui = { selected = nil, sell_mode = false, hover_x = 0, hover_y = 0, hover_valid = false, speed = 1 },
     summary = nil, current = nil, pending = nil,
   }
   function SwitchScene(k) State.pending = k end

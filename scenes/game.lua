@@ -20,6 +20,8 @@ local run_lib = require("lib.run")
 local inspect = require("lib.inspect")
 local modifier = require("lib.modifier")
 local loop    = require("lib.loop")
+local speed   = require("lib.speed")
+local threat  = require("lib.threat")
 
 local M = {}
 
@@ -67,12 +69,18 @@ local function handle_hud_click(run, ui, meta, mx, my)
       if modifier.buy_upgrade(run, ui.inspect, act.id) then fx.place_sfx() end
     elseif act and act.type == "module" then
       if modifier.socket_module(run, ui.inspect, act.id) then fx.place_sfx() end
+    elseif act and act.type == "targeting" then
+      ui.inspect.targeting_override = tower.cycle_targeting(ui.inspect.def, ui.inspect.targeting_override)
+      fx.click_sfx()
     end
     return
   end
   local act = hud.button_at(run, mx, my)
   if not act then return end
-  if act.type == "select" then
+  if act.type == "speed" then
+    ui.speed = speed.cycle(ui.speed or 1)
+    fx.click_sfx()
+  elseif act.type == "select" then
     if tower.available(meta, act.kind, run.mode) then
       ui.selected = act.kind
       ui.sell_mode = false
@@ -113,9 +121,17 @@ function M.update(dt)
     if run_lib.orbital_strike(run) then fx.orbital() end
   end
   if input.key_pressed(input.KEY_S) then ui.sell_mode = not ui.sell_mode; ui.selected = nil; ui.inspect = nil end
-  if (input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER))
-    and run.phase == "building" then
-    start_wave(run)
+  if input.KEY_F and input.key_pressed(input.KEY_F) then   -- F: cycle combat speed
+    ui.speed = speed.cycle(ui.speed or 1)
+  end
+  -- Space/Enter starts the wave while building, or calls the next wave early
+  -- while in combat (when the field is nearly clear and no route event is due).
+  if input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER) then
+    if run.phase == "building" then
+      start_wave(run)
+    elseif run.phase == "combat" and run_lib.call_early(run) then
+      fx.wave_sfx()
+    end
   end
 
   -- mouse
@@ -130,14 +146,24 @@ function M.update(dt)
     ui.selected = nil; ui.sell_mode = false; ui.inspect = nil
   end
 
-  -- simulation
+  -- simulation. Combat advances in FIXED C.SIM_DT steps via an accumulator, so
+  -- it is deterministic + frame-rate-independent; speed (1x/2x) multiplies how
+  -- much real time feeds the accumulator each frame. Input/UI/fx above ran once.
   if run.phase == "combat" then
-    local spawns_done = loop.step(run, dt)   -- canonical combat step (shared with the sim)
-    local cleared = run.enemies.n == 0 and (not run.boss or run.boss.dead)
-    if spawns_done and cleared then
-      run.phase = "building"
-      run.draft = nil
-      SwitchScene("upgrade")
+    run.sim_acc = (run.sim_acc or 0) + dt * speed.clamp(ui.speed or 1)
+    local steps = 0
+    while run.sim_acc >= C.SIM_DT and steps < C.MAX_SIM_STEPS do
+      run.sim_acc = run.sim_acc - C.SIM_DT
+      steps = steps + 1
+      local spawns_done = loop.step(run, C.SIM_DT)   -- canonical combat step (shared with the sim)
+      local cleared = run.enemies.n == 0 and (not run.boss or run.boss.dead)
+      if spawns_done and cleared then
+        run.phase = "building"
+        run.draft = nil
+        SwitchScene("upgrade")
+        break
+      end
+      if run.lives <= 0 then break end
     end
   else
     -- build phase: only in-flight projectiles + lingering rings keep ticking
@@ -156,6 +182,77 @@ local function draw_ghost(run, ui)
   local def = tower.DEFS[ui.selected]
   gfx.circ(ui.hover_x, ui.hover_y, def.range * run.mods.range_mult, col)
   gfx.rect(ui.hover_x - C.TOWER_R, ui.hover_y - C.TOWER_R, C.TOWER_R * 2, C.TOWER_R * 2, col)
+end
+
+-- Build-phase threat preview (M1): what the upcoming wave demands the player
+-- counter, drawn top-left of the field. Pure data from lib/threat (no rng);
+-- cached per wave so the draw frame doesn't rebuild it (the preview is constant
+-- for the whole build phase).
+local function draw_threat(run)
+  local n = run.wave_index + 1
+  local c = run.threat_cache
+  if not c or c.wave ~= n then
+    c = { wave = n, tp = threat.preview(run, n) }
+    run.threat_cache = c
+  end
+  local tp = c.tp
+  if tp.boss then
+    local def = boss.DEFS[tp.boss_kind]
+    gfx.text("NEXT: BOSS " .. ((def and def.name) or tp.boss_kind), 6, 6, gfx.COLOR_RED)
+  else
+    gfx.text("NEXT W" .. n, 6, 6, pal.TEXT)
+    if #tp.tag_list > 0 then
+      local parts = {}
+      for i = 1, #tp.tag_list do parts[i] = threat.TAG_LABEL[tp.tag_list[i]] end
+      gfx.text(table.concat(parts, " "), 6, 18, gfx.COLOR_ORANGE)
+    end
+  end
+  if tp.route_event then
+    gfx.text("route shift after this wave", 6, tp.boss and 18 or 30, gfx.COLOR_PINK)
+  end
+end
+
+-- Combat-phase label naming the boss's imminent telegraphed ability, clamped to
+-- the field so it never spills into the HUD or off-screen.
+local function draw_boss_label(run)
+  local b = run.boss
+  if not b or b.dead then return end
+  local label = (b.shock_warn and "SHOCKWAVE")
+    or (b.invuln_warn and "PHASING") or (b.spawn_warn and "ADDS")
+  if not label then return end
+  local w = usagi.measure_text(label)
+  local lx = math.max(2, math.min(b.x - w * 0.5, C.HUD_X - w - 2))
+  local ly = math.max(2, b.y - b.size - 18)
+  gfx.text(label, lx, ly, gfx.COLOR_YELLOW)
+end
+
+-- Nearest live enemy within a small pick radius of (x, y), or nil.
+local function enemy_at(run, x, y)
+  local list = run.enemies
+  local best, best_d2
+  for i = 1, list.n do
+    local e = list[i]
+    if not e.dead then
+      local r = (e.size or 4) + 3
+      local dx, dy = e.x - x, e.y - y
+      local d2 = dx * dx + dy * dy
+      if d2 <= r * r and (not best_d2 or d2 < best_d2) then best, best_d2 = e, d2 end
+    end
+  end
+  return best
+end
+
+-- Hover tooltip naming an aura emitter's buff (the "kill the buffer" puzzle).
+local function draw_aura_tooltip(run, ui)
+  if ui.hover_x >= C.HUD_X then return end
+  local e = enemy_at(run, ui.hover_x, ui.hover_y)
+  if not (e and e.def.aura) then return end
+  local label = e.def.aura.kind .. " aura"
+  local w = usagi.measure_text(label)
+  local lx = math.max(2, math.min(ui.hover_x + 6, C.HUD_X - w - 2))
+  local ly = math.max(2, ui.hover_y - 10)
+  gfx.rect_fill(lx - 1, ly - 1, w + 2, 9, pal.HUD_BG)
+  gfx.text(label, lx, ly, gfx.COLOR_PINK)
 end
 
 function M.draw(dt)
@@ -183,6 +280,14 @@ function M.draw(dt)
 
   fx.draw()
 
+  -- tactical overlays (M1)
+  if run.phase == "building" then
+    draw_threat(run)
+  else
+    draw_boss_label(run)
+  end
+  draw_aura_tooltip(run, ui)
+
   -- field banner
   local banner
   if run.phase == "building" then
@@ -193,6 +298,10 @@ function M.draw(dt)
     banner = "WAVE " .. run.wave_index
   end
   gfx.text(banner, 6, C.GAME_H - 14, pal.TEXT_DIM)
+  if run.phase == "combat" and run_lib.can_call_early(run) then
+    gfx.text("SPACE: call next wave early  +$" .. C.EARLY_CALL_BONUS,
+      6, C.GAME_H - 26, gfx.COLOR_GREEN)
+  end
 
   if ui.inspect then
     inspect.draw(run, ui.inspect)

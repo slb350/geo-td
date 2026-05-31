@@ -13,13 +13,17 @@ local wave  = require("lib.wave")
 
 local M = {}
 
--- Is a route choice offered before the next wave? Only on maps that define
--- variants, on an event-cadence wave, and never before a boss wave -- including
--- mode-driven boss waves (Boss Rush makes EVERY wave a boss, so it gets none).
-function M.pending(run)
+-- Is a route choice offered immediately before wave `w`? Only on maps that
+-- define variants, on an event-cadence wave, and never before a boss wave --
+-- including mode-driven boss waves (Boss Rush makes EVERY wave a boss).
+function M.pending_for(run, w)
   if #maps.variants(run.path_name) == 0 then return false end
-  local nxt = run.wave_index + 1
-  return nxt % C.ROUTE_EVENT_EVERY == 0 and not wave.is_boss_for(run, nxt)
+  return w % C.ROUTE_EVENT_EVERY == 0 and not wave.is_boss_for(run, w)
+end
+
+-- Is a route choice offered before the NEXT wave (the upgrade->route->game hop)?
+function M.pending(run)
+  return M.pending_for(run, run.wave_index + 1)
 end
 
 -- Route options for the choice screen: the base route, then each variant. Each

@@ -75,6 +75,7 @@ end
 function M.begin_wave(run)
   local n = run.wave_index + 1
   run.phase = "combat"
+  run.sim_acc = 0            -- fresh fixed-timestep accumulator for this wave (M1)
   local mods = run.mods
   if mods.interest > 0 then
     run.money = run.money + math.floor(run.money * mods.interest)
@@ -110,6 +111,37 @@ end
 function M.field_clear(run)
   if run.enemies.n > 0 then return false end
   if run.boss and not run.boss.dead then return false end
+  return true
+end
+
+-- Can the next wave be "called early"? Only mid-combat, once the current wave's
+-- spawn queue is drained, with a small handful of stragglers left and no live
+-- boss, and -- crucially -- with NO route event due before the next wave (a route
+-- swap needs a clear field, so overlapping waves would be unsafe). The route check
+-- mirrors pathmut.pending's cadence inline, because run can't require pathmut
+-- (pathmut -> tower -> projectile -> run would cycle); both read the same
+-- C.ROUTE_EVENT_EVERY + maps.variants + wave.is_boss_for sources.
+function M.can_call_early(run)
+  if run.phase ~= "combat" then return false end
+  local q = run.spawn_queue
+  if q.i < q.n then return false end                       -- still spawning this wave
+  if run.enemies.n == 0 or run.enemies.n > C.EARLY_CALL_MAX then return false end
+  if run.boss and not run.boss.dead then return false end  -- finish the boss first
+  local nxt = run.wave_index + 1
+  if #maps.variants(run.path_name) > 0
+    and nxt % C.ROUTE_EVENT_EVERY == 0 and not wave.is_boss_for(run, nxt) then
+    return false                                            -- a route event must intervene
+  end
+  return true
+end
+
+-- Start the next wave early, overlapping the current stragglers, for a money
+-- bonus. A no-op unless can_call_early. The overlapped pair resolves into a
+-- single between-wave break, so the bonus also stands in for the skipped draft.
+function M.call_early(run)
+  if not M.can_call_early(run) then return false end
+  run.money = run.money + C.EARLY_CALL_BONUS
+  M.begin_wave(run)
   return true
 end
 

@@ -159,7 +159,7 @@ function M.run(check, near)
   do
     local r = fresh()
     local t = tower.place(r, 200, 150, "pellet")
-    local up = inspect.button_at(r, t, C.HUD_X + 11, 49)    -- inside upgrade row 1
+    local up = inspect.button_at(r, t, C.HUD_X + 11, 57)    -- inside upgrade row 1 (UP_Y = 52)
     check(up and up.type == "upgrade", "inspect click in the upgrade area returns a buy action")
     local sock = inspect.button_at(r, t, C.HUD_X + 11, 137)  -- inside module row 1 (socket empty)
     check(sock and sock.type == "module", "inspect click in the module area returns a socket action")

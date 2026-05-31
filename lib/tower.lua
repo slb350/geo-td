@@ -19,6 +19,47 @@ M.DEFS = DEFS
 -- Stable display order for the build palette.
 M.ORDER = { "pellet", "splash", "frost", "rail", "flak" }
 
+-- Per-tower targeting overrides (M1), cycled from the inspect panel. false =
+-- "auto" (the tower's data-driven priority + policy). "first"/"closest"/
+-- "strongest" override the tie-break policy; "air"/"boss" force a focus tier
+-- (prefer that target type) while keeping the policy.
+M.TARGETING = { false, "first", "closest", "strongest", "air", "boss" }
+
+function M.targeting_label(ov)
+  return ov or "auto"
+end
+
+-- A focus override only helps if the tower can actually hit that target type:
+-- "air" needs an air-capable tower, "boss" needs a ground-capable one (the boss
+-- is ground). Policy overrides + auto always apply. Keeps the inspect panel from
+-- offering a focus that would silently do nothing.
+local function focus_usable(def, ov)
+  local tg = def.targets or "ground"
+  if ov == "air"  then return tg == "all" or tg == "air" end
+  if ov == "boss" then return tg == "all" or tg == "ground" end
+  return true
+end
+
+-- The targeting options usable by a tower kind (auto + policies + the focuses it
+-- can hit), in cycle order.
+function M.targeting_options(def)
+  local out = {}
+  for i = 1, #M.TARGETING do
+    if focus_usable(def, M.TARGETING[i]) then out[#out + 1] = M.TARGETING[i] end
+  end
+  return out
+end
+
+-- Next targeting override for a tower, cycling only through its usable options.
+function M.cycle_targeting(def, ov)
+  local opts = M.targeting_options(def)
+  ov = ov or false
+  for i = 1, #opts do
+    if opts[i] == ov then return opts[(i % #opts) + 1] end
+  end
+  return opts[1]
+end
+
 -- air/ground targeting eligibility (shared with the projectile chain)
 local can_hit = target.can_hit
 
@@ -107,19 +148,40 @@ function M.at(run, x, y)
   return nil
 end
 
--- Priority tier for a candidate, from the tower's optional `priority` list
--- (e.g. {"boss","air"}). Earlier entries rank higher; 0 = no priority match.
--- A higher tier always beats a lower one regardless of the `targeting` score.
-local function target_tier(def, is_boss, is_fly)
-  local pr = def.priority
-  if not pr then return 0 end
-  for i = 1, #pr do
-    local c = pr[i]
+-- Priority tier for a candidate, from a `priority` list (e.g. {"boss","air"}).
+-- Earlier entries rank higher; 0 = no priority match. A higher tier always beats
+-- a lower one regardless of the `targeting` score.
+local function target_tier(priority, is_boss, is_fly)
+  if not priority then return 0 end
+  for i = 1, #priority do
+    local c = priority[i]
     if (c == "boss" and is_boss) or (c == "air" and is_fly) then
-      return #pr - i + 1
+      return #priority - i + 1
     end
   end
   return 0
+end
+
+-- Shared single-entry priority lists for the focus overrides (read-only in
+-- acquire), so effective_targeting allocates nothing on the per-frame firing path.
+local AIR_FOCUS  = { "air" }
+local BOSS_FOCUS = { "boss" }
+
+-- The effective (priority list, policy) for a tower, applying its optional M1
+-- targeting override. A policy override swaps only the tie-break; a focus
+-- override ("air"/"boss") forces a single-entry priority list; auto = the def's
+-- own `priority` + `targeting`. Returns plain data, never mutating the def.
+local function effective_targeting(t)
+  local def = t.def
+  local ov = t.targeting_override
+  if ov == "first" or ov == "closest" or ov == "strongest" then
+    return def.priority, ov
+  elseif ov == "air" then
+    return AIR_FOCUS, def.targeting
+  elseif ov == "boss" then
+    return BOSS_FOCUS, def.targeting
+  end
+  return def.priority, def.targeting
 end
 
 -- Tie-break score within a tier, per the tower's `targeting` policy. Higher
@@ -141,7 +203,7 @@ local function acquire(run, t, range)
   local r2 = range * range
   local list = run.enemies
   local def = t.def
-  local policy = def.targeting
+  local priority, policy = effective_targeting(t)
   local best, best_tier, best_score
   for i = 1, list.n do
     local e = list[i]
@@ -149,7 +211,7 @@ local function acquire(run, t, range)
       local dx, dy = e.x - t.x, e.y - t.y
       local d2 = dx * dx + dy * dy
       if d2 <= r2 then
-        local tier = target_tier(def, false, e.fly)
+        local tier = target_tier(priority, false, e.fly)
         local sc = score(policy, d2, e.hp, e.d)
         if better(tier, sc, best_tier, best_score) then
           best, best_tier, best_score = e, tier, sc
@@ -162,7 +224,7 @@ local function acquire(run, t, range)
     local dx, dy = b.x - t.x, b.y - t.y
     local d2 = dx * dx + dy * dy
     if d2 <= r2 then
-      local tier = target_tier(def, true, b.fly)
+      local tier = target_tier(priority, true, b.fly)
       local sc = score(policy, d2, b.hp, run.path.total_len)
       if better(tier, sc, best_tier, best_score) then
         best, best_tier, best_score = b, tier, sc

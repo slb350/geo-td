@@ -4,12 +4,15 @@
 -- fresh table, so the balance suite can assert on them deterministically and a
 -- baseline tool can print them.
 
+local C = require("lib.const")
+
 local M = {}
 
--- The game's fixed combat step (scenes/game.lua and lib/sim both advance combat
--- at this dt), so frame counts convert to wall-clock seconds the same way the
--- real game would feel them.
-M.DT = 1 / 60
+-- The game's fixed combat step. scenes/game.lua's accumulator and lib/sim both
+-- advance combat at exactly this dt (one source: C.SIM_DT), so frame counts
+-- convert to wall-clock seconds the way the real game feels them, and balance
+-- numbers match real play.
+M.DT = C.SIM_DT
 
 -- Seconds of simulated combat for a frame count.
 function M.seconds(frames)

@@ -71,4 +71,21 @@ C.BOSS_TELEGRAPH = 0.9
 -- preserved (no live enemy's `d` is ever remapped).
 C.ROUTE_EVENT_EVERY = 4
 
+-- Fixed combat timestep (V2-M1). The game advances combat in fixed C.SIM_DT
+-- increments via an accumulator, decoupled from the variable render dt (Usagi's
+-- _update dt is real frame time, clamped to a 30fps floor). This makes combat
+-- deterministic and frame-rate-independent, and makes the 1x/2x speed toggle
+-- exactly a step-count multiplier. The headless sim uses the same step (via
+-- lib/metrics.DT), so balance numbers match real play. MAX_SIM_STEPS caps the
+-- per-frame catch-up so a frame-time spike can't spiral.
+C.SIM_DT        = 1 / 60
+C.MAX_SIM_STEPS = 8
+
+-- Tactical UX (V2-M1). "Call next wave early": once the current wave's spawn
+-- queue is drained and only a handful of stragglers remain, the player may start
+-- the next wave early (overlapping them) for a small money bonus -- a reward for
+-- the risk and for skipping this wave's upgrade draft.
+C.EARLY_CALL_MAX   = 4   -- max stragglers left for an early call to be offered
+C.EARLY_CALL_BONUS = 20  -- money granted for calling the next wave early
+
 return C

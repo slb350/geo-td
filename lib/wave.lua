@@ -33,7 +33,9 @@ function M.weighted_pool(pool, mode)
 end
 
 -- Enemy kinds unlocked by wave n, with their budget costs (deterministic order).
-local function pool_for(n)
+-- Public so the threat preview (lib/threat) can read the pool without duplicating
+-- the unlock rule or consuming the run's rng.
+function M.pool_for(n)
   local pool = {}
   for kind, def in pairs(enemy.DEFS) do
     if (def.unlock_wave or 1) <= n then
@@ -43,6 +45,7 @@ local function pool_for(n)
   table.sort(pool, function(a, b) return a.kind < b.kind end)
   return pool
 end
+local pool_for = M.pool_for
 
 -- Tier index: 0 for waves 1..TIER_STEP, 1 for the next block, etc.
 function M.tier(n)
@@ -55,6 +58,12 @@ end
 -- consistently -- a "tier" means the whole tier, not just hp/speed.
 local function eff_tier(run, n)
   return M.tier(n) + (run.mode.hardcore and 1 or 0)
+end
+
+-- Spawn budget for wave n (drives the enemy count), including the run's mode.
+-- Public so the threat preview can size the incoming wave without consuming rng.
+function M.budget_for(run, n)
+  return C.BASE_BUDGET * (C.BUDGET_GROWTH ^ (n - 1)) * (C.BUDGET_TIER_MULT ^ eff_tier(run, n))
 end
 
 local function set_scaling(run, n)
@@ -80,7 +89,7 @@ function M.start(run, n)
 
   local q = run.spawn_queue
   q.n, q.i = 0, 0
-  local budget = C.BASE_BUDGET * (C.BUDGET_GROWTH ^ (n - 1)) * (C.BUDGET_TIER_MULT ^ eff_tier(run, n))
+  local budget = M.budget_for(run, n)
   local pool = M.weighted_pool(pool_for(n), run.mode)
   while budget > 0 and q.n < 200 do
     local pick = pool[run.rng:int(1, #pool)]
