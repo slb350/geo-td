@@ -8,5 +8,10 @@
   "mender":   { "name": "Mender",   "hp": 60,  "speed": 20, "bounty": 9,  "shape": "circ",   "size": 6, "color": "DARK_GREEN", "armor": 0, "unlock_wave": 8,  "cost": 3, "regen": 9 },
   "ward":     { "name": "Ward",     "hp": 70,  "speed": 19, "bounty": 14, "shape": "hex",    "size": 7, "color": "LIGHT_GRAY", "armor": 0, "unlock_wave": 11, "cost": 4, "spin": 2, "shield": 50, "shield_regen": 12 },
   "raider":   { "name": "Raider",   "hp": 80,  "speed": 34, "bounty": 13, "shape": "diamond","size": 6, "color": "PINK",       "armor": 0, "unlock_wave": 12, "cost": 4, "spin": 4, "fly": true, "trail": true },
-  "swarm":    { "name": "Swarm",    "hp": 10,  "speed": 60, "bounty": 3,  "shape": "tri",    "size": 3, "color": "PINK",       "armor": 0, "unlock_wave": 13, "cost": 1, "spin": 9, "trail": true }
+  "swarm":    { "name": "Swarm",    "hp": 10,  "speed": 60, "bounty": 3,  "shape": "tri",    "size": 3, "color": "PINK",       "armor": 0, "unlock_wave": 13, "cost": 1, "spin": 9, "trail": true },
+  "accelerant": { "name": "Accelerant", "hp": 30, "speed": 30, "bounty": 8,  "shape": "tri",   "size": 5, "color": "ORANGE",     "armor": 0, "unlock_wave": 9,  "cost": 3, "spin": 5, "aura": { "kind": "speed",  "radius": 36, "value": 1.4 } },
+  "warden":     { "name": "Warden",     "hp": 55, "speed": 18, "bounty": 12, "shape": "hex",   "size": 7, "color": "LIGHT_GRAY", "armor": 1, "unlock_wave": 9,  "cost": 4, "spin": 2, "aura": { "kind": "shield", "radius": 38, "value": 12 } },
+  "totem":      { "name": "Totem",      "hp": 60, "speed": 16, "bounty": 10, "shape": "penta", "size": 6, "color": "DARK_GREEN", "armor": 0, "unlock_wave": 11, "cost": 4, "spin": 3, "aura": { "kind": "regen",  "radius": 40, "value": 10 } },
+  "lattice":    { "name": "Lattice",    "hp": 70, "speed": 16, "bounty": 12, "shape": "square","size": 7, "color": "BROWN",      "armor": 2, "unlock_wave": 12, "cost": 4, "spin": 1, "aura": { "kind": "armor",  "radius": 38, "value": 3 } },
+  "veil":       { "name": "Veil",       "hp": 40, "speed": 26, "bounty": 14, "shape": "diamond","size": 6, "color": "INDIGO",     "armor": 0, "unlock_wave": 13, "cost": 4, "spin": 4, "trail": true, "aura": { "kind": "stealth", "radius": 34, "value": 1 } }
 }

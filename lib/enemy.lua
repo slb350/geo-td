@@ -9,6 +9,7 @@ local path   = require("lib.path")
 local fx     = require("lib.fx")
 local shape  = require("lib.shape")
 local combat = require("lib.combat")
+local aura   = require("lib.aura")
 
 local DEFS = usagi.read_json("enemies.json")
 
@@ -47,6 +48,8 @@ function M.spawn(run, kind, hp_scale, speed_scale, start_d)
   e.leaked = false
   e.fly = def.fly == true
   e.trail = def.trail == true
+  aura.reset(e)   -- derived formation-aura fields (M4); recomputed each tick
+
   if e.fly then
     -- flyers beeline straight from spawn to core, ignoring the path
     local nodes = run.path.nodes
@@ -129,6 +132,7 @@ function M.slow(e, factor, time)
 end
 
 function M.update(run, dt)
+  aura.update(run)   -- recompute every enemy's derived aura buffs for this tick
   local list = run.enemies
   local total = run.path.total_len
   local i = 1
@@ -140,7 +144,7 @@ function M.update(run, dt)
     end
     combat.tick_regen(e, dt)
     if not e.dead then
-      e.d = e.d + e.base_speed * e.slow_factor * dt
+      e.d = e.d + e.base_speed * e.slow_factor * e.aura_speed * dt
       if e.fly then
         if e.d >= e.fly_total then e.leaked = true end
         e.x, e.y = e.sx + e.fly_ux * e.d, e.sy + e.fly_uy * e.d

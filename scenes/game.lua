@@ -9,6 +9,7 @@ local enemy = require("lib.enemy")
 local tower = require("lib.tower")
 local proj  = require("lib.projectile")
 local ring  = require("lib.ring")
+local aura  = require("lib.aura")
 local wave  = require("lib.wave")
 local boss  = require("lib.boss")
 local fx    = require("lib.fx")
@@ -188,6 +189,7 @@ function M.draw(dt)
   local hovered = tower.at(run, ui.hover_x, ui.hover_y)
   if hovered then tower.draw(run, hovered, true) end
 
+  aura.draw(run)   -- faint formation-aura buff-zone rings, under the enemies
   enemy.draw(run)
   if run.boss then boss.draw(run) end
   proj.draw(run)

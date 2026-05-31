@@ -147,7 +147,7 @@ local function acquire(run, t, range)
   local best, best_tier, best_score
   for i = 1, list.n do
     local e = list[i]
-    if not e.dead and can_hit(def, e) then
+    if not e.dead and not e.aura_stealth and can_hit(def, e) then
       local dx, dy = e.x - t.x, e.y - t.y
       local d2 = dx * dx + dy * dy
       if d2 <= r2 then

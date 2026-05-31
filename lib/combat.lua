@@ -13,6 +13,14 @@ local M = {}
 function M.apply_damage(ent, dmg)
   local remaining = dmg
   local applied = 0
+  -- formation shield-carrier ward (M4): a maintained pool, absorbed before the
+  -- entity's own shield; the aura pass refreshes it each tick.
+  if ent.aura_shield and ent.aura_shield > 0 then
+    local absorbed = math.min(ent.aura_shield, remaining)
+    ent.aura_shield = ent.aura_shield - absorbed
+    remaining = remaining - absorbed
+    applied = applied + absorbed
+  end
   if ent.shield and ent.shield > 0 then
     local absorbed = math.min(ent.shield, remaining)
     ent.shield = ent.shield - absorbed
@@ -21,7 +29,7 @@ function M.apply_damage(ent, dmg)
     ent.shield_hit_t = ent.shield_hit_delay or 0.5
   end
   if remaining > 0 then
-    local real = remaining - (ent.armor or 0)
+    local real = remaining - ((ent.armor or 0) + (ent.aura_armor or 0))
     if real < 1 then real = 1 end
     applied = applied + math.min(real, math.max(0, ent.hp))
     ent.hp = ent.hp - real
@@ -32,8 +40,10 @@ end
 -- Tick hp regen and shield regen. Shield regen pauses for `shield_hit_delay`
 -- seconds after the pool last took a hit.
 function M.tick_regen(ent, dt)
-  if ent.regen and ent.regen > 0 and ent.hp < ent.maxhp then
-    ent.hp = math.min(ent.maxhp, ent.hp + ent.regen * dt)
+  -- base regen + any formation regen-node aura (M4)
+  local regen = (ent.regen or 0) + (ent.aura_regen or 0)
+  if regen > 0 and ent.hp < ent.maxhp then
+    ent.hp = math.min(ent.maxhp, ent.hp + regen * dt)
   end
   if ent.shield_max and ent.shield_max > 0 then
     if ent.shield_hit_t and ent.shield_hit_t > 0 then

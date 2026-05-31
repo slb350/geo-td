@@ -549,6 +549,11 @@ require("tests.smoke_cards").run(check, near)
 -- live in tests/smoke_modifier.lua (same LOC-split rationale).
 require("tests.smoke_modifier").run(check, near)
 
+-- ------------------------------------------------------- enemy auras (M4)
+-- Formation-aura buffs (shield/speed/regen/armor/stealth) + the kill-the-buffer
+-- targeting puzzle live in tests/smoke_aura.lua (same LOC-split rationale).
+require("tests.smoke_aura").run(check, near)
+
 -- ----------------------------------------------------------------- result
 print(("smoke: %d checks, %d failures"):format(checks, fails))
 os.exit(fails == 0 and 0 or 1)
