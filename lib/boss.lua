@@ -172,7 +172,7 @@ function M.update(run, dt)
         if dx * dx + dy * dy <= r2 then tw.disabled_t = b.def.shockwave_disable end
       end
       fx.burst(b.x, b.y, gfx.COLOR_PINK, 16)
-      effect.screen_shake(0.2, 3)
+      fx.shake(0.2, 3)
     end
   end
 

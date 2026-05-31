@@ -12,6 +12,7 @@ local audio  = require("lib.audio")
 local report = require("lib.report")
 local tower  = require("lib.tower")
 local metacontract = require("lib.metacontract")
+local replay = require("lib.replay")
 
 local M = {}
 
@@ -35,6 +36,7 @@ function M.init()
   stats.contracts_done = {}
   for i = 1, #done do stats.contracts_done[i] = metacontract.DEFS[done[i]].name end
   stats.unlocked = unlocked and maps.get(unlocked).name or nil
+  stats.share = replay.snapshot(run, stats).share   -- shareable run code (M9)
   State.summary = stats
   effect.stop()
   fx.clear()
@@ -100,6 +102,7 @@ function M.draw(dt)
   if s.contracts_done and #s.contracts_done > 0 then
     ui.center_text("CONTRACT  -  " .. table.concat(s.contracts_done, ", "), ny, gfx.COLOR_PINK, 1)
   end
+  if s.share then ui.center_text(s.share, C.GAME_H - 26, pal.TEXT_DIM, 1) end   -- shareable run code (M9)
   ui.center_text("click to return to menu", C.GAME_H - 14, pal.TEXT_DIM, 1)
 end
 

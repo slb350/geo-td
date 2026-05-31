@@ -51,4 +51,34 @@ P.HUD_BG     = gfx.COLOR_BLACK
 P.HUD_PANEL  = gfx.COLOR_DARK_PURPLE
 P.HUD_SEL    = gfx.COLOR_YELLOW
 
+-- High-contrast accessibility mode (V2-M9). The semantic roles are direct fields,
+-- so a toggle just rewrites them: capture the normal set once, define brighter
+-- overrides for the readability-critical roles (a pure-black field so neon enemies
+-- pop, white/gray route tubes, crisp text/danger), and fall back to the normal
+-- value for any role without an override -- so set_contrast(true) resolves EVERY
+-- semantic color. set_contrast(false) restores the normal set exactly.
+P.SEMANTIC = {
+  "BG", "FIELD_BG", "PATH", "PATH_EDGE", "PATH_CORE", "PULSE", "CORE", "SPAWN",
+  "TEXT", "TEXT_DIM", "MONEY", "LIVES", "GOOD", "BAD", "RANGE", "GHOST_OK",
+  "GHOST_BAD", "HUD_BG", "HUD_PANEL", "HUD_SEL",
+}
+
+local NORMAL = {}
+for i = 1, #P.SEMANTIC do NORMAL[P.SEMANTIC[i]] = P[P.SEMANTIC[i]] end
+
+local HIGH = {
+  BG = gfx.COLOR_BLACK, FIELD_BG = gfx.COLOR_BLACK,
+  PATH = gfx.COLOR_LIGHT_GRAY, PATH_EDGE = gfx.COLOR_WHITE, PATH_CORE = gfx.COLOR_WHITE,
+  PULSE = gfx.COLOR_YELLOW, CORE = gfx.COLOR_GREEN, SPAWN = gfx.COLOR_RED,
+  TEXT = gfx.COLOR_WHITE, TEXT_DIM = gfx.COLOR_LIGHT_GRAY,
+  RANGE = gfx.COLOR_WHITE, HUD_PANEL = gfx.COLOR_DARK_GRAY,
+}
+
+function P.set_contrast(on)
+  for i = 1, #P.SEMANTIC do
+    local k = P.SEMANTIC[i]
+    P[k] = (on and HIGH[k]) or NORMAL[k]
+  end
+end
+
 return P

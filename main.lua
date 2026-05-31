@@ -12,6 +12,8 @@ local route    = require("scenes.route")
 local contract = require("scenes.contract")
 local gameover = require("scenes.gameover")
 local meta     = require("lib.meta")
+local settings = require("lib.settings")
+local pal      = require("lib.palette")
 
 local SCENES = {
   menu = menu,
@@ -38,23 +40,45 @@ function SwitchScene(key)
 end
 
 function _init()
+  local m = meta.load()
   State = {
-    meta = meta.load(),
+    meta = m,
+    settings = m.settings,   -- M9: live settings (a reference into the meta save)
     run = nil,
     ui = { selected = nil, sell_mode = false, hover_x = 0, hover_y = 0, hover_valid = false, inspect = nil, mode = "standard", speed = 1 },
     summary = nil,
     current = nil,
     pending = nil,
-    crt = true,
+    crt = m.settings.crt,
   }
   -- Background music is scene-driven (menu / combat / boss) via lib/audio,
   -- which each scene calls from its init/update -- nothing to start here.
-  -- CRT / neon-glow post-process, with a pause-menu toggle.
-  gfx.shader_set("crt")
+  -- Apply persisted accessibility/comfort settings (M9): the high-contrast palette
+  -- and the CRT / neon-glow post-process. Each pause-menu toggle flips the setting,
+  -- applies it, and persists (settings live in the meta save).
+  pal.set_contrast(State.settings.high_contrast)
+  gfx.shader_set(State.crt and "crt" or nil)
+  -- Pause-menu quick toggles for the in-combat-relevant settings (the engine caps
+  -- these at 3; the full set lives on the menu Options tab). Clear first so a live
+  -- reload re-registers cleanly instead of accumulating past the cap.
+  if usagi.clear_menu_items then usagi.clear_menu_items() end
   usagi.menu_item("CRT filter", function()
-    State.crt = not State.crt
+    settings.toggle(State.settings, "crt")
+    State.crt = State.settings.crt
     gfx.shader_set(State.crt and "crt" or nil)
+    meta.save(State.meta)
     return true -- keep the pause menu open
+  end)
+  usagi.menu_item("High contrast", function()
+    settings.toggle(State.settings, "high_contrast")
+    pal.set_contrast(State.settings.high_contrast)
+    meta.save(State.meta)
+    return true
+  end)
+  usagi.menu_item("Screen shake", function()
+    settings.toggle(State.settings, "shake")
+    meta.save(State.meta)
+    return true
   end)
   SwitchScene("menu")
 end

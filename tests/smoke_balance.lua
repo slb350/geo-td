@@ -51,6 +51,12 @@ function M.run(check, near)
   check(z.peak_enemies <= 80, "balance: peak enemies within perf budget (zigzag)")
   check(w.peak_enemies <= 80, "balance: peak enemies within perf budget (switchback)")
 
+  -- Projectile perf budget (V2-M9 production gate): pooled shots stay bounded even
+  -- under a max cordon (measured ~13-26 across maps); a runaway pool would blow this.
+  check(s.peak_proj <= 150, "balance: peak projectiles within perf budget (serpentine)")
+  check(z.peak_proj <= 150, "balance: peak projectiles within perf budget (zigzag)")
+  check(w.peak_proj <= 150, "balance: peak projectiles within perf budget (switchback)")
+
   -- Distribution: a pellet-only cordon's damage is dominated by pellets.
   check(s.tower_damage.list[1] and s.tower_damage.list[1].kind == "pellet",
     "balance: a pellet cordon's top damage source is the pellet")

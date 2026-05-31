@@ -2,8 +2,9 @@
 -- usagi.save/load (JSON, namespaced by game_id). Kept strictly string-keyed
 -- so it satisfies the save serializer's shape rules.
 
-local C    = require("lib.const")
-local maps = require("lib.maps")
+local C        = require("lib.const")
+local maps     = require("lib.maps")
+local settings = require("lib.settings")
 
 local M = {}
 local SAVE_VERSION = 2
@@ -24,6 +25,7 @@ function M.default()
     contract_board = {},        -- active meta-contract ids (the 3-goal board)
     completed_contracts = {},   -- [meta-contract id] = true (done at least once)
     daily = {},                 -- { day = <n>, done = bool, best = wave }
+    settings = settings.defaults(),   -- V2-M9 volumes + comfort/accessibility toggles
   }
 end
 
@@ -48,6 +50,7 @@ local function backfill(data)
   data.contract_board = data.contract_board or {}
   data.completed_contracts = data.completed_contracts or {}
   data.daily = data.daily or {}
+  data.settings = settings.fill(data.settings)   -- add any missing setting (M9 migration)
   return data
 end
 

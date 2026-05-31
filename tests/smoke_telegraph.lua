@@ -87,17 +87,17 @@ function M.run(check, near)
   do
     local r, b = spawn_boss("prism")
     local stung = nil
-    local real_play = sfx.play
-    sfx.play = function(name) stung = name end
+    local real_play = sfx.play_ex             -- the stinger routes through play_ex (SFX-volume aware)
+    sfx.play_ex = function(name) stung = name end
     b.hp = b.maxhp * b.def.phase2_at      -- right at the phase-2 threshold
     boss.hurt(r, 1)                        -- a hit that crosses into phase 2
     check(b.phase == 2, "boss enters phase 2 at the threshold")
     check(stung == "boss_phase", "the phase change fires audio.stinger")
     -- and it fires exactly once: a second hit while already in phase 2 is silent
     local stung2 = nil
-    sfx.play = function(name) stung2 = name end
+    sfx.play_ex = function(name) stung2 = name end
     boss.hurt(r, 1)
-    sfx.play = real_play
+    sfx.play_ex = real_play
     check(stung2 == nil, "the stinger does not re-fire on subsequent phase-2 damage")
   end
 

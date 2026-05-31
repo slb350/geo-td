@@ -17,6 +17,7 @@ local daily   = require("lib.daily")
 local maps    = require("lib.maps")
 local modes   = require("lib.modes")
 local share   = require("lib.share")
+local settings = require("lib.settings")
 local select_s = require("scenes.select")
 
 local M = {}
@@ -29,6 +30,7 @@ local TABS = {
   { id = "mastery",   name = "MASTERY" },
   { id = "contracts", name = "CONTRACTS" },
   { id = "daily",     name = "DAILY" },
+  { id = "options",   name = "OPTIONS" },
 }
 local TAB_Y, TAB_H, TAB_GAP = 70, 16, 6
 local PANEL = { x = 40, y = 94, w = 400, h = 150 }
@@ -66,6 +68,11 @@ function M.tab_rows(tab)
     end
   elseif tab == "daily" then
     rows[1] = { x = (C.GAME_W - 140) * 0.5, y = PANEL.y + PANEL.h - 28, w = 140, h = 20, id = "daily" }
+  elseif tab == "options" then
+    local rh = 22
+    for i = 1, #settings.DEFS do
+      rows[i] = { x = PANEL.x, y = PANEL.y + (i - 1) * rh, w = PANEL.w, h = rh, id = settings.DEFS[i].id }
+    end
   end
   rows_cache[tab] = rows
   return rows
@@ -112,6 +119,21 @@ local function click_row(tab, id)
   elseif tab == "daily" and id == "daily" then
     local d = todays_daily()
     select_s.start_map(d.map, d.mode, d.seed)
+  elseif tab == "options" then
+    for i = 1, #settings.DEFS do
+      local def = settings.DEFS[i]
+      if def.id == id then
+        settings.apply(State.settings, def)
+        if id == "crt" then
+          State.crt = State.settings.crt
+          gfx.shader_set(State.crt and "crt" or nil)
+        elseif id == "high_contrast" then
+          pal.set_contrast(State.settings.high_contrast)
+        end
+        meta.save(State.meta)
+        return
+      end
+    end
   end
 end
 
@@ -218,6 +240,25 @@ local function draw_daily(rows)
   ui.center_text("PLAY DAILY", b.y + 6, gfx.COLOR_BLACK, 1)
 end
 
+local function draw_options(rows)
+  local s = State.settings or settings.defaults()
+  for i = 1, #settings.DEFS do
+    local def, r = settings.DEFS[i], rows[i]
+    local val = s[def.id]
+    gfx.rect_fill(r.x, r.y, r.w, r.h - 2, pal.HUD_PANEL)
+    gfx.text(def.name, r.x + 8, r.y + 5, pal.TEXT)
+    local label, col
+    if def.kind == "volume" then
+      label, col = math.floor((val or 0) * 100 + 0.5) .. "%", pal.MONEY
+    else
+      label, col = (val and "ON" or "OFF"), (val and pal.GOOD or pal.TEXT_DIM)
+    end
+    gfx.text(label, r.x + r.w - usagi.measure_text(label) - 8, r.y + 5, col)
+  end
+  ui.center_text("keys:  1-6 towers   S sell   O orbital   D discharge   SPACE wave",
+    PANEL.y + 134, pal.TEXT_DIM, 1)
+end
+
 function M.draw(dt)
   gfx.clear(pal.BG)
   ui.center_text("USAGI GEO TD", 12, gfx.COLOR_WHITE, 2)
@@ -243,7 +284,8 @@ function M.draw(dt)
   if tab == "shop" then draw_shop(rows)
   elseif tab == "mastery" then draw_mastery(rows)
   elseif tab == "contracts" then draw_contracts()
-  elseif tab == "daily" then draw_daily(rows) end
+  elseif tab == "daily" then draw_daily(rows)
+  elseif tab == "options" then draw_options(rows) end
 
   ui.center_text("press Z / Space to play", C.GAME_H - 10, pal.TEXT_DIM, 1)
 end

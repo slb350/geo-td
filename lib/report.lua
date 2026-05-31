@@ -50,6 +50,7 @@ end
 function M.build(run)
   local fav = favorite_powerup(run.powerups)
   return {
+    seed          = run.seed,        -- for replay/share metadata (M9)
     map           = run.map_name,
     wave          = run.final_wave or run.wave_index,
     bosses_killed = run.bosses_killed or 0,
