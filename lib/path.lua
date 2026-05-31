@@ -76,6 +76,18 @@ function M.dist_to(path, px, py)
   return math.sqrt(best)
 end
 
+-- Is there at least one grid cell clear enough of the path to place a tower? Used
+-- to validate that a route/layout still leaves somewhere to build (shared by the
+-- map-layout checks, the route-variant sweep, and routedraft.valid).
+function M.has_buildable_spot(path)
+  for gx = 20, C.FIELD_W - 20, 16 do
+    for gy = 20, C.FIELD_H - 20, 16 do
+      if M.dist_to(path, gx, gy) > C.PLACE_MARGIN then return true end
+    end
+  end
+  return false
+end
+
 local flr = math.floor
 
 -- Render the route as a neon tube (bloom-friendly glow edge, dark body, bright

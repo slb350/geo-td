@@ -39,4 +39,14 @@ function M:chance(p)
   return self:next() < p
 end
 
+-- A fresh local rng derived from a base seed + an extra mixer, warmed past the
+-- Park-Miller small-seed correlation (the first output is tiny for small seeds).
+-- For deterministic one-shot lotteries (e.g. the route-draft shuffle) that must
+-- NOT consume a run's main rng and so can't perturb later wave generation.
+function M.derive(base, extra)
+  local r = M.new(base * 131 + (extra or 0) + 17)
+  r:next(); r:next(); r:next()
+  return r
+end
+
 return M

@@ -81,8 +81,8 @@ function M.run(check, near)
   -- Flyer Swarm: the spawn pool weights flyers (standard leaves it unchanged)
   do
     local pool = { { kind = "wisp", cost = 2 }, { kind = "hulk", cost = 3 } }   -- wisp flies
-    check(#wave.weighted_pool(pool, modes.get("standard")) == 2, "standard leaves the pool unweighted")
-    local fly = wave.weighted_pool(pool, modes.get("flyer_swarm"))
+    check(#wave.weighted_pool(pool, false) == 2, "no flyer bias leaves the pool unweighted")
+    local fly = wave.weighted_pool(pool, modes.get("flyer_swarm").flyer_bias)
     local wisps = 0; for i = 1, #fly do if fly[i].kind == "wisp" then wisps = wisps + 1 end end
     check(#fly == 4 and wisps == 3, "Flyer Swarm triples flyer entries (wisp x3 + hulk x1)")
   end

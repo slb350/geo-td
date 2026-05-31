@@ -84,14 +84,7 @@ function M.run(check, near)
       if not in_field(nd[1], nd[2]) then in_bounds = false end
     end
     check(in_bounds, name .. " stays in field bounds")
-    local buildable = false
-    for gx = 20, C.FIELD_W - 20, 16 do
-      for gy = 20, C.FIELD_H - 20, 16 do
-        if path.dist_to(r.path, gx, gy) > C.PLACE_MARGIN then buildable = true; break end
-      end
-      if buildable then break end
-    end
-    check(buildable, name .. " leaves room to build")
+    check(path.has_buildable_spot(r.path), name .. " leaves room to build")
   end
   local function seed_map(s) return run_mod.new(m, s).path_name end
   check(seed_map(20260530) == seed_map(20260530), "seed-derived map is deterministic")

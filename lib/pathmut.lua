@@ -13,11 +13,13 @@ local wave  = require("lib.wave")
 
 local M = {}
 
--- Is a route choice offered immediately before wave `w`? Only on maps that
--- define variants, on an event-cadence wave, and never before a boss wave --
--- including mode-driven boss waves (Boss Rush makes EVERY wave a boss).
+-- Is a route choice offered immediately before wave `w`? On any map, on an
+-- event-cadence wave, and never before a boss wave -- including mode-driven boss
+-- waves (Boss Rush makes EVERY wave a boss). V2-M2 generates the route options
+-- procedurally from the current route (lib/routedraft), so a map no longer needs
+-- predefined variants to host an event; a degenerate draft (only Hold) is skipped
+-- by the route scene.
 function M.pending_for(run, w)
-  if #maps.variants(run.path_name) == 0 then return false end
   return w % C.ROUTE_EVENT_EVERY == 0 and not wave.is_boss_for(run, w)
 end
 
@@ -41,6 +43,22 @@ function M.routes(run)
     }
   end
   return out
+end
+
+-- Dry run of apply's auto-refund: how many towers the route `nodes` would
+-- invalidate, and the total investment that would be returned. Read-only, for the
+-- route-draft card previews (the player sees the cost before committing).
+function M.refund_preview(run, nodes)
+  local p = path.build(nodes)
+  local count, total = 0, 0
+  for i = 1, #run.towers do
+    local t = run.towers[i]
+    if path.dist_to(p, t.x, t.y) < C.PLACE_MARGIN then
+      count = count + 1
+      total = total + (t.invested or tower.cost(run, t.kind))
+    end
+  end
+  return count, total
 end
 
 -- Adopt `nodes` as the run's route. Towers now on / too close to the new path

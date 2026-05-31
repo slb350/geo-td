@@ -64,10 +64,12 @@ function M.run(check, near)
     "threat: boss_rush flags wave 1 as a boss")
   check(threat.preview(run_mod.new(m, 1, "serpentine", "flyer_swarm"), 1).tags.flyers,
     "threat: flyer_swarm flags flyers from wave 1")
-  -- route warning looks one wave past the previewed one, only on variant maps
+  -- route warning looks one wave past the previewed one; V2-M2 hosts events on
+  -- ANY map (procedural transforms), so even no-variant serpentine flags one
   check(threat.preview(run_mod.new(m, 1, "zigzag"), 3).route_event,
-    "threat: route event flagged before wave 4 on a variant map")
-  check(not threat.preview(r, 3).route_event, "threat: no route event on a map without variants")
+    "threat: route event flagged before the cadence wave (variant map)")
+  check(threat.preview(r, 3).route_event, "threat: route event flagged on a no-variant map too")
+  check(not threat.preview(r, 2).route_event, "threat: no route event off the cadence")
 
   -- ------------------------------------------------------- targeting override
   local rt = run_mod.new(m, 2, "serpentine"); rt.money = 99999

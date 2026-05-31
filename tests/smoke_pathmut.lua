@@ -11,7 +11,6 @@ local path    = require("lib.path")
 local tower   = require("lib.tower")
 local pathmut  = require("lib.pathmut")
 local modifier = require("lib.modifier")
-local route    = require("scenes.route")
 local helpers  = require("tests.helpers")
 
 local M = {}
@@ -41,14 +40,7 @@ function M.run(check, near)
         and v[#v][1] == base[#base][1] and v[#v][2] == base[#base][2],
         name .. " variant " .. vi .. " shares the base spawn + core")
       -- buildable: at least one off-route spot exists (parity with base-layout validation)
-      local buildable = false
-      for gx = 20, C.FIELD_W - 20, 16 do
-        for gy = 20, C.FIELD_H - 20, 16 do
-          if path.dist_to(vp, gx, gy) > C.PLACE_MARGIN then buildable = true; break end
-        end
-        if buildable then break end
-      end
-      check(buildable, name .. " variant " .. vi .. " leaves room to build")
+      check(path.has_buildable_spot(vp), name .. " variant " .. vi .. " leaves room to build")
     end
   end
 
@@ -58,8 +50,11 @@ function M.run(check, near)
     r.wave_index = 3; check(pathmut.pending(r), "route event pending before wave 4 (zigzag)")
     r.wave_index = 4; check(not pathmut.pending(r), "no route event before a boss wave (5)")
     r.wave_index = 5; check(not pathmut.pending(r), "no route event before wave 6 (off cadence)")
+    -- V2-M2: procedural transforms host route events on ANY map, so a map without
+    -- predefined variants (serpentine) still gets one on the cadence
     local rs = run_mod.new(m, 1, "serpentine"); rs.wave_index = 3
-    check(not pathmut.pending(rs), "no route event on a map without variants")
+    check(pathmut.pending(rs), "route event pending on a no-variant map (procedural transforms)")
+    rs.wave_index = 4; check(not pathmut.pending(rs), "no route event before a boss wave on a no-variant map")
     -- Boss Rush makes every wave a boss, so a route event must never be offered
     local rbr = run_mod.new(m, 1, "zigzag", "boss_rush"); rbr.wave_index = 3
     check(not pathmut.pending(rbr), "no route event in Boss Rush (every wave is a boss)")
@@ -123,26 +118,18 @@ function M.run(check, near)
     check(r.money == before + paid, "the refund returns the cost_mult-discounted price actually paid")
   end
 
-  -- route-event scene: lockout, then a click adopts a route and returns to game
+  -- refund_preview: a read-only dry run that matches apply's actual refund
   do
-    State.run = run_mod.new(State.meta, 7, "zigzag")
-    State.pending = nil
+    local r = run_mod.new(m, 1, "zigzag"); r.money = 99999
     local v1 = maps.variants("zigzag")[1]
-    local real_mp, real_mh, real_mo = input.mouse_pressed, input.mouse_held, input.mouse
-    input.mouse_held = function() return false end
-    input.mouse_pressed = function() return false end
-    input.mouse = function() return 0, 0 end
-    route.init()
-    route.update(1 / 60)                          -- mouse up -> lockout clears
-    check(State.run.route_ready, "route scene arms after the mouse is released")
-    input.mouse_pressed = function(b) return b == 1 end
-    input.mouse = function() return 240, 118 end  -- center of the 2nd route tile
-    route.update(1 / 60)
-    input.mouse_pressed, input.mouse_held, input.mouse = real_mp, real_mh, real_mo
-    check(State.run.path.nodes == v1, "clicking a route tile adopts that route")
-    check(State.pending == "game", "the route scene returns to the game scene")
-    route.draw(1 / 60)                            -- render path (must not error)
-    State.run = nil; State.pending = nil
+    tower.place(r, 186, 72, "pellet")              -- on v1
+    tower.place(r, 300, 40, "pellet")              -- clear of v1
+    local pre_count, pre_cost = pathmut.refund_preview(r, v1)
+    check(pre_count == 1, "refund_preview counts exactly the displaced tower")
+    local before = r.money
+    local refunded = pathmut.apply(r, v1)
+    check(refunded == pre_count, "refund_preview count matches apply's refund")
+    check(r.money == before + pre_cost, "refund_preview cost matches the money apply returns")
   end
 end
 

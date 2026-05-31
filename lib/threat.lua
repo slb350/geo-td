@@ -50,10 +50,12 @@ function M.preview(run, n)
 
   out.boss = false
   out.budget = wave.budget_for(run, n)
-  local pool = wave.weighted_pool(wave.pool_for(n), run.mode)
+  -- the raw pool carries the same threat tags as a flyer-weighted one (weighting
+  -- only duplicates flyer entries), so read pool_for directly.
+  local pool = wave.pool_for(n)
   local tags = {}
   for i = 1, #pool do def_tags(enemy.DEFS[pool[i].kind], tags) end
-  if run.mode.flyer_bias then tags.flyers = true end   -- mode floods the skies
+  if run.mode.flyer_bias or run.route_mods.next_flyer_bias then tags.flyers = true end
   out.tags = tags
 
   for i = 1, #M.TAG_ORDER do

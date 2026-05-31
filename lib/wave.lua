@@ -17,10 +17,11 @@ function M.is_boss_for(run, n)
   return run.mode.boss_rush == true or M.is_boss(n)
 end
 
--- Optionally weight a spawn pool toward flyers (the Flyer Swarm mode). Returns
--- the pool unchanged for any non-flyer-bias mode. Public so it is unit-testable.
-function M.weighted_pool(pool, mode)
-  if not (mode and mode.flyer_bias) then return pool end
+-- Optionally weight a spawn pool toward flyers. `flyer_bias` is a boolean (the
+-- Flyer Swarm mode OR a one-shot route-draft risk both set it). Returns the pool
+-- unchanged when false. Public so it is unit-testable.
+function M.weighted_pool(pool, flyer_bias)
+  if not flyer_bias then return pool end
   local out = {}
   for i = 1, #pool do
     out[#out + 1] = pool[i]
@@ -83,20 +84,26 @@ function M.boss_scale(run, n)
 end
 
 -- Begin wave n: scale difficulty and build the spawn queue. Returns spawn count.
+-- One-shot route-draft risks (V2-M2) are folded in here and then consumed, so a
+-- Shortcut/Convergence budget spike or a Braid flyer flood affects exactly the
+-- wave that follows the route choice.
 function M.start(run, n)
   set_scaling(run, n)
   run.spawn_timer = 0.3
 
   local q = run.spawn_queue
   q.n, q.i = 0, 0
-  local budget = M.budget_for(run, n)
-  local pool = M.weighted_pool(pool_for(n), run.mode)
+  local rm = run.route_mods
+  local budget = M.budget_for(run, n) * ((rm and rm.next_budget_mult) or 1)
+  local flyer_bias = (run.mode and run.mode.flyer_bias) or (rm and rm.next_flyer_bias) or false
+  local pool = M.weighted_pool(pool_for(n), flyer_bias)
   while budget > 0 and q.n < 200 do
     local pick = pool[run.rng:int(1, #pool)]
     q.n = q.n + 1
     q[q.n] = pick.kind
     budget = budget - pick.cost
   end
+  if rm then rm.next_budget_mult, rm.next_flyer_bias = 1, false end   -- consume once
   return q.n
 end
 

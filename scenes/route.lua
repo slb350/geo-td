@@ -1,23 +1,25 @@
--- Between-wave route-mutation event (M7): on maps with route variants, the
--- player picks among predefined alternate polylines (forks / shortcuts) before
--- the next wave. Adopting a route auto-refunds any tower the new path
--- invalidates. The field is clear here, so the scalar-distance model is
--- preserved. An input lockout ignores a click carried over from the upgrade
--- screen (mirrors scenes/upgrade.lua).
+-- Route Draft 2.0 event scene (V2-M2): between waves, pick 1 of 3 geometric route
+-- cards (two procedural transforms + a Hold). Each card shows a mini preview, its
+-- reward/risk, and the refund it would trigger. Adopting a route auto-refunds any
+-- tower it invalidates; the field is clear here, so the scalar-distance model is
+-- preserved. An input lockout ignores a click carried over from the upgrade screen
+-- (mirrors scenes/upgrade.lua). The draft + its static layout/text are stored on
+-- the run (computed once in init), so the per-frame redraw allocates nothing and
+-- it survives a live reload.
 
-local C       = require("lib.const")
-local pal     = require("lib.palette")
-local path    = require("lib.path")
-local fx      = require("lib.fx")
-local ui      = require("lib.ui")
-local pathmut = require("lib.pathmut")
+local C         = require("lib.const")
+local pal       = require("lib.palette")
+local path      = require("lib.path")
+local fx        = require("lib.fx")
+local ui        = require("lib.ui")
+local shape     = require("lib.shape")
+local routedraft = require("lib.routedraft")
 
 local M = {}
 
-local TILE_W, TILE_H, GAP = 96, 96, 10
-local ROW_Y, PREV_H, PAD = 70, 64, 6
+local TILE_W, TILE_H, GAP = 146, 150, 10
+local ROW_Y, PREV_H, PAD = 56, 58, 6
 
--- Centered row of tiles, one per route option.
 local function tiles(n)
   local out = {}
   local x0 = (C.GAME_W - (n * TILE_W + (n - 1) * GAP)) * 0.5
@@ -27,33 +29,64 @@ local function tiles(n)
   return out
 end
 
+-- "+$55  +18% wave  +flyers" -- the card's immediate reward and next-wave risk.
+local function reward_risk_text(card)
+  local parts = {}
+  local r = card.reward
+  if r and r.money and r.money > 0 then parts[#parts + 1] = "+$" .. r.money end
+  local k = card.risk
+  if k then
+    if k.budget_mult and k.budget_mult > 1 then
+      parts[#parts + 1] = ("+%d%% wave"):format(math.floor((k.budget_mult - 1) * 100 + 0.5))
+    end
+    if k.flyer_bias then parts[#parts + 1] = "+flyers" end
+  end
+  return table.concat(parts, "  ")
+end
+
+local function refund_text(card)
+  if card.current then return "keeps your towers" end
+  if card.refund == 0 then return "no towers displaced" end
+  return ("refund %d ($%d)"):format(card.refund, card.refund_cost)
+end
+
 function M.init()
   if not State.run then SwitchScene("menu"); return end
-  State.run.route_ready = false   -- require a fresh click before accepting a choice
-  -- routes are fixed while this modal screen is shown (run.path only changes on
-  -- choose, which exits), so compute them once here rather than every frame.
-  State.run.route_options = pathmut.routes(State.run)
+  local cards = routedraft.draft(State.run)
+  -- a draft with only the Hold card is a non-event (no real choice); skip it so
+  -- the player isn't shown a one-option screen (robust for future sparse maps)
+  if #cards <= 1 then SwitchScene("game"); return end
+  -- bake the modal's static geometry + per-card text once (it redraws every frame
+  -- while it waits for a choice)
+  State.run.route_tiles = tiles(#cards)
+  for i = 1, #cards do
+    cards[i].rr_text = reward_risk_text(cards[i])
+    cards[i].refund_label = refund_text(cards[i])
+  end
+  State.run.route_draft = cards
+  State.run.route_ready = false                  -- require a fresh click first
 end
 
 local function choose(run, i)
-  local opt = run.route_options[i]
-  if opt then
-    pathmut.apply(run, opt.nodes)   -- swaps the route + auto-refunds invalid towers
+  local card = run.route_draft and run.route_draft[i]
+  if card then
+    routedraft.apply(run, card)                  -- swap + refund + reward + risk
     fx.click_sfx()
   end
+  run.route_draft = nil
   SwitchScene("game")
 end
 
 function M.update(dt)
   local run = State.run
-  if not run then SwitchScene("menu"); return end
+  if not run or not run.route_draft then SwitchScene("game"); return end
   if not run.route_ready then
     if not input.mouse_held(input.MOUSE_LEFT) then run.route_ready = true end
     return
   end
   if input.mouse_pressed(input.MOUSE_LEFT) then
     local mx, my = input.mouse()
-    local ts = tiles(#run.route_options)
+    local ts = run.route_tiles
     for i = 1, #ts do
       if ui.in_rect(mx, my, ts[i]) then return choose(run, i) end
     end
@@ -62,23 +95,31 @@ end
 
 function M.draw(dt)
   gfx.clear(pal.BG)
-  ui.center_text("ROUTE SHIFT", 24, gfx.COLOR_PINK, 2)
-  ui.center_text("choose a route for the waves ahead", 52, pal.TEXT_DIM, 1)
+  ui.center_text("ROUTE SHIFT", 22, gfx.COLOR_PINK, 2)
+  ui.center_text("choose a route for the waves ahead", 46, pal.TEXT_DIM, 1)
 
-  local routes = State.run.route_options or {}
-  local ts = tiles(#routes)
+  local cards = State.run.route_draft or {}
+  local ts = State.run.route_tiles or {}
   local mx, my = input.mouse()
-  for i = 1, #routes do
-    local t, opt = ts[i], routes[i]
+  for i = 1, #cards do
+    local t, card = ts[i], cards[i]
     local hover = ui.in_rect(mx, my, t)
+    local accent = card.current and pal.MONEY or gfx.COLOR_PINK
     gfx.rect_fill(t.x, t.y, t.w, t.h, pal.HUD_PANEL)
     gfx.rect(t.x, t.y, t.w, t.h, hover and pal.HUD_SEL or pal.PATH_EDGE)
-    gfx.rect_fill(t.x + PAD, t.y + PAD, t.w - PAD * 2, PREV_H, pal.FIELD_BG)
-    path.draw_preview(opt.nodes, t.x + PAD, t.y + PAD, t.w - PAD * 2, PREV_H,
+
+    -- title: shape icon + name
+    shape.fill(card.shape, t.x + 12, t.y + 12, 5, accent)
+    gfx.text(card.name, t.x + 22, t.y + 8, accent)
+
+    -- mini route preview
+    gfx.rect_fill(t.x + PAD, t.y + 22, t.w - PAD * 2, PREV_H, pal.FIELD_BG)
+    path.draw_preview(card.nodes, t.x + PAD, t.y + 22, t.w - PAD * 2, PREV_H,
       pal.PATH_CORE, pal.SPAWN, pal.CORE)
-    local label = opt.current and (opt.label .. " (current)") or opt.label
-    gfx.text(label, t.x + (t.w - usagi.measure_text(label)) * 0.5, t.y + t.h - 14,
-      opt.current and pal.MONEY or pal.TEXT)
+
+    gfx.text(card.desc, t.x + PAD, t.y + 86, pal.TEXT_DIM)
+    if card.rr_text ~= "" then gfx.text(card.rr_text, t.x + PAD, t.y + 108, pal.GOOD) end
+    gfx.text(card.refund_label, t.x + PAD, t.y + 126, card.current and pal.MONEY or pal.TEXT_DIM)
   end
 
   ui.center_text("a tower on a new route is refunded in full", C.GAME_H - 14, pal.TEXT_DIM, 1)

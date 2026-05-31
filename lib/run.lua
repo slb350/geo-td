@@ -57,6 +57,9 @@ function M.new(meta, seed, path_name, mode_id)
     spawn_timer = 0,
     spawn_interval = C.SPAWN_INTERVAL,
     powerups = {},
+    -- One-shot route-draft risks (V2-M2), consumed by the next wave.start and
+    -- then reset. resources is forward-compat for the M3 resource nodes.
+    route_mods = { next_budget_mult = 1, next_flyer_bias = false, resources = {} },
     mods = {
       dmg_mult = 1, rate_mult = 1, range_mult = 1, bounty_mult = 1, cost_mult = 1,
       proj_mult = 1, splash_mult = 1, crit_chance = 0, interest = 0, life_per_wave = 0,
@@ -118,9 +121,9 @@ end
 -- spawn queue is drained, with a small handful of stragglers left and no live
 -- boss, and -- crucially -- with NO route event due before the next wave (a route
 -- swap needs a clear field, so overlapping waves would be unsafe). The route check
--- mirrors pathmut.pending's cadence inline, because run can't require pathmut
+-- mirrors pathmut.pending_for's cadence inline, because run can't require pathmut
 -- (pathmut -> tower -> projectile -> run would cycle); both read the same
--- C.ROUTE_EVENT_EVERY + maps.variants + wave.is_boss_for sources.
+-- C.ROUTE_EVENT_EVERY + wave.is_boss_for sources.
 function M.can_call_early(run)
   if run.phase ~= "combat" then return false end
   local q = run.spawn_queue
@@ -128,9 +131,8 @@ function M.can_call_early(run)
   if run.enemies.n == 0 or run.enemies.n > C.EARLY_CALL_MAX then return false end
   if run.boss and not run.boss.dead then return false end  -- finish the boss first
   local nxt = run.wave_index + 1
-  if #maps.variants(run.path_name) > 0
-    and nxt % C.ROUTE_EVENT_EVERY == 0 and not wave.is_boss_for(run, nxt) then
-    return false                                            -- a route event must intervene
+  if nxt % C.ROUTE_EVENT_EVERY == 0 and not wave.is_boss_for(run, nxt) then
+    return false                                            -- a route event must intervene first
   end
   return true
 end
