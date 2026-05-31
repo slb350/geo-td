@@ -76,16 +76,46 @@ function M.dist_to(path, px, py)
   return math.sqrt(best)
 end
 
+-- Number of grid cells clear enough of the path to place a tower -- a cheap
+-- "buildable area" estimate for the map lab + a sufficiency check for validation.
+function M.buildable_count(path)
+  local n = 0
+  for gx = 20, C.FIELD_W - 20, 16 do
+    for gy = 20, C.FIELD_H - 20, 16 do
+      if M.dist_to(path, gx, gy) > C.PLACE_MARGIN then n = n + 1 end
+    end
+  end
+  return n
+end
+
 -- Is there at least one grid cell clear enough of the path to place a tower? Used
 -- to validate that a route/layout still leaves somewhere to build (shared by the
 -- map-layout checks, the route-variant sweep, and routedraft.valid).
 function M.has_buildable_spot(path)
-  for gx = 20, C.FIELD_W - 20, 16 do
-    for gy = 20, C.FIELD_H - 20, 16 do
-      if M.dist_to(path, gx, gy) > C.PLACE_MARGIN then return true end
-    end
+  return M.buildable_count(path) > 0
+end
+
+-- Total length of a node polyline (the route geometry sans a built path object).
+function M.poly_len(nodes)
+  local total = 0
+  for i = 1, #nodes - 1 do
+    local a, b = nodes[i], nodes[i + 1]
+    local dx, dy = b[1] - a[1], b[2] - a[2]
+    total = total + math.sqrt(dx * dx + dy * dy)
   end
-  return false
+  return total
+end
+
+-- Shortest segment length of a node polyline (huge for a degenerate <2-node list).
+function M.min_edge(nodes)
+  local m = math.huge
+  for i = 1, #nodes - 1 do
+    local a, b = nodes[i], nodes[i + 1]
+    local dx, dy = b[1] - a[1], b[2] - a[2]
+    local d = math.sqrt(dx * dx + dy * dy)
+    if d < m then m = d end
+  end
+  return m
 end
 
 local flr = math.floor

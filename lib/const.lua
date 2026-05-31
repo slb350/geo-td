@@ -66,6 +66,16 @@ C.MODULE_COST    = 60      -- in-run cost to socket a geometry module on a tower
 -- fires on the boss's existing cadence, so balance is unchanged.
 C.BOSS_TELEGRAPH = 0.9
 
+-- Map / route geometry invariants (V2-M8). A valid layout (and every route
+-- variant or procedurally-drafted route) shares these: bounded inside the field
+-- with a small margin, segment count under the cap, no near-zero edges, and a
+-- substantial total length. `lib/maps.validate`, the route-variant sweep, and
+-- `routedraft.valid` all read these so the rules live in one place.
+C.MAP_BOUND_MARGIN = 2     -- min px a node must sit inside the field edges
+C.MAP_MAX_SEGS     = 13    -- max polyline segments (so "< 14")
+C.MAP_MIN_EDGE     = 12    -- shortest allowed segment (no near-zero edges)
+C.MAP_MIN_LEN      = 100   -- min total route length to be playable
+
 -- Path-mutation events (M7): on maps with route variants, a between-wave route
 -- choice is offered before every Nth wave (skipping boss waves). The swap only
 -- happens with the field clear, so the single-polyline scalar-distance model is

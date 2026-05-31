@@ -26,39 +26,19 @@ M.DEFS = DEFS
 M.TYPE_ORDER = { "loop", "shortcut", "braid", "convergence" }
 
 local FIELD_W, FIELD_H = C.FIELD_W, C.FIELD_H
-local MIN_EDGE = 12       -- shortest allowed segment (no near-zero edges)
-local MAX_SEGS = 13       -- "segment count stays under 14"
 local LEN_LO, LEN_HI = 0.65, 1.60   -- total length band vs the base route
+local poly_len = path.poly_len      -- shared geometry primitives (lib/path)
+local min_edge = path.min_edge
 
 local function in_bounds(x, y)
-  return x >= 2 and x < FIELD_W - 2 and y >= 2 and y < FIELD_H - 2
+  local m = C.MAP_BOUND_MARGIN
+  return x >= m and x < FIELD_W - m and y >= m and y < FIELD_H - m
 end
 
 local function copy_nodes(nodes)
   local out = {}
   for i = 1, #nodes do out[i] = { nodes[i][1], nodes[i][2] } end
   return out
-end
-
-local function poly_len(nodes)
-  local total = 0
-  for i = 1, #nodes - 1 do
-    local a, b = nodes[i], nodes[i + 1]
-    local dx, dy = b[1] - a[1], b[2] - a[2]
-    total = total + math.sqrt(dx * dx + dy * dy)
-  end
-  return total
-end
-
-local function min_edge(nodes)
-  local m = math.huge
-  for i = 1, #nodes - 1 do
-    local a, b = nodes[i], nodes[i + 1]
-    local dx, dy = b[1] - a[1], b[2] - a[2]
-    local d = math.sqrt(dx * dx + dy * dy)
-    if d < m then m = d end
-  end
-  return m
 end
 
 local function longest_seg(nodes)
@@ -76,15 +56,15 @@ end
 -- in bounds, keeps segment count + edge lengths sane, lands in the length band,
 -- and leaves somewhere to build (same checks a hand-authored variant must pass).
 function M.valid(base, nodes)
-  if #nodes < 2 or (#nodes - 1) > MAX_SEGS then return false end
+  if #nodes < 2 or (#nodes - 1) > C.MAP_MAX_SEGS then return false end
   local bs, bc, ns, nc = base[1], base[#base], nodes[1], nodes[#nodes]
   if ns[1] ~= bs[1] or ns[2] ~= bs[2] or nc[1] ~= bc[1] or nc[2] ~= bc[2] then return false end
   for i = 1, #nodes do
     if not in_bounds(nodes[i][1], nodes[i][2]) then return false end
   end
-  if min_edge(nodes) < MIN_EDGE then return false end
+  if min_edge(nodes) < C.MAP_MIN_EDGE then return false end
   local len, base_len = poly_len(nodes), poly_len(base)
-  if len <= 100 or len < base_len * LEN_LO or len > base_len * LEN_HI then return false end
+  if len <= C.MAP_MIN_LEN or len < base_len * LEN_LO or len > base_len * LEN_HI then return false end
   return path.has_buildable_spot(path.build(nodes))
 end
 

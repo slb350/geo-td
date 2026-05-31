@@ -16,6 +16,7 @@ local mcontract = require("lib.metacontract")
 local daily   = require("lib.daily")
 local maps    = require("lib.maps")
 local modes   = require("lib.modes")
+local share   = require("lib.share")
 local select_s = require("scenes.select")
 
 local M = {}
@@ -70,20 +71,28 @@ function M.tab_rows(tab)
   return rows
 end
 
--- Today's daily challenge, memoized so the 60fps menu redraw doesn't re-roll it
--- (os.time + a derived rng + a fresh table) every frame. Invalidated on each menu
--- (re)entry by M.init so it tracks the date, and on live-reload (file-scope local).
-local daily_cache
+-- Today's daily challenge + its share code, memoized so the 60fps menu redraw
+-- doesn't re-roll the daily (os.time + a derived rng) or rebuild the share string
+-- every frame. Invalidated on each menu (re)entry by M.init so they track the date,
+-- and on live-reload (file-scope locals).
+local daily_cache, daily_code_cache
 local function todays_daily()
   daily_cache = daily_cache or daily.for_day(daily.today())
   return daily_cache
+end
+local function todays_code()
+  if not daily_code_cache then
+    local d = todays_daily()
+    daily_code_cache = share.encode({ seed = d.seed, map = d.map, mode = d.mode, tag = "D" .. d.day })
+  end
+  return daily_code_cache
 end
 
 function M.init()
   audio.set("menu")
   State.ui.menu_tab = State.ui.menu_tab or "shop"
   mcontract.refresh(State.meta)   -- ensure the contract board is populated for display
-  daily_cache = nil               -- re-roll today's daily on (re)entering the menu
+  daily_cache, daily_code_cache = nil, nil   -- re-roll today's daily on (re)entering the menu
 end
 
 local function open_select()
@@ -196,10 +205,11 @@ local function draw_daily(rows)
   local d = todays_daily()
   local layout = maps.get(d.map)
   local mode = modes.get(d.mode)
-  ui.center_text("TODAY'S CHALLENGE", PANEL.y + 10, pal.TEXT, 1)
-  ui.center_text(layout.name .. "   -   " .. mode.name, PANEL.y + 34, gfx.COLOR_ORANGE, 1)
-  ui.center_text(mode.desc, PANEL.y + 50, pal.TEXT_DIM, 1)
-  ui.center_text("seed " .. d.seed, PANEL.y + 70, pal.TEXT_DIM, 1)
+  ui.center_text("TODAY'S CHALLENGE", PANEL.y + 8, pal.TEXT, 1)
+  ui.center_text(layout.name .. "   -   " .. mode.name, PANEL.y + 30, gfx.COLOR_ORANGE, 1)
+  ui.center_text(mode.desc, PANEL.y + 46, pal.TEXT_DIM, 1)
+  -- the deterministic share code (recreates this exact daily from seed/map/mode)
+  ui.center_text(todays_code(), PANEL.y + 66, pal.MONEY, 1)
   local b = rows[1]
   local mx, my = input.mouse()
   local hov = ui.in_rect(mx, my, b)
