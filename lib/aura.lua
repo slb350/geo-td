@@ -45,7 +45,10 @@ function M.update(run)
       for j = 1, n do
         if j ~= i then
           local o = list[j]
-          if not o.dead then
+          -- arena objects (M6) are not buffable: a lingering veil from a
+          -- called-early boss wave must not cloak a battery/anchor and block the
+          -- destroy mechanic.
+          if not o.dead and not o.arena then
             local dx, dy = o.x - em.x, o.y - em.y
             if dx * dx + dy * dy <= r2 then apply(o, a.kind, a.value) end
           end

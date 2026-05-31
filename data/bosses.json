@@ -4,24 +4,37 @@
     "shockwave_every": 3.2, "shockwave_radius": 46, "shockwave_disable": 2.5,
     "phase2_at": 0.5, "phase2_speed_mult": 1.25,
     "spawn_type": "dasher", "spawn_every": 2.2, "spawn_phase": "phase2",
-    "on_death_split": { "type": "mote", "count": 8, "hp_mult": 0.5 }
+    "on_death_split": { "type": "mote", "count": 8, "hp_mult": 0.5 },
+    "arena": { "kind": "prism_mirror", "count": 2, "hp_mult": 0.18, "spawn_at": "phase2" }
   },
   "bulwark": {
     "name": "Bulwark", "hp": 360, "speed": 13, "bounty": 110, "size": 16, "color": "LIGHT_GRAY", "shape": "hex",
     "armor": 2, "shield": 160, "shield_regen": 24,
     "phase2_at": 0.4, "phase2_speed_mult": 1.2,
-    "on_death_split": { "type": "brute", "count": 2, "hp_mult": 0.25 }
+    "on_death_split": { "type": "brute", "count": 2, "hp_mult": 0.25 },
+    "arena": { "kind": "shield_battery", "count": 3, "hp_mult": 0.12, "spawn_at": "spawn", "drop_shield": true }
   },
   "hydra": {
     "name": "Hydra", "hp": 520, "speed": 20, "bounty": 120, "size": 14, "color": "DARK_GREEN", "shape": "penta",
     "regen": 12,
     "spawn_type": "swarm", "spawn_every": 1.1, "spawn_phase": "always",
-    "on_death_split": { "type": "swarm", "count": 14 }
+    "on_death_split": { "type": "swarm", "count": 14 },
+    "arena": { "kind": "hydra_head", "count": 3, "hp_mult": 0.15, "spawn_at": "spawn", "head_spawn_every": 2.0 }
   },
   "specter": {
     "name": "Specter", "hp": 700, "speed": 26, "bounty": 130, "size": 13, "color": "INDIGO", "shape": "diamond",
     "invuln_every": 3.5, "invuln_time": 1.2,
     "phase2_at": 0.5, "phase2_speed_mult": 1.4,
-    "on_death_split": { "type": "wisp", "count": 6 }
+    "on_death_split": { "type": "wisp", "count": 6 },
+    "arena": { "kind": "phase_anchor", "count": 3, "hp_mult": 0.1, "spawn_at": "spawn", "untargetable": true, "invuln_counter": true }
+  },
+  "lattice": {
+    "name": "The Lattice", "hp": 1200, "speed": 16, "bounty": 250, "size": 17, "color": "PEACH", "shape": "hex",
+    "armor": 2, "shield": 200, "shield_regen": 30,
+    "invuln_every": 4.0, "invuln_time": 1.0,
+    "phase2_at": 0.5, "phase2_speed_mult": 1.2,
+    "spawn_type": "swarm", "spawn_every": 1.5, "spawn_phase": "phase2",
+    "on_death_split": { "type": "wisp", "count": 8 },
+    "arena": { "kind": "lattice_anchor", "count": 5, "hp_mult": 0.14, "spawn_at": "spawn", "gate_invuln": true }
   }
 }

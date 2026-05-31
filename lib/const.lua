@@ -29,6 +29,7 @@ C.ORBITAL_COST = 500
 
 -- Waves / difficulty scaling
 C.BOSS_EVERY      = 5      -- every Nth wave is a boss
+C.FINAL_BOSS_EVERY = 25    -- every Nth wave is the final-act boss (The Lattice) (M6)
 C.BASE_BUDGET     = 6      -- enemy "spawn budget" at wave 1
 C.BUDGET_GROWTH   = 1.18   -- budget *= this per wave
 C.HP_GROWTH       = 1.15   -- enemy hp scales by wave

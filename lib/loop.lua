@@ -16,6 +16,7 @@ local proj  = require("lib.projectile")
 local ring  = require("lib.ring")
 local resource = require("lib.resource")
 local affix = require("lib.affix")
+local arena = require("lib.arena")
 
 local M = {}
 
@@ -26,7 +27,7 @@ function M.step(run, dt)
   local boss_wave = wave.is_boss_for(run, run.wave_index)
   local spawns_done = boss_wave or wave.update(run, dt)
   enemy.update(run, dt)
-  if boss_wave then boss.update(run, dt) end
+  if boss_wave then boss.update(run, dt); arena.update(run, dt) end   -- arena hooks (M6)
   tower.update(run, dt)
   proj.update(run, dt)
   ring.update(run, dt)

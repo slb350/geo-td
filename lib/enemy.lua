@@ -86,6 +86,14 @@ function M.kill(run, e)
   local reward = math.floor(e.bounty * (run.mods.bounty_mult or 1))
   run.money = run.money + reward
   run.score = run.score + e.bounty
+  -- arena objects (M6): pay their bounty but never split / burst / count as a kill;
+  -- a boss effect (lib/arena.count) reads the survivors, so just tally + return.
+  if e.arena then
+    run.arena_kills = (run.arena_kills or 0) + 1
+    fx.burst(e.x, e.y, e.color, 10)
+    fx.kill_sfx()
+    return
+  end
   run.kills = run.kills + 1
   fx.burst(e.x, e.y, e.color, 8)
   fx.number(e.x - 4, e.y - e.size - 6, "+" .. reward, gfx.COLOR_YELLOW)
@@ -149,7 +157,9 @@ function M.update(run, dt)
       if e.slow_t <= 0 then e.slow_factor = 1 end
     end
     combat.tick_regen(e, dt)
-    if not e.dead then
+    if not e.dead and e.arena then
+      -- arena objects (M6) are fixed route hazards: they never move or leak
+    elseif not e.dead then
       e.d = e.d + e.base_speed * e.slow_factor * e.aura_speed * dt
       if e.fly then
         if e.d >= e.fly_total then e.leaked = true end

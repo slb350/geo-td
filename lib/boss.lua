@@ -12,6 +12,7 @@ local fx     = require("lib.fx")
 local shape  = require("lib.shape")
 local combat = require("lib.combat")
 local audio  = require("lib.audio")
+local arena  = require("lib.arena")
 
 local DEFS = usagi.read_json("bosses.json")
 
@@ -19,14 +20,21 @@ local M = {}
 M.DEFS = DEFS
 M.ROTATION = { "prism", "bulwark", "hydra", "specter" }
 
--- Which boss spawns on (boss) wave n.
+-- Every FINAL_BOSS_EVERY-th wave is the final-act boss, The Lattice (M6).
+local function is_final(n) return n % C.FINAL_BOSS_EVERY == 0 end
+
+-- Which boss spawns on (boss) wave n: the final boss on its cadence, else the
+-- four-boss rotation.
 function M.for_wave(n)
+  if is_final(n) then return "lattice" end
   local idx = math.floor(n / C.BOSS_EVERY)
   return M.ROTATION[((idx - 1) % #M.ROTATION) + 1]
 end
 
--- Boss for an every-wave cadence (Boss Rush mode): cycle the rotation by wave.
+-- Boss for an every-wave cadence (Boss Rush mode): cycle the rotation by wave,
+-- with the final boss still landing on each FINAL_BOSS_EVERY-th wave.
 function M.cycle(n)
+  if is_final(n) then return "lattice" end
   return M.ROTATION[(n - 1) % #M.ROTATION + 1]
 end
 
@@ -50,6 +58,8 @@ function M.spawn(run, kind, hp_scale)
   }
   b.x, b.y = path.point_at(run.path, 0)
   run.boss = b
+  if kind == "lattice" then run.final_boss_reached = true end   -- final-act boss (M6)
+  arena.spawn_for(run, b, "spawn")     -- boss-arena objects placed on the route (M6)
   fx.boss_sfx()
   return b
 end
@@ -59,13 +69,20 @@ end
 function M.hurt(run, dmg)
   local b = run.boss
   if not b or b.dead then return false, 0 end
-  if b.invuln_t > 0 then return false, 0 end -- phased out; immune
+  local a = b.def.arena
+  -- arena gating (M6): the Lattice is invulnerable while its anchors stand; a
+  -- Specter is hittable during a phase-out only while its phase anchors stand.
+  if a and a.gate_invuln and arena.count(run, a.kind) > 0 then return false, 0 end
+  if b.invuln_t > 0 then
+    if not (a and a.invuln_counter and arena.count(run, a.kind) > 0) then return false, 0 end
+  end
   local killed, applied = combat.apply_damage(b, dmg)
   fx.boss_hit()
   if b.phase == 1 and b.def.phase2_at and b.hp <= b.maxhp * b.def.phase2_at then
     b.phase = 2
     audio.stinger("boss_phase")          -- one-shot dramatic sting (M5)
     effect.flash(0.15, gfx.COLOR_RED)
+    arena.spawn_for(run, b, "phase2")    -- phase-2 arena objects (e.g. Prism mirrors) (M6)
   end
   if killed then M.kill(run) end
   return killed, applied
@@ -89,6 +106,7 @@ function M.kill(run)
       enemy.spawn(run, split.type, hp_scale, run.speed_scale, math.max(0, b.d - k * 4))
     end
   end
+  arena.clear(run)        -- vaporize the arena objects so the wave can clear (M6)
 end
 
 local function emit_add(run, b)
@@ -101,6 +119,12 @@ function M.update(run, dt)
   b.angle = b.angle + dt * 1.5
 
   combat.tick_regen(b, dt)
+  -- Bulwark arena (M6): once every shield battery is destroyed, the shield drops.
+  local arena_def = b.def.arena
+  if arena_def and arena_def.drop_shield and b.shield_max > 0
+    and arena.count(run, arena_def.kind) == 0 then
+    b.shield, b.shield_max = 0, 0
+  end
   -- invulnerability windows (telegraphed: warn in the last BOSS_TELEGRAPH
   -- seconds before the boss phases out; cadence is unchanged)
   if b.def.invuln_every then

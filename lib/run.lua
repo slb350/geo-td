@@ -56,6 +56,8 @@ function M.new(meta, seed, path_name, mode_id)
     rings = { n = 0 },     -- lingering splash damage zones (M2 "Aftershock" card)
     boss = nil,
     bosses_killed = 0,
+    arena_kills = 0,       -- boss-arena objects destroyed (M6 report stat)
+    final_boss_reached = false,  -- the wave-25 Lattice was reached (M6)
     spawn_queue = { n = 0, i = 0 },
     spawn_timer = 0,
     spawn_interval = C.SPAWN_INTERVAL,

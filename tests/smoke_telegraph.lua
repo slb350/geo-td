@@ -22,6 +22,13 @@ function M.run(check, near)
   end
   local IN_WINDOW = C.BOSS_TELEGRAPH * 0.5      -- a countdown inside the warning window
   local OUTSIDE = C.BOSS_TELEGRAPH + 1.0        -- well before the warning window
+  -- count the boss's OWN adds, ignoring the stationary arena objects a boss now
+  -- spawns on the route (M6 -- the hydra also seeds 3 arena heads at spawn)
+  local function adds(r)
+    local n = 0
+    for i = 1, r.enemies.n do if not r.enemies[i].arena then n = n + 1 end end
+    return n
+  end
 
   -- shockwave: telegraph shows only in the warning window, fires only after it
   do
@@ -66,11 +73,11 @@ function M.run(check, near)
     b.spawn_t = IN_WINDOW
     boss.update(r, 1 / 60)
     check(b.spawn_warn, "add-spawn portal telegraph shows in the warning window")
-    check(r.enemies.n == 0, "no add has spawned yet (telegraph precedes it)")
+    check(adds(r) == 0, "no add has spawned yet (telegraph precedes it)")
     local spawned = false
     for _ = 1, 120 do
       boss.update(r, 1 / 60)
-      if r.enemies.n > 0 then spawned = true; break end
+      if adds(r) > 0 then spawned = true; break end
     end
     check(spawned, "an add spawns after the telegraph window")
     check(not b.spawn_warn, "portal telegraph clears once the add spawns")

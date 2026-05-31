@@ -26,6 +26,7 @@ local resource = require("lib.resource")
 local contracts = require("lib.contracts")
 local resonance = require("lib.resonance")
 local affix    = require("lib.affix")
+local arena    = require("lib.arena")
 
 local M = {}
 
@@ -288,6 +289,7 @@ function M.draw(dt)
   if hovered then tower.draw(run, hovered, true) end
 
   aura.draw(run)   -- faint formation-aura buff-zone rings, under the enemies
+  if run.boss then arena.draw(run) end   -- arena link lines, under the enemies (M6)
   enemy.draw(run)
   if run.boss then boss.draw(run) end
   proj.draw(run)

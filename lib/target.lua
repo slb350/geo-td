@@ -13,4 +13,12 @@ function M.can_hit(def, e)
   return t == "all" or t == "ground"
 end
 
+-- Is this enemy visible to acquisition? False for stealthed (aura veil / affix
+-- cloak) and untargetable arena objects (Specter anchors). Shared by tower
+-- acquisition AND the projectile pierce/ricochet chain so they can't drift -- a
+-- chained shot skips exactly what the firing tower would.
+function M.targetable(e)
+  return not e.aura_stealth and not e.affix_stealth and not (e.arena and e.arena.untargetable)
+end
+
 return M

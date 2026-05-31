@@ -67,6 +67,9 @@ function M.build(run)
     bank_shards   = run.bank_shards or 0,
     -- M5: number of affix-bearing waves survived
     affixes       = run.affix_history and #run.affix_history or 0,
+    -- M6: boss-arena objects destroyed + whether the final boss was reached
+    arena_kills   = run.arena_kills or 0,
+    final_boss    = run.final_boss_reached or false,
   }
 end
 
