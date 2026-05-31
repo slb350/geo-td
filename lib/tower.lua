@@ -9,6 +9,7 @@ local proj  = require("lib.projectile")
 local fx    = require("lib.fx")
 local shape = require("lib.shape")
 local modifier = require("lib.modifier")
+local target = require("lib.target")
 
 local DEFS = usagi.read_json("towers.json")
 
@@ -18,14 +19,8 @@ M.DEFS = DEFS
 -- Stable display order for the build palette.
 M.ORDER = { "pellet", "splash", "frost", "rail", "flak" }
 
--- Can this tower hit the given enemy, given air/ground targeting?
-local function can_hit(def, e)
-  local t = def.targets or "ground"
-  if e.fly then
-    return t == "all" or t == "air"
-  end
-  return t == "all" or t == "ground"
-end
+-- air/ground targeting eligibility (shared with the projectile chain)
+local can_hit = target.can_hit
 
 function M.cost(run, kind)
   local def = DEFS[kind]

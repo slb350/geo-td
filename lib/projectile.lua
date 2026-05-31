@@ -11,6 +11,7 @@ local fx      = require("lib.fx")
 local C       = require("lib.const")
 local run_lib = require("lib.run")
 local ring    = require("lib.ring")
+local target  = require("lib.target")
 
 local M = {}
 
@@ -53,15 +54,19 @@ function M.spawn(run, x, y, target, opts)
   return p
 end
 
--- Nearest enemy this shot has not hit yet, within chain range. Pierce mode only
--- considers enemies ahead of the shot's heading (forward hemisphere).
+-- Nearest enemy this shot has not hit yet, within chain range. A chained shot
+-- obeys the SAME targeting rules as the firing tower: it skips stealthed enemies
+-- and respects the tower's air/ground capability (a ground-only tower can't chain
+-- to a flyer). Pierce mode only considers enemies ahead of the heading.
 local function next_chain_target(run, p)
   local r2 = C.CHAIN_RANGE * C.CHAIN_RANGE
+  local def = p.tower and p.tower.def
   local list = run.enemies
   local best, best_d2
   for i = 1, list.n do
     local e = list[i]
-    if not e.dead and not p.hits[e] then
+    if not e.dead and not p.hits[e] and not e.aura_stealth
+      and (not def or target.can_hit(def, e)) then
       local dx, dy = e.x - p.x, e.y - p.y
       local d2 = dx * dx + dy * dy
       if d2 <= r2 and ((not p.chain_ahead) or (dx * p.hx + dy * p.hy) > 0) then

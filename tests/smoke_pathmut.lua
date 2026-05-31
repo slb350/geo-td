@@ -60,6 +60,9 @@ function M.run(check, near)
     r.wave_index = 5; check(not pathmut.pending(r), "no route event before wave 6 (off cadence)")
     local rs = run_mod.new(m, 1, "serpentine"); rs.wave_index = 3
     check(not pathmut.pending(rs), "no route event on a map without variants")
+    -- Boss Rush makes every wave a boss, so a route event must never be offered
+    local rbr = run_mod.new(m, 1, "zigzag", "boss_rush"); rbr.wave_index = 3
+    check(not pathmut.pending(rbr), "no route event in Boss Rush (every wave is a boss)")
   end
 
   -- routes: base + variants, the active route flagged current on a fresh run

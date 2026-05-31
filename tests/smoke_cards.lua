@@ -104,6 +104,32 @@ function M.run(check, near)
     check(near(r.tower_stats[t.id].damage, 21), "brittle applies to each chained hit on slowed enemies (10.5 + 10.5)")
   end
 
+  -- a chained shot must obey the firing tower's targeting rules: a ground-only
+  -- tower's chain cannot hop to a flyer
+  do
+    local r = fresh(40); r.mods.ricochet = 1
+    local t = tower.place(r, 200, 150, "frost")   -- ground-only, no splash to muddy it
+    r.enemies.n = 0
+    dummy(r, 205, 150)                              -- ground direct target
+    local fly = enemy.spawn(r, "wisp", 20, 1, 5); fly.x, fly.y = 214, 150
+    fly.armor, fly.shield, fly.shield_max = 0, 0, 0
+    local fly_hp0 = fly.hp
+    t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
+    check(fly.hp == fly_hp0, "a ground-only tower's chain does not hop to a flyer")
+  end
+
+  -- a chained shot cannot hop to a stealthed enemy (the veil hides it from chains too)
+  do
+    local r = fresh(41); r.mods.ricochet = 1
+    local t = tower.place(r, 200, 150, "pellet")
+    r.enemies.n = 0
+    dummy(r, 205, 150)
+    local hidden = dummy(r, 214, 150); hidden.aura_stealth = true
+    local hp0 = hidden.hp
+    t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
+    check(hidden.hp == hp0, "a chained shot does not hop to a stealthed enemy")
+  end
+
   -- ----------------------------------------------------- pooled field reset
   do
     -- fire a chaining shot, let it settle (pool emptied), then fire a clean shot

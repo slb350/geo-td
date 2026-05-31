@@ -96,6 +96,18 @@ function M.run(check, near)
     check(t.module == "triangle", "the original module is unchanged")
   end
 
+  -- upgrades + modules count toward the run's gross money_spent (report stat)
+  do
+    local r = fresh()
+    local t = tower.place(r, 200, 150, "pellet")
+    local after_place = r.money_spent                 -- the pellet's base cost
+    local up_cost = modifier.upgrade_cost(modifier.UPDEFS.pellet[1], 0)
+    modifier.buy_upgrade(r, t, "dmg")
+    modifier.socket_module(r, t, "triangle")
+    check(r.money_spent == after_place + up_cost + C.MODULE_COST,
+      "buying an upgrade + module adds to gross money_spent")
+  end
+
   -- per-tower upgrade state persists across a wave of simulation
   do
     local r = fresh()
