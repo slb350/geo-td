@@ -5,6 +5,7 @@
 
 local C     = require("lib.const")
 local pal   = require("lib.palette")
+local path  = require("lib.path")
 local run   = require("lib.run")
 local meta  = require("lib.meta")
 local maps  = require("lib.maps")
@@ -73,21 +74,6 @@ local function tile_text(t, text, y, col, scale)
   gfx.text_ex(text, t.x + (t.w - w) * 0.5, y, scale, 0, col, 1)
 end
 
--- Path polyline of `layout` fitted (aspect-preserving) into a box.
-local function draw_preview(layout, bx, by, bw, bh, line_col, lit)
-  local nodes = layout.nodes
-  local s = math.min(bw / C.FIELD_W, bh / C.FIELD_H)
-  local ox = bx + (bw - C.FIELD_W * s) * 0.5
-  local oy = by + (bh - C.FIELD_H * s) * 0.5
-  for i = 1, #nodes - 1 do
-    gfx.line(ox + nodes[i][1] * s, oy + nodes[i][2] * s,
-             ox + nodes[i + 1][1] * s, oy + nodes[i + 1][2] * s, line_col)
-  end
-  local a, b = nodes[1], nodes[#nodes]
-  gfx.circ_fill(ox + a[1] * s, oy + a[2] * s, 1.5, lit and pal.SPAWN or gfx.COLOR_DARK_GRAY)
-  gfx.circ_fill(ox + b[1] * s, oy + b[2] * s, 1.5, lit and pal.CORE or gfx.COLOR_DARK_GRAY)
-end
-
 -- Difficulty pips: `rank` of `total` filled, centered in the tile.
 local function draw_pips(t, rank, total, lit)
   local pw, gap = 5, 2
@@ -121,8 +107,10 @@ function M.draw(dt)
 
     -- preview panel
     gfx.rect_fill(t.x + PAD, t.y + PAD, t.w - PAD * 2, PREV_H, pal.FIELD_BG)
-    draw_preview(layout, t.x + PAD, t.y + PAD, t.w - PAD * 2, PREV_H,
-      lit and pal.PATH_CORE or gfx.COLOR_DARK_GRAY, lit)
+    path.draw_preview(layout.nodes, t.x + PAD, t.y + PAD, t.w - PAD * 2, PREV_H,
+      lit and pal.PATH_CORE or gfx.COLOR_DARK_GRAY,
+      lit and pal.SPAWN or gfx.COLOR_DARK_GRAY,
+      lit and pal.CORE or gfx.COLOR_DARK_GRAY)
 
     tile_text(t, layout.name, t.y + 72, lit and pal.TEXT or pal.TEXT_DIM, 1)
     draw_pips(t, i, total, lit)

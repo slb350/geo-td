@@ -23,6 +23,7 @@ local proj    = require("lib.projectile")
 local boss    = require("lib.boss")
 local powerup = require("lib.powerup")
 local ui      = require("lib.ui")
+local helpers = require("tests.helpers")
 
 local checks, fails = 0, 0
 local function check(cond, msg)
@@ -83,9 +84,7 @@ check(run.enemies.n == 0 and run.projectiles.n == 0, "empty pools")
 -- Every shipped layout must be in-bounds, long enough to play, and leave room
 -- to build; seed-derived selection must be deterministic and pick a real map.
 check(#maps.ORDER >= 2, "multiple path layouts available")
-local function in_field(x, y)
-  return x >= 0 and x < C.FIELD_W and y >= 0 and y < C.FIELD_H
-end
+local in_field = helpers.in_field
 for _, name in ipairs(maps.ORDER) do
   local layout = maps.get(name)
   check(layout ~= nil, "layout '" .. name .. "' present")
@@ -563,6 +562,11 @@ require("tests.smoke_telegraph").run(check, near)
 -- Mode registry + each mode's invariant (one_life/no_orbital/no_rail/boss_rush/
 -- flyer_swarm/hardcore) live in tests/smoke_modes.lua (same LOC-split rationale).
 require("tests.smoke_modes").run(check, near)
+
+-- ----------------------------------------------------- path mutation (M7)
+-- Route variants, the between-wave route event + auto-refund, and the route
+-- scene live in tests/smoke_pathmut.lua (same LOC-split rationale).
+require("tests.smoke_pathmut").run(check, near)
 
 -- ----------------------------------------------------------------- result
 print(("smoke: %d checks, %d failures"):format(checks, fails))

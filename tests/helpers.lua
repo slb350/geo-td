@@ -2,6 +2,7 @@
 -- engine-stub harness must already be installed (modules read JSON at require
 -- time), which smoke.lua guarantees by requiring tests.harness first.
 
+local C       = require("lib.const")
 local enemy   = require("lib.enemy")
 local proj    = require("lib.projectile")
 local tower   = require("lib.tower")
@@ -14,6 +15,12 @@ function M.fresh(meta, seed)
   local r = run_mod.new(meta, seed or 1, "serpentine")
   r.money = 99999
   return r
+end
+
+-- Is a point inside the play field (left of the HUD)? Used by the path/variant
+-- in-bounds checks in the layout suites.
+function M.in_field(x, y)
+  return x >= 0 and x < C.FIELD_W and y >= 0 and y < C.FIELD_H
 end
 
 -- A stationary, durable, no-armor ground target so damage math is not muddied

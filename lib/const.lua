@@ -65,4 +65,10 @@ C.MODULE_COST    = 60      -- in-run cost to socket a geometry module on a tower
 -- fires on the boss's existing cadence, so balance is unchanged.
 C.BOSS_TELEGRAPH = 0.9
 
+-- Path-mutation events (M7): on maps with route variants, a between-wave route
+-- choice is offered before every Nth wave (skipping boss waves). The swap only
+-- happens with the field clear, so the single-polyline scalar-distance model is
+-- preserved (no live enemy's `d` is ever remapped).
+C.ROUTE_EVENT_EVERY = 4
+
 return C

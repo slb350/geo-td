@@ -16,6 +16,13 @@ M.UNLOCK_WAVE = 20
 function M.get(name) return DATA.layouts[name] end
 function M.exists(name) return DATA.layouts[name] ~= nil end
 
+-- Alternate route polylines for a map (the M7 path-mutation variants), or {} if
+-- the map defines none. Each variant is a complete node-list (single polyline).
+function M.variants(name)
+  local lay = DATA.layouts[name]
+  return (lay and lay.variants) or {}
+end
+
 function M.index(name)
   for i = 1, #M.ORDER do
     if M.ORDER[i] == name then return i end

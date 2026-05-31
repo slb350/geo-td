@@ -8,6 +8,7 @@ local menu     = require("scenes.menu")
 local select   = require("scenes.select")
 local game     = require("scenes.game")
 local upgrade  = require("scenes.upgrade")
+local route    = require("scenes.route")
 local gameover = require("scenes.gameover")
 local meta     = require("lib.meta")
 
@@ -16,6 +17,7 @@ local SCENES = {
   select = select,
   game = game,
   upgrade = upgrade,
+  route = route,
   gameover = gameover,
 }
 

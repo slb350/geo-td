@@ -80,6 +80,8 @@ function M.place(run, x, y, kind)
   local cost = M.cost(run, kind)
   run.money = run.money - cost
   run.money_spent = run.money_spent + cost
+  t.invested = cost   -- cumulative spend on this tower (grows with upgrades/modules);
+                      -- the M7 auto-refund returns it in full
   -- per-tower damage stat lives on the run (keyed by id), so it survives a sell
   run.tower_stats[t.id] = { kind = kind, damage = 0 }
   fx.place_sfx()

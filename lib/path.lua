@@ -4,8 +4,25 @@
 -- tower placement, and a draw routine.
 
 local shape = require("lib.shape")
+local C     = require("lib.const")
 
 local M = {}
+
+-- Draw a polyline fitted (aspect-preserving) into a box -- the mini route preview
+-- used by the map-select and route-event screens. Colors are passed in so this
+-- stays a pure renderer (no palette dependency).
+function M.draw_preview(nodes, bx, by, bw, bh, line_col, spawn_col, core_col)
+  local s = math.min(bw / C.FIELD_W, bh / C.FIELD_H)
+  local ox = bx + (bw - C.FIELD_W * s) * 0.5
+  local oy = by + (bh - C.FIELD_H * s) * 0.5
+  for i = 1, #nodes - 1 do
+    gfx.line(ox + nodes[i][1] * s, oy + nodes[i][2] * s,
+             ox + nodes[i + 1][1] * s, oy + nodes[i + 1][2] * s, line_col)
+  end
+  local a, b = nodes[1], nodes[#nodes]
+  gfx.circ_fill(ox + a[1] * s, oy + a[2] * s, 1.5, spawn_col)
+  gfx.circ_fill(ox + b[1] * s, oy + b[2] * s, 1.5, core_col)
+end
 
 -- Build a path object from a list of {x, y} nodes.
 function M.build(nodes)

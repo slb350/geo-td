@@ -124,8 +124,10 @@ function M.buy_upgrade(run, t, id)
   if not M.can_buy_upgrade(run, t, id) then return false end
   local def = find_upgrade(t.kind, id)
   local lvl = t.upgrades[id] or 0
-  run.money = run.money - M.upgrade_cost(def, lvl)
+  local cost = M.upgrade_cost(def, lvl)
+  run.money = run.money - cost
   t.upgrades[id] = lvl + 1
+  t.invested = (t.invested or 0) + cost   -- counts toward the M7 full auto-refund
   return true
 end
 
@@ -138,6 +140,7 @@ function M.socket_module(run, t, module_id)
   if not M.can_socket(run, t, module_id) then return false end
   run.money = run.money - C.MODULE_COST
   t.module = module_id
+  t.invested = (t.invested or 0) + C.MODULE_COST   -- counts toward the M7 full auto-refund
   return true
 end
 

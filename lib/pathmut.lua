@@ -1,0 +1,66 @@
+-- Path-mutation events (M7): between-wave route changes for route agency while
+-- preserving the single-polyline scalar-distance model. A swap only happens via
+-- the route-event screen, which runs BETWEEN waves with the field clear, so no
+-- live enemy's `d` is ever remapped -- the next wave simply runs the new
+-- polyline. Variants are predefined complete polylines per map (data/paths.json),
+-- each sharing the spawn + core node with the base route.
+
+local C     = require("lib.const")
+local maps  = require("lib.maps")
+local path  = require("lib.path")
+local tower = require("lib.tower")
+
+local M = {}
+
+-- Is a route choice offered before the next wave? Only on maps that define
+-- variants, on an event-cadence wave, and never on a boss wave.
+function M.pending(run)
+  if #maps.variants(run.path_name) == 0 then return false end
+  local nxt = run.wave_index + 1
+  return nxt % C.ROUTE_EVENT_EVERY == 0 and nxt % C.BOSS_EVERY ~= 0
+end
+
+-- Route options for the choice screen: the base route, then each variant. Each
+-- is flagged `current` if it is the run's active polyline.
+function M.routes(run)
+  local all = { maps.get(run.path_name).nodes }
+  local vars = maps.variants(run.path_name)
+  for i = 1, #vars do all[#all + 1] = vars[i] end
+  local out = {}
+  for i = 1, #all do
+    out[i] = {
+      label = (i == 1) and "Origin" or ("Route " .. i),
+      nodes = all[i],
+      current = all[i] == run.path.nodes,
+    }
+  end
+  return out
+end
+
+-- Adopt `nodes` as the run's route. Towers now on / too close to the new path
+-- are auto-refunded at full value -- their whole investment (base cost + every
+-- upgrade + module via t.invested), since the route change forced them out, not
+-- the player. Returns the number of towers refunded. Must be called between
+-- waves (field clear).
+function M.apply(run, nodes)
+  -- enforce the field-clear precondition: swapping the polyline with live
+  -- enemies on it would strand their scalar `d`. The scene flow only reaches
+  -- here between waves, but assert so any future misuse fails loud, not silent.
+  assert(run.enemies.n == 0 and (not run.boss or run.boss.dead),
+    "pathmut.apply requires a clear field (route swaps happen between waves)")
+  run.path = path.build(nodes)
+  local kept, refunded = {}, 0
+  for i = 1, #run.towers do
+    local t = run.towers[i]
+    if path.dist_to(run.path, t.x, t.y) < C.PLACE_MARGIN then
+      run.money = run.money + (t.invested or tower.cost(run, t.kind))
+      refunded = refunded + 1
+    else
+      kept[#kept + 1] = t
+    end
+  end
+  run.towers = kept
+  return refunded
+end
+
+return M

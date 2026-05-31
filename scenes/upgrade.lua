@@ -9,6 +9,7 @@ local pal     = require("lib.palette")
 local powerup = require("lib.powerup")
 local fx      = require("lib.fx")
 local ui      = require("lib.ui")
+local pathmut = require("lib.pathmut")
 
 local M = {}
 
@@ -35,7 +36,8 @@ local function choose(i)
   if card then powerup.apply(run, card) end
   run.draft = nil
   fx.upgrade_sfx()
-  SwitchScene("game")
+  -- a route-mutation event may intervene before the next wave (M7)
+  SwitchScene(pathmut.pending(run) and "route" or "game")
 end
 
 function M.update(dt)
