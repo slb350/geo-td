@@ -15,14 +15,14 @@ local PAD = 6
 local BX = C.HUD_X + PAD
 local BW = C.HUD_W - PAD * 2
 
--- Tower palette buttons (vertical list). Sized to fit the full palette in the
--- band above the action buttons (5 towers including the Rail/Flak unlocks).
+-- Tower palette buttons (vertical list). Single-line rows (icon + name left,
+-- cost right) keep the full 5-tower palette compact above the action buttons.
 local btns = {}
 do
   local y = 80
   for i = 1, #tower.ORDER do
-    btns[i] = { kind = tower.ORDER[i], x = BX, y = y, w = BW, h = 20 }
-    y = y + 22
+    btns[i] = { kind = tower.ORDER[i], x = BX, y = y, w = BW, h = 18 }
+    y = y + 20
   end
 end
 -- The action button doubles as START WAVE (building) and ORBITAL STRIKE (combat).
@@ -108,13 +108,12 @@ function M.draw(run, meta, ui)
     end
     local body = avail and (afford and pal.resolve(def.color) or gfx.COLOR_DARK_GRAY) or gfx.COLOR_DARK_GRAY
     icon(kind, b.x + 12, b.y + b.h * 0.5, body)
-    local name_col = avail and pal.TEXT or pal.TEXT_DIM
-    gfx.text(def.name, b.x + 24, b.y + 3, name_col)
-    if avail then
-      gfx.text("$" .. cost, b.x + 24, b.y + 13, afford and pal.MONEY or pal.BAD)
-    else
-      gfx.text("LOCKED", b.x + 24, b.y + 13, pal.TEXT_DIM)
-    end
+    -- one centered line: name on the left, cost (or LOCKED) right-aligned
+    local ty = b.y + 5
+    gfx.text(def.name, b.x + 24, ty, avail and pal.TEXT or pal.TEXT_DIM)
+    local tag = avail and ("$" .. cost) or "LOCKED"
+    local tag_col = avail and (afford and pal.MONEY or pal.BAD) or pal.TEXT_DIM
+    gfx.text(tag, b.x + b.w - usagi.measure_text(tag) - 4, ty, tag_col)
   end
 
   -- hint / tooltip (wrapped to the sidebar width)
