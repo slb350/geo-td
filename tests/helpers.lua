@@ -7,6 +7,7 @@ local enemy   = require("lib.enemy")
 local proj    = require("lib.projectile")
 local tower   = require("lib.tower")
 local run_mod = require("lib.run")
+local path    = require("lib.path")
 
 local M = {}
 
@@ -47,6 +48,40 @@ function M.fire_and_settle(r, t)
   t.cooldown = 0
   tower.update(r, 1 / 60)
   M.settle(r)
+end
+
+-- ----------------------------------------------------------- build-plan helpers
+-- A lib/sim build plan is an array of actions, each carrying the `wave` whose
+-- build phase applies it plus one of place/upgrade/module/sell/powerup. These
+-- helpers generate the recurring shapes (a uniform tower cordon) so the sim and
+-- balance suites and the baseline tool don't hand-roll the same grid each time.
+
+-- A uniform off-path tower grid for `path_obj`: one `kind` tower (default pellet)
+-- every `step` px (default 26) that clears the path by PLACE_MARGIN + TOWER_R, all
+-- applied in wave `wave` (default 1). Step > 2*TOWER_R guarantees no overlaps, so
+-- with enough money every cell places -- the "uniform cordon" used to rank map
+-- difficulty empirically. opts: kind, step, wave, margin.
+function M.grid_cordon(path_obj, opts)
+  opts = opts or {}
+  local kind   = opts.kind or "pellet"
+  local step   = opts.step or 26
+  local wv     = opts.wave or 1
+  local margin = opts.margin or (C.PLACE_MARGIN + C.TOWER_R)
+  local plan = {}
+  for gx = 16, C.FIELD_W - 16, step do
+    for gy = 16, C.FIELD_H - 16, step do
+      if path.dist_to(path_obj, gx, gy) >= margin then
+        plan[#plan + 1] = { wave = wv, place = { kind = kind, x = gx, y = gy } }
+      end
+    end
+  end
+  return plan
+end
+
+-- grid_cordon for a map by name (builds a scratch run just to read its path).
+function M.map_cordon(meta, map, opts)
+  local r = run_mod.new(meta, (opts and opts.seed) or 1, map)
+  return M.grid_cordon(r.path, opts)
 end
 
 return M

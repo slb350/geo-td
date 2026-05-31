@@ -9,6 +9,8 @@ local fx    = require("lib.fx")
 local maps  = require("lib.maps")
 local enemy = require("lib.enemy")
 local modes = require("lib.modes")
+local wave  = require("lib.wave")
+local boss  = require("lib.boss")
 
 local M = {}
 
@@ -63,6 +65,32 @@ function M.new(meta, seed, path_name, mode_id)
       pierce = 0, ricochet = 0, brittle = 0, ring = 0, flyer_burst = 0,
     },
   }
+end
+
+-- Advance the run into the next wave's combat: apply start-of-wave economy
+-- (interest, life-per-wave) then spawn the wave or its boss. This is the
+-- presentation-free core of the game scene's start_wave -- the scene wraps it
+-- with sfx/audio/UI, and the headless sim (lib/sim) drives it directly, so the
+-- two can never drift on the rules that affect balance. Returns the wave number.
+function M.begin_wave(run)
+  local n = run.wave_index + 1
+  run.phase = "combat"
+  local mods = run.mods
+  if mods.interest > 0 then
+    run.money = run.money + math.floor(run.money * mods.interest)
+  end
+  if mods.life_per_wave > 0 then
+    run.lives = run.lives + mods.life_per_wave
+  end
+  if wave.is_boss_for(run, n) then
+    wave.boss_scale(run, n)
+    local kind = run.mode.boss_rush and boss.cycle(n) or boss.for_wave(n)
+    boss.spawn(run, kind, run.hp_scale)
+  else
+    run.boss = nil
+    wave.start(run, n)
+  end
+  return n
 end
 
 -- Credit applied damage to a tower's run-level stat entry (seeded at placement,

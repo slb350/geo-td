@@ -189,7 +189,7 @@ function M.run(check, near)
     "report top-tower ranks the highest damage across towers")
 
   -- ----------------------------------------------------- gameover scene
-  -- Reuses the global State / SwitchScene / input that smoke.lua installs.
+  -- Reuses the global State / SwitchScene / input that smoke_core.lua installs.
   State.run = run_mod.new(State.meta, 9, "serpentine")
   State.run.final_wave = 12
   State.run.kills = 30

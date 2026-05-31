@@ -19,31 +19,18 @@ local audio = require("lib.audio")
 local run_lib = require("lib.run")
 local inspect = require("lib.inspect")
 local modifier = require("lib.modifier")
+local loop    = require("lib.loop")
 
 local M = {}
 
 local function start_wave(run)
   local n = run.wave_index + 1
-  run.phase = "combat"
   State.ui.inspect = nil   -- close the tower-inspect panel when combat starts
   fx.wave_sfx()
   audio.set(wave.is_boss_for(run, n) and "boss" or "combat")
-  -- start-of-wave economy from upgrades
-  local mods = run.mods
-  if mods.interest > 0 then
-    run.money = run.money + math.floor(run.money * mods.interest)
-  end
-  if mods.life_per_wave > 0 then
-    run.lives = run.lives + mods.life_per_wave
-  end
-  if wave.is_boss_for(run, n) then
-    wave.boss_scale(run, n)
-    local kind = run.mode.boss_rush and boss.cycle(n) or boss.for_wave(n)
-    boss.spawn(run, kind, run.hp_scale)
-  else
-    run.boss = nil
-    wave.start(run, n)
-  end
+  -- rules (economy + wave/boss spawn) live in run.begin_wave, shared with the
+  -- headless sim so balance-affecting logic has exactly one implementation.
+  run_lib.begin_wave(run)
 end
 
 function M.init()
@@ -145,13 +132,7 @@ function M.update(dt)
 
   -- simulation
   if run.phase == "combat" then
-    local boss_wave = wave.is_boss_for(run, run.wave_index)
-    local spawns_done = boss_wave or wave.update(run, dt)
-    enemy.update(run, dt)
-    if boss_wave then boss.update(run, dt) end
-    tower.update(run, dt)
-    proj.update(run, dt)
-    ring.update(run, dt)
+    local spawns_done = loop.step(run, dt)   -- canonical combat step (shared with the sim)
     local cleared = run.enemies.n == 0 and (not run.boss or run.boss.dead)
     if spawns_done and cleared then
       run.phase = "building"
@@ -159,6 +140,7 @@ function M.update(dt)
       SwitchScene("upgrade")
     end
   else
+    -- build phase: only in-flight projectiles + lingering rings keep ticking
     proj.update(run, dt)
     ring.update(run, dt)
   end
