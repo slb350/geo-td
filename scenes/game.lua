@@ -24,6 +24,7 @@ local speed   = require("lib.speed")
 local threat  = require("lib.threat")
 local resource = require("lib.resource")
 local contracts = require("lib.contracts")
+local resonance = require("lib.resonance")
 
 local M = {}
 
@@ -101,6 +102,7 @@ function M.update(dt)
   fx.update(dt)
   local run, ui, meta = State.run, State.ui, State.meta
   if not run then SwitchScene("menu"); return end
+  resonance.update(run)   -- keep circuits fresh for the build-phase overlay + inspect
 
   local mx, my = input.mouse()
   ui.hover_x, ui.hover_y = mx, my
@@ -297,6 +299,7 @@ function M.draw(dt)
   -- tactical overlays (M1)
   if run.phase == "building" then
     draw_threat(run)
+    resonance.draw(run)   -- module circuit links + active-proof markers (M4)
   else
     draw_boss_label(run)
   end

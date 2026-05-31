@@ -84,6 +84,7 @@ function M.apply(run, nodes)
     end
   end
   run.towers = kept
+  run.resonance_dirty = true        -- towers were removed; recompute circuits (M4)
   return refunded
 end
 

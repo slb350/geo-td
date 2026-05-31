@@ -74,6 +74,7 @@ function M.new(meta, seed, path_name, mode_id)
     bank_shards = 0,
     module_discount = 0,
     no_sell = false,
+    resonance_dirty = true,    -- recompute tower resonance on the next touch (M4)
     mods = {
       dmg_mult = 1, rate_mult = 1, range_mult = 1, bounty_mult = 1, cost_mult = 1,
       proj_mult = 1, splash_mult = 1, crit_chance = 0, interest = 0, life_per_wave = 0,

@@ -11,6 +11,7 @@ local shape = require("lib.shape")
 local modifier = require("lib.modifier")
 local target = require("lib.target")
 local resource = require("lib.resource")
+local resonance = require("lib.resonance")
 
 local DEFS = usagi.read_json("towers.json")
 
@@ -124,6 +125,7 @@ function M.place(run, x, y, kind)
                       -- the M7 auto-refund returns it in full
   -- per-tower damage stat lives on the run (keyed by id), so it survives a sell
   run.tower_stats[t.id] = { kind = kind, damage = 0 }
+  run.resonance_dirty = true        -- topology changed (M4)
   fx.place_sfx()
   return t
 end
@@ -135,6 +137,7 @@ function M.sell(run, t)
     if towers[i] == t then
       run.money = run.money + math.floor(M.cost(run, t.kind) * C.SELL_REFUND)
       table.remove(towers, i)
+      run.resonance_dirty = true     -- topology changed (M4)
       fx.sell_sfx()
       return
     end
@@ -240,6 +243,7 @@ local function acquire(run, t, range)
 end
 
 function M.update(run, dt)
+  resonance.update(run)            -- recompute only if the topology changed (M4)
   local towers = run.towers
   local mods = run.mods
   for i = 1, #towers do

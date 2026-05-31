@@ -87,6 +87,13 @@ function M.draw(run, t)
     end
   end
 
+  -- active resonance (M4): the proof(s) this tower's circuit grants
+  if t.resonance and #t.resonance.names > 0 then
+    local names = t.resonance.names
+    local label = "RES: " .. names[1] .. (#names > 1 and (" +" .. (#names - 1)) or "")
+    gfx.text(label, BX, C.GAME_H - 54, gfx.COLOR_PINK)
+  end
+
   -- targeting override (M1): cycle the tower's acquisition policy/focus
   gfx.rect_fill(tgt_btn.x, tgt_btn.y, tgt_btn.w, tgt_btn.h, pal.HUD_PANEL)
   local ov = t.targeting_override

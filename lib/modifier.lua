@@ -89,6 +89,17 @@ function M.effective(run, t, out)
     elseif e == "range" then range = range * (1 + v)
     elseif e == "splash" then splash = splash * (1 + v) end
   end
+  -- resonance (M4): the LAST fold. crit/pierce/ricochet ADD; range/splash/dmg/rate
+  -- MULTIPLY. Derived (resonance.update); nil for towers in no circuit.
+  local res = t.resonance
+  if res then
+    out.crit = out.crit + res.crit
+    out.pierce = out.pierce + res.pierce
+    out.ricochet = out.ricochet + res.ricochet
+    out.damage = out.damage * (1 + res.dmg)
+    range = range * (1 + res.range)
+    splash = splash * (1 + res.splash)
+  end
   out.range = range
   out.splash_radius = splash
   return out
@@ -150,6 +161,7 @@ function M.socket_module(run, t, module_id)
   run.module_discount = 0                             -- one-shot discount consumed
   t.module = module_id
   t.invested = (t.invested or 0) + cost               -- counts toward the M7 full auto-refund
+  run.resonance_dirty = true                          -- a new module can form circuits (M4)
   return true
 end
 

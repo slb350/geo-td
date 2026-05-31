@@ -1,0 +1,8 @@
+{
+  "delta_chain":  { "name": "Delta Chain",  "tower": "pellet", "requires": ["triangle", "hex"],         "radius": 46, "effect": { "crit": 0.25, "ricochet": 1 }, "desc": "Pellet crits chain." },
+  "orbit_field":  { "name": "Orbit Field",  "tower": "frost",  "requires": ["circle", "hex"],           "radius": 44, "effect": { "range": 0.45 },                "desc": "Frost chills a wider field." },
+  "diamond_wake": { "name": "Diamond Wake", "tower": "splash", "requires": ["diamond", "square"],       "radius": 46, "effect": { "splash": 0.5, "pierce": 1 },   "desc": "Splash tears through." },
+  "green_vector": { "name": "Green Vector", "tower": "flak",   "requires": ["triangle", "circle"],      "radius": 46, "effect": { "dmg": 0.5, "crit": 0.2 },      "desc": "Flak shreds the skies." },
+  "triad":        { "name": "Triad",                          "requires": ["triangle", "triangle", "triangle"], "radius": 50, "effect": { "crit": 0.3 },         "desc": "Three triangles: a crit surge." },
+  "lattice":      { "name": "Lattice",                        "requires": ["square", "square", "square"],        "radius": 50, "effect": { "pierce": 1 },         "desc": "Three squares: a piercing lattice." }
+}
