@@ -26,7 +26,7 @@ end
 function M.init()
   local run = State.run
   if not run then SwitchScene("menu"); return end
-  run.draft = powerup.draft(run.rng, 3)
+  run.draft = powerup.draft(run.rng, 3, run.mode.draft_chaos)   -- Draft Chaos skews rare
   run.upgrade_ready = false -- require a fresh click before accepting a choice
 end
 

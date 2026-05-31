@@ -18,6 +18,7 @@ M.LIST = {
   { id = "boss_rush",   name = "Boss Rush",   desc = "Every wave is a boss.",              boss_rush = true },
   { id = "flyer_swarm", name = "Flyer Swarm", desc = "The skies are thick with flyers.",   flyer_bias = true },
   { id = "hardcore",    name = "Hardcore",    desc = "Difficulty tiers spike harder.",     hardcore = true },
+  { id = "draft_chaos", name = "Draft Chaos", desc = "Upgrade drafts skew to high rarity.", draft_chaos = true },
 }
 
 M.ORDER = {}

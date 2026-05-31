@@ -33,12 +33,15 @@ local function roll_rarity(rng)
   return 1
 end
 
--- Draft n distinct cards. Each card = { key = <string>, rarity = 1..3 }.
-function M.draft(rng, n)
+-- Draft n distinct cards. Each card = { key = <string>, rarity = 1..3 }. With
+-- `chaos` (the Draft Chaos mode), each card's rarity is bumped one tier (capped
+-- at Rare), so the whole draft skews powerful.
+function M.draft(rng, n, chaos)
   local out, used, attempts = {}, {}, 0
   while #out < n and attempts < 200 do
     attempts = attempts + 1
     local ri = roll_rarity(rng)
+    if chaos then ri = math.min(#M.RARITY, ri + 1) end
     local pool = {}
     for i = 1, #M.KEYS do
       local k = M.KEYS[i]

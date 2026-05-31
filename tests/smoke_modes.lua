@@ -10,6 +10,8 @@ local tower   = require("lib.tower")
 local enemy   = require("lib.enemy")
 local report  = require("lib.report")
 local modes   = require("lib.modes")
+local powerup = require("lib.powerup")
+local rng     = require("lib.rng")
 
 local M = {}
 
@@ -83,6 +85,19 @@ function M.run(check, near)
     local fly = wave.weighted_pool(pool, modes.get("flyer_swarm"))
     local wisps = 0; for i = 1, #fly do if fly[i].kind == "wisp" then wisps = wisps + 1 end end
     check(#fly == 4 and wisps == 3, "Flyer Swarm triples flyer entries (wisp x3 + hulk x1)")
+  end
+
+  -- Draft Chaos: every drafted card is boosted to a higher rarity (Uncommon+)
+  do
+    check(modes.get("draft_chaos").draft_chaos == true, "draft_chaos mode flag is set")
+    local chaos = powerup.draft(rng.new(123), 3, true)
+    check(#chaos == 3, "chaos draft still offers 3 cards")
+    local all_boosted = true
+    for i = 1, #chaos do if chaos[i].rarity < 2 then all_boosted = false end end
+    check(all_boosted, "every Draft Chaos card is Uncommon or better")
+    -- a plain draft is unaffected (chaos must be opt-in, not the default)
+    local plain = powerup.draft(rng.new(123), 3)
+    check(#plain == 3, "a plain draft still offers 3 cards (chaos defaults off)")
   end
 
   -- the run report carries the mode name (and nothing for a standard run)
