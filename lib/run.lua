@@ -8,15 +8,18 @@ local rng   = require("lib.rng")
 local fx    = require("lib.fx")
 local maps  = require("lib.maps")
 local enemy = require("lib.enemy")
+local modes = require("lib.modes")
 
 local M = {}
 
-function M.new(meta, seed, path_name)
+function M.new(meta, seed, path_name, mode_id)
+  local mode = modes.get(mode_id)
   local money, lives = C.START_MONEY, C.START_LIVES
   if meta.unlocks.start_bonus then
     money = money + 50
     lives = lives + 5
   end
+  if mode.lives then lives = mode.lives end   -- a challenge mode may override (e.g. One Life)
   fx.clear()
   -- an explicit map (map-select / tests) if it names a real layout, else a
   -- seed-derived fallback so any run still gets a valid map.
@@ -28,6 +31,7 @@ function M.new(meta, seed, path_name)
     path = path.build(layout.nodes),
     path_name = key,
     map_name = layout.name,
+    mode = mode,           -- challenge-mode config deltas (M6); standard = no-op
     wave_index = 0,
     phase = "building",  -- building | combat | upgrade
     money = money,
@@ -85,6 +89,7 @@ end
 -- when there is actually something on the field to nuke (so the button greys
 -- out rather than burning $500 on an empty screen).
 function M.can_orbital(run)
+  if run.mode.no_orbital then return false end   -- "No Orbital" challenge mode
   return run.phase == "combat" and run.money >= C.ORBITAL_COST and run.enemies.n > 0
 end
 

@@ -12,6 +12,26 @@ function M.is_boss(n)
   return n % C.BOSS_EVERY == 0
 end
 
+-- Boss-wave decision including the run's mode (Boss Rush makes every wave a boss).
+function M.is_boss_for(run, n)
+  return run.mode.boss_rush == true or M.is_boss(n)
+end
+
+-- Optionally weight a spawn pool toward flyers (the Flyer Swarm mode). Returns
+-- the pool unchanged for any non-flyer-bias mode. Public so it is unit-testable.
+function M.weighted_pool(pool, mode)
+  if not (mode and mode.flyer_bias) then return pool end
+  local out = {}
+  for i = 1, #pool do
+    out[#out + 1] = pool[i]
+    if enemy.DEFS[pool[i].kind].fly then          -- triple a flyer's pick weight
+      out[#out + 1] = pool[i]
+      out[#out + 1] = pool[i]
+    end
+  end
+  return out
+end
+
 -- Enemy kinds unlocked by wave n, with their budget costs (deterministic order).
 local function pool_for(n)
   local pool = {}
@@ -30,8 +50,15 @@ function M.tier(n)
 end
 
 -- Apply wave-n difficulty scaling to the run (shared by normal + boss waves).
+-- Effective tier including the run's mode. Hardcore spikes one tier early, and
+-- ALL three tier-driven stats (hp, budget, speed) use this so the bump is applied
+-- consistently -- a "tier" means the whole tier, not just hp/speed.
+local function eff_tier(run, n)
+  return M.tier(n) + (run.mode.hardcore and 1 or 0)
+end
+
 local function set_scaling(run, n)
-  local tier = M.tier(n)
+  local tier = eff_tier(run, n)
   run.wave_index = n
   run.hp_scale = (C.HP_GROWTH ^ (n - 1)) * (C.HP_TIER_MULT ^ tier)
   run.speed_scale = (C.SPEED_GROWTH ^ (n - 1)) * (1 + tier * C.SPEED_TIER_ADD)
@@ -53,8 +80,8 @@ function M.start(run, n)
 
   local q = run.spawn_queue
   q.n, q.i = 0, 0
-  local budget = C.BASE_BUDGET * (C.BUDGET_GROWTH ^ (n - 1)) * (C.BUDGET_TIER_MULT ^ M.tier(n))
-  local pool = pool_for(n)
+  local budget = C.BASE_BUDGET * (C.BUDGET_GROWTH ^ (n - 1)) * (C.BUDGET_TIER_MULT ^ eff_tier(run, n))
+  local pool = M.weighted_pool(pool_for(n), run.mode)
   while budget > 0 and q.n < 200 do
     local pick = pool[run.rng:int(1, #pool)]
     q.n = q.n + 1

@@ -37,7 +37,7 @@ function _init()
   State = {
     meta = meta.load(),
     run = nil,
-    ui = { selected = nil, sell_mode = false, hover_x = 0, hover_y = 0, hover_valid = false, inspect = nil },
+    ui = { selected = nil, sell_mode = false, hover_x = 0, hover_y = 0, hover_valid = false, inspect = nil, mode = "standard" },
     summary = nil,
     current = nil,
     pending = nil,

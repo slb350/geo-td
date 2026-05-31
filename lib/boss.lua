@@ -25,6 +25,11 @@ function M.for_wave(n)
   return M.ROTATION[((idx - 1) % #M.ROTATION) + 1]
 end
 
+-- Boss for an every-wave cadence (Boss Rush mode): cycle the rotation by wave.
+function M.cycle(n)
+  return M.ROTATION[(n - 1) % #M.ROTATION + 1]
+end
+
 function M.spawn(run, kind, hp_scale)
   local def = DEFS[kind] or DEFS.prism
   local hp = def.hp * (hp_scale or 1)

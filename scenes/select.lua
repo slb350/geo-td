@@ -11,11 +11,15 @@ local maps  = require("lib.maps")
 local fx    = require("lib.fx")
 local ui    = require("lib.ui")
 local audio = require("lib.audio")
+local modes = require("lib.modes")
 
 local M = {}
 
 local TILE_W, TILE_H, GAP = 84, 124, 6
 local ROW_Y, PREV_H, PAD = 54, 60, 6
+
+-- Challenge-mode picker button below the map row (click to cycle the mode).
+local mode_btn = { x = (C.GAME_W - 300) * 0.5, y = 186, w = 300, h = 20 }
 
 -- Static tile geometry (one per map, in difficulty order).
 local tiles = {}
@@ -35,7 +39,7 @@ end
 local function start_map(name)
   local t = os.time and os.time() or 0
   local seed = t + State.meta.total_runs * 7919 + math.floor(usagi.elapsed * 1000)
-  State.run = run.new(State.meta, seed, name)
+  State.run = run.new(State.meta, seed, name, State.ui.mode)
   State.ui.selected = "pellet"
   State.ui.sell_mode = false
   fx.click_sfx()
@@ -48,6 +52,11 @@ function M.update(dt)
   end
   if input.mouse_pressed(input.MOUSE_LEFT) then
     local mx, my = input.mouse()
+    if ui.in_rect(mx, my, mode_btn) then
+      State.ui.mode = modes.next(State.ui.mode or modes.DEFAULT)   -- cycle the challenge mode
+      fx.click_sfx()
+      return
+    end
     for i = 1, #tiles do
       if ui.in_rect(mx, my, tiles[i]) and meta.is_map_unlocked(State.meta, tiles[i].name) then
         start_map(tiles[i].name)
@@ -126,6 +135,16 @@ function M.draw(dt)
     else status, scol = "NEW", pal.MONEY end
     tile_text(t, status, t.y + 102, scol, 1)
   end
+
+  -- challenge-mode picker
+  local cur = modes.get(State.ui.mode)
+  local mhover = ui.in_rect(mx, my, mode_btn)
+  gfx.rect_fill(mode_btn.x, mode_btn.y, mode_btn.w, mode_btn.h, pal.HUD_PANEL)
+  gfx.rect(mode_btn.x, mode_btn.y, mode_btn.w, mode_btn.h, mhover and pal.HUD_SEL or pal.PATH_EDGE)
+  local mlabel = "MODE:  " .. cur.name .. "   (click to change)"
+  gfx.text_ex(mlabel, mode_btn.x + (mode_btn.w - usagi.measure_text(mlabel)) * 0.5, mode_btn.y + 6,
+    1, 0, cur.id == "standard" and pal.TEXT_DIM or pal.MONEY, 1)
+  ui.center_text(cur.desc, mode_btn.y + mode_btn.h + 6, pal.TEXT_DIM, 1)
 
   ui.center_text("reach wave " .. maps.UNLOCK_WAVE .. " on a map to unlock the next",
     C.GAME_H - 28, pal.TEXT_DIM, 1)

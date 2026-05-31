@@ -57,6 +57,7 @@ function M.draw(dt)
   ui.center_text("RUN OVER", 24, gfx.COLOR_RED, 2)
   local sub = "wave " .. s.wave
   if s.map then sub = sub .. "  on  " .. s.map end
+  if s.mode then sub = sub .. "  -  " .. s.mode end   -- challenge mode (M6), if any
   ui.center_text(sub, 52, pal.TEXT, 1)
 
   local y = 74

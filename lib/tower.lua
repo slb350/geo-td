@@ -32,7 +32,8 @@ function M.cost(run, kind)
   return math.max(1, math.floor(def.cost * run.mods.cost_mult))
 end
 
-function M.available(meta, kind)
+function M.available(meta, kind, mode)
+  if mode and mode.no_rail and kind == "rail" then return false end   -- "No Rail" mode
   local def = DEFS[kind]
   if def.locked then
     return meta.unlocks[def.unlock] == true

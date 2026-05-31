@@ -559,6 +559,11 @@ require("tests.smoke_aura").run(check, near)
 -- tests/smoke_telegraph.lua (same LOC-split rationale).
 require("tests.smoke_telegraph").run(check, near)
 
+-- ----------------------------------------------------- challenge modes (M6)
+-- Mode registry + each mode's invariant (one_life/no_orbital/no_rail/boss_rush/
+-- flyer_swarm/hardcore) live in tests/smoke_modes.lua (same LOC-split rationale).
+require("tests.smoke_modes").run(check, near)
+
 -- ----------------------------------------------------------------- result
 print(("smoke: %d checks, %d failures"):format(checks, fails))
 os.exit(fails == 0 and 0 or 1)

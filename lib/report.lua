@@ -60,6 +60,8 @@ function M.build(run)
     top_tower     = top_tower(run.tower_stats),
     favorite      = fav,
     favorite_name = fav and powerup.DEFS[fav] and powerup.DEFS[fav].name or nil,
+    -- challenge mode name, or nil for a standard run (so default runs show nothing)
+    mode          = (run.mode and run.mode.id ~= "standard") and run.mode.name or nil,
   }
 end
 

@@ -97,7 +97,7 @@ function M.draw(run, meta, ui)
     local b = btns[i]
     local kind = b.kind
     local def = tower.DEFS[kind]
-    local avail = tower.available(meta, kind)
+    local avail = tower.available(meta, kind, run.mode)
     local cost = tower.cost(run, kind)
     local afford = run.money >= cost
     local selected = (ui.selected == kind)

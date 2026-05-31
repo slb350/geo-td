@@ -27,7 +27,7 @@ local function start_wave(run)
   run.phase = "combat"
   State.ui.inspect = nil   -- close the tower-inspect panel when combat starts
   fx.wave_sfx()
-  audio.set(wave.is_boss(n) and "boss" or "combat")
+  audio.set(wave.is_boss_for(run, n) and "boss" or "combat")
   -- start-of-wave economy from upgrades
   local mods = run.mods
   if mods.interest > 0 then
@@ -36,9 +36,10 @@ local function start_wave(run)
   if mods.life_per_wave > 0 then
     run.lives = run.lives + mods.life_per_wave
   end
-  if wave.is_boss(n) then
+  if wave.is_boss_for(run, n) then
     wave.boss_scale(run, n)
-    boss.spawn(run, boss.for_wave(n), run.hp_scale)
+    local kind = run.mode.boss_rush and boss.cycle(n) or boss.for_wave(n)
+    boss.spawn(run, kind, run.hp_scale)
   else
     run.boss = nil
     wave.start(run, n)
@@ -85,7 +86,7 @@ local function handle_hud_click(run, ui, meta, mx, my)
   local act = hud.button_at(run, mx, my)
   if not act then return end
   if act.type == "select" then
-    if tower.available(meta, act.kind) then
+    if tower.available(meta, act.kind, run.mode) then
       ui.selected = act.kind
       ui.sell_mode = false
     end
@@ -112,13 +113,13 @@ function M.update(dt)
   -- keyboard shortcuts
   if input.key_pressed(input.KEY_1) then ui.selected = "pellet"; ui.sell_mode = false; ui.inspect = nil end
   if input.key_pressed(input.KEY_2) then ui.selected = "splash"; ui.sell_mode = false; ui.inspect = nil end
-  if input.key_pressed(input.KEY_3) and tower.available(meta, "frost") then
+  if input.key_pressed(input.KEY_3) and tower.available(meta, "frost", run.mode) then
     ui.selected = "frost"; ui.sell_mode = false; ui.inspect = nil
   end
-  if input.key_pressed(input.KEY_4) and tower.available(meta, "rail") then
+  if input.key_pressed(input.KEY_4) and tower.available(meta, "rail", run.mode) then
     ui.selected = "rail"; ui.sell_mode = false; ui.inspect = nil
   end
-  if input.key_pressed(input.KEY_5) and tower.available(meta, "flak") then
+  if input.key_pressed(input.KEY_5) and tower.available(meta, "flak", run.mode) then
     ui.selected = "flak"; ui.sell_mode = false; ui.inspect = nil
   end
   if input.key_pressed(input.KEY_O) then
@@ -144,7 +145,7 @@ function M.update(dt)
 
   -- simulation
   if run.phase == "combat" then
-    local boss_wave = wave.is_boss(run.wave_index)
+    local boss_wave = wave.is_boss_for(run, run.wave_index)
     local spawns_done = boss_wave or wave.update(run, dt)
     enemy.update(run, dt)
     if boss_wave then boss.update(run, dt) end
@@ -204,7 +205,7 @@ function M.draw(dt)
   local banner
   if run.phase == "building" then
     banner = "BUILD  -  " .. run.map_name .. "  -  place towers, then START"
-  elseif wave.is_boss(run.wave_index) then
+  elseif wave.is_boss_for(run, run.wave_index) then
     banner = "BOSS  -  wave " .. run.wave_index
   else
     banner = "WAVE " .. run.wave_index
