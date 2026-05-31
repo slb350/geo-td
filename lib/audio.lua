@@ -31,6 +31,14 @@ function M.set(state)
   music.play_ex(pool[n], VOL, 1, 0, true)
 end
 
+-- A one-shot sting layered over the running music (does NOT touch the music
+-- director's state/rotation), used for dramatic beats like a boss phase change.
+-- sfx.play no-ops on an absent clip, so this is safe before music/sfx assets
+-- exist; add a `boss_phase` (or similarly named) clip to give it sound.
+function M.stinger(name)
+  sfx.play(name)
+end
+
 function M.stop()
   if State then State.music_state = nil end
   music.stop()

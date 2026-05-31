@@ -554,6 +554,11 @@ require("tests.smoke_modifier").run(check, near)
 -- targeting puzzle live in tests/smoke_aura.lua (same LOC-split rationale).
 require("tests.smoke_aura").run(check, near)
 
+-- ----------------------------------------------------- boss telegraphs (M5)
+-- Shockwave/invuln/add-spawn warning windows + the phase-change stinger live in
+-- tests/smoke_telegraph.lua (same LOC-split rationale).
+require("tests.smoke_telegraph").run(check, near)
+
 -- ----------------------------------------------------------------- result
 print(("smoke: %d checks, %d failures"):format(checks, fails))
 os.exit(fails == 0 and 0 or 1)

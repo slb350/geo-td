@@ -60,4 +60,9 @@ C.FLYER_BURST_R  = 42      -- radius (px) of a flyer's on-death burst
 -- data/upgrades.json); a geometry module is a one-per-tower qualitative socket.
 C.MODULE_COST    = 60      -- in-run cost to socket a geometry module on a tower
 
+-- Boss telegraphs (M5): the warning window shown in the last N seconds before a
+-- shockwave / invuln / add-spawn fires. Purely a lead-in -- the effect still
+-- fires on the boss's existing cadence, so balance is unchanged.
+C.BOSS_TELEGRAPH = 0.9
+
 return C

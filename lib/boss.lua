@@ -11,6 +11,7 @@ local enemy  = require("lib.enemy")
 local fx     = require("lib.fx")
 local shape  = require("lib.shape")
 local combat = require("lib.combat")
+local audio  = require("lib.audio")
 
 local DEFS = usagi.read_json("bosses.json")
 
@@ -39,6 +40,7 @@ function M.spawn(run, kind, hp_scale)
     shock_t = def.shockwave_every or 0,
     spawn_t = def.spawn_every or 0,
     invuln_t = 0, invuln_cd = def.invuln_every or 0,
+    shock_warn = false, invuln_warn = false, spawn_warn = false,  -- telegraphs (M5)
     dead = false, leaked = false,
   }
   b.x, b.y = path.point_at(run.path, 0)
@@ -57,6 +59,8 @@ function M.hurt(run, dmg)
   fx.boss_hit()
   if b.phase == 1 and b.def.phase2_at and b.hp <= b.maxhp * b.def.phase2_at then
     b.phase = 2
+    audio.stinger("boss_phase")          -- one-shot dramatic sting (M5)
+    effect.flash(0.15, gfx.COLOR_RED)
   end
   if killed then M.kill(run) end
   return killed, applied
@@ -92,15 +96,19 @@ function M.update(run, dt)
   b.angle = b.angle + dt * 1.5
 
   combat.tick_regen(b, dt)
-  -- invulnerability windows
+  -- invulnerability windows (telegraphed: warn in the last BOSS_TELEGRAPH
+  -- seconds before the boss phases out; cadence is unchanged)
   if b.def.invuln_every then
     if b.invuln_t > 0 then
       b.invuln_t = b.invuln_t - dt
+      b.invuln_warn = false
     else
       b.invuln_cd = b.invuln_cd - dt
+      b.invuln_warn = b.invuln_cd > 0 and b.invuln_cd <= C.BOSS_TELEGRAPH
       if b.invuln_cd <= 0 then
         b.invuln_t = b.def.invuln_time
         b.invuln_cd = b.def.invuln_every + b.def.invuln_time
+        b.invuln_warn = false
       end
     end
   end
@@ -119,11 +127,14 @@ function M.update(run, dt)
   end
   b.x, b.y = path.point_at(run.path, b.d)
 
-  -- shockwave: disable towers in radius
+  -- shockwave: disable towers in radius (telegraphed in the last
+  -- BOSS_TELEGRAPH seconds; it still fires on the same cadence)
   if b.def.shockwave_every then
     b.shock_t = b.shock_t - dt
+    b.shock_warn = b.shock_t > 0 and b.shock_t <= C.BOSS_TELEGRAPH
     if b.shock_t <= 0 then
       b.shock_t = b.def.shockwave_every
+      b.shock_warn = false
       local r2 = b.def.shockwave_radius * b.def.shockwave_radius
       local towers = run.towers
       for i = 1, #towers do
@@ -136,15 +147,19 @@ function M.update(run, dt)
     end
   end
 
-  -- adds (continuous or phase-2 only)
+  -- adds (continuous or phase-2 only), telegraphed with a spawn-portal warning
   if b.def.spawn_every then
     local active = b.def.spawn_phase == "always" or (b.def.spawn_phase == "phase2" and b.phase == 2)
     if active then
       b.spawn_t = b.spawn_t - dt
+      b.spawn_warn = b.spawn_t > 0 and b.spawn_t <= C.BOSS_TELEGRAPH
       if b.spawn_t <= 0 then
         b.spawn_t = b.def.spawn_every
+        b.spawn_warn = false
         emit_add(run, b)
       end
+    else
+      b.spawn_warn = false
     end
   end
 end
@@ -173,6 +188,21 @@ function M.draw(run)
   else
     gfx.circ(b.x, b.y, r + 3, gfx.COLOR_WHITE)
   end
+  -- telegraphs (M5): warn the player before an ability fires. Purely visual --
+  -- the effect still fires on the boss's existing cadence.
+  if b.shock_warn then
+    -- the shockwave danger zone, with an inner ring contracting as it counts down
+    gfx.circ(b.x, b.y, b.def.shockwave_radius, gfx.COLOR_RED)
+    gfx.circ(b.x, b.y, b.def.shockwave_radius * (0.5 + 0.5 * (b.shock_t / C.BOSS_TELEGRAPH)), gfx.COLOR_ORANGE)
+  end
+  if b.invuln_warn then
+    gfx.circ(b.x, b.y, r + 8, gfx.COLOR_YELLOW)   -- about to phase out (time your damage)
+  end
+  if b.spawn_warn then
+    local sx, sy = path.point_at(run.path, 0)     -- adds enter at the path start
+    gfx.circ(sx, sy, 6 + math.sin(usagi.elapsed * 10) * 2, gfx.COLOR_PINK)
+  end
+
   -- hp bar (+ shield bar)
   local w = r * 3
   local x0, y0 = b.x - w * 0.5, b.y - r - 10
