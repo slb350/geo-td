@@ -266,6 +266,66 @@ local d1 = run.mods.dmg_mult
 powerup.apply(run, { key = "dmg", rarity = 3 })
 check((run.mods.dmg_mult - d1) > (d1 - d0), "rare card scales stronger than common")
 
+-- -------------------------------------------------------------- boss balance
+local BALANCE_DT = 1 / 60
+
+local function layout_cost(layout)
+  local total = 0
+  for i = 1, #layout do
+    total = total + tower.DEFS[layout[i][1]].cost
+  end
+  return total
+end
+
+local function place_layout(r, layout)
+  r.money = 99999
+  for i = 1, #layout do
+    local it = layout[i]
+    local ok, why = tower.can_place(r, it[2], it[3], it[1])
+    check(ok, ("boss fixture place %s at %d,%d (%s)"):format(it[1], it[2], it[3], tostring(why)))
+    if ok then tower.place(r, it[2], it[3], it[1]) end
+  end
+  r.money = 0
+end
+
+local function sim_boss_fixture(n, kind, layout, mods)
+  local r = run_mod.new(m, 1777 + n)
+  r.lives = 99999
+  for k, v in pairs(mods) do r.mods[k] = v end -- override mods for this fixture
+  place_layout(r, layout)
+  wave.boss_scale(r, n)
+  boss.spawn(r, kind, r.hp_scale)
+  local frames = 0
+  while frames < 30000 do
+    frames = frames + 1
+    enemy.update(r, BALANCE_DT)
+    boss.update(r, BALANCE_DT)
+    tower.update(r, BALANCE_DT)
+    proj.update(r, BALANCE_DT)
+    local cleared = r.enemies.n == 0 and r.boss and r.boss.dead
+    if cleared or r.lives < 99999 then break end
+  end
+  return r.lives == 99999 and r.bosses_killed > 0 and r.enemies.n == 0
+end
+
+local prism_layout = {
+  { "pellet", 98, 98 }, { "pellet", 306, 130 }, { "pellet", 114, 146 },
+  { "pellet", 210, 162 }, { "pellet", 290, 114 }, { "pellet", 194, 162 },
+}
+check(layout_cost(prism_layout) == 270, "prism fixture cost matches pre-boss income envelope")
+local prism_ok = sim_boss_fixture(5, "prism", prism_layout, { dmg_mult = 1.18, rate_mult = 1.15 })
+check(prism_ok, "wave 5 prism + splits clears with a broad six-pellet/two-common-DPS setup")
+
+local bulwark_layout = {
+  { "pellet", 322, 194 }, { "pellet", 290, 130 }, { "pellet", 290, 114 },
+  { "pellet", 306, 114 }, { "pellet", 306, 130 },
+  { "splash", 322, 130 }, { "splash", 274, 130 },
+  { "frost", 322, 114 }, { "frost", 354, 114 },
+}
+check(layout_cost(bulwark_layout) == 525, "bulwark fixture cost fits normal pre-wave-10 income")
+local bulwark_ok = sim_boss_fixture(10, "bulwark", bulwark_layout, { dmg_mult = 1.36, rate_mult = 1.30 })
+check(bulwark_ok, "wave 10 bulwark + brutes clears with a non-rail mixed/four-common-DPS setup")
+
 -- ----------------------------------------------------------------- wave sim
 local DT = 1 / 60
 local function sim_wave(n)

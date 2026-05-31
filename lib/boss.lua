@@ -72,14 +72,15 @@ function M.kill(run)
   fx.number(b.x - 8, b.y - b.size - 8, "+" .. reward, gfx.COLOR_YELLOW)
   local split = b.def.on_death_split
   if split then
+    local hp_scale = run.hp_scale * (split.hp_mult or C.BOSS_SPLIT_HP_MULT)
     for k = 1, split.count do
-      enemy.spawn(run, split.type, run.hp_scale, run.speed_scale, math.max(0, b.d - k * 4))
+      enemy.spawn(run, split.type, hp_scale, run.speed_scale, math.max(0, b.d - k * 4))
     end
   end
 end
 
 local function emit_add(run, b)
-  enemy.spawn(run, b.def.spawn_type, run.hp_scale * 0.6, run.speed_scale, 0)
+  enemy.spawn(run, b.def.spawn_type, run.hp_scale * C.BOSS_ADD_HP_MULT, run.speed_scale, 0)
 end
 
 function M.update(run, dt)

@@ -31,6 +31,8 @@ C.HP_GROWTH       = 1.15   -- enemy hp scales by wave
 C.SPEED_GROWTH    = 1.012  -- enemy speed creeps up per wave
 C.SPAWN_INTERVAL  = 0.65   -- base seconds between spawns
 C.SPAWN_MIN       = 0.18   -- floor on spawn interval at high waves
+C.BOSS_SPLIT_HP_MULT = 0.6 -- default hp scale for boss death-spawned adds
+C.BOSS_ADD_HP_MULT   = 0.6 -- hp scale for boss continuous / phase-2 adds
 
 -- Compounding difficulty tiers: every TIER_STEP waves the multipliers stack on
 -- top of the per-wave growth, so deep runs spike hard. HP carries most of the
