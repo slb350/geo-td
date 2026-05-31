@@ -14,7 +14,7 @@ function M.default()
     currency = 0,
     best_wave = 0,
     total_runs = 0,
-    unlocks = { tower_rail = false, start_bonus = false },
+    unlocks = { tower_rail = false, tower_flak = false, start_bonus = false },
     map_unlocked = { [maps.first] = true },  -- easiest map open from the start
     map_best = {},                           -- per-map best wave reached
   }
@@ -27,6 +27,7 @@ function M.load()
   end
   data.unlocks = data.unlocks or {}
   if data.unlocks.tower_rail == nil then data.unlocks.tower_rail = false end
+  if data.unlocks.tower_flak == nil then data.unlocks.tower_flak = false end
   if data.unlocks.start_bonus == nil then data.unlocks.start_bonus = false end
   data.map_unlocked = data.map_unlocked or {}
   data.map_unlocked[maps.first] = true       -- first map is always available
@@ -44,8 +45,9 @@ end
 
 -- Purchasable permanent unlocks.
 M.SHOP = {
-  { id = "tower_rail",  name = "Rail Tower", desc = "Long-range anti-air sniper", cost = 16 },
-  { id = "start_bonus", name = "Head Start", desc = "+50 money, +5 lives",        cost = 18 },
+  { id = "tower_rail",  name = "Rail Tower",   desc = "Long-range anti-air sniper", cost = 16 },
+  { id = "tower_flak",  name = "Flak Cannon",  desc = "Anti-air: shreds flyers",    cost = 14 },
+  { id = "start_bonus", name = "Head Start",   desc = "+50 money, +5 lives",        cost = 18 },
 }
 
 function M.can_buy(meta, id)

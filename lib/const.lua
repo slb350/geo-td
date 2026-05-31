@@ -23,6 +23,10 @@ C.START_MONEY  = 150
 C.START_LIVES  = 20
 C.SELL_REFUND  = 0.6
 
+-- Orbital strike: a pricey panic button that vaporizes every enemy on the field
+-- (bosses are immune). A deliberate late-game money sink for flyer swarms.
+C.ORBITAL_COST = 500
+
 -- Waves / difficulty scaling
 C.BOSS_EVERY      = 5      -- every Nth wave is a boss
 C.BASE_BUDGET     = 6      -- enemy "spawn budget" at wave 1

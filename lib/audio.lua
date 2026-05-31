@@ -11,11 +11,11 @@ local M = {}
 local VOL = 0.48  -- +20% over the original 0.4 (a touch quiet out of the box)
 
 -- Tracks per scene-state, played in rotation. Boss is the cinematic / female
--- synthwave set; combat cycles three darksynth variants.
+-- synthwave set; combat cycles the darksynth variants.
 local POOL = {
   menu   = { "menu" },
-  combat = { "combat", "combat2", "combat3" },
-  boss   = { "boss", "boss2" },
+  combat = { "combat", "combat2", "combat3", "combat4", "combat5" },
+  boss   = { "boss", "boss2", "boss3" },
 }
 
 function M.set(state)

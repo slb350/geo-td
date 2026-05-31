@@ -14,6 +14,7 @@ local fx    = require("lib.fx")
 local hud   = require("lib.hud")
 local field = require("lib.field")
 local audio = require("lib.audio")
+local run_lib = require("lib.run")
 
 local M = {}
 
@@ -69,6 +70,8 @@ local function handle_hud_click(run, ui, meta, mx, my)
     end
   elseif act.type == "start" then
     if run.phase == "building" then start_wave(run) end
+  elseif act.type == "orbital" then
+    if run_lib.orbital_strike(run) then fx.orbital() end
   elseif act.type == "sell" then
     ui.sell_mode = not ui.sell_mode
     ui.selected = nil
@@ -90,6 +93,15 @@ function M.update(dt)
   if input.key_pressed(input.KEY_2) then ui.selected = "splash"; ui.sell_mode = false end
   if input.key_pressed(input.KEY_3) and tower.available(meta, "frost") then
     ui.selected = "frost"; ui.sell_mode = false
+  end
+  if input.key_pressed(input.KEY_4) and tower.available(meta, "rail") then
+    ui.selected = "rail"; ui.sell_mode = false
+  end
+  if input.key_pressed(input.KEY_5) and tower.available(meta, "flak") then
+    ui.selected = "flak"; ui.sell_mode = false
+  end
+  if input.key_pressed(input.KEY_O) then
+    if run_lib.orbital_strike(run) then fx.orbital() end
   end
   if input.key_pressed(input.KEY_S) then ui.sell_mode = not ui.sell_mode; ui.selected = nil end
   if (input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER))

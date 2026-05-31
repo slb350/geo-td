@@ -18,8 +18,8 @@ local start_btn = { x = 190, y = 104, w = 100, h = 24 }
 
 -- Shop rows, laid out from meta.SHOP.
 local rows = {}
-local SHOP_X, SHOP_Y = 96, 164
-local SHOP_W, SHOP_PAD = 288, 4
+local SHOP_X, SHOP_Y = 96, 160
+local SHOP_W, SHOP_PAD = 288, 2
 local SHOP_TEXT_X_PAD = 8
 
 -- Geometry depends only on the (constant) measured text height and the static

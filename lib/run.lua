@@ -2,11 +2,12 @@
 -- meta unlocks (start bonus) at creation. A "run" is the whole roguelike climb;
 -- it lives at State.run and is nil between runs.
 
-local C    = require("lib.const")
-local path = require("lib.path")
-local rng  = require("lib.rng")
-local fx   = require("lib.fx")
-local maps = require("lib.maps")
+local C     = require("lib.const")
+local path  = require("lib.path")
+local rng   = require("lib.rng")
+local fx    = require("lib.fx")
+local maps  = require("lib.maps")
+local enemy = require("lib.enemy")
 
 local M = {}
 
@@ -59,6 +60,27 @@ end
 function M.field_clear(run)
   if run.enemies.n > 0 then return false end
   if run.boss and not run.boss.dead then return false end
+  return true
+end
+
+-- Orbital strike availability: only mid-combat, with the cost on hand, and only
+-- when there is actually something on the field to nuke (so the button greys
+-- out rather than burning $500 on an empty screen).
+function M.can_orbital(run)
+  return run.phase == "combat" and run.money >= C.ORBITAL_COST and run.enemies.n > 0
+end
+
+-- Spend ORBITAL_COST to vaporize every enemy currently on the field. This is a
+-- pure clear -- no bounty, no score, and no splitter children -- so the screen
+-- truly empties and the cost stays a real money sink. The boss is in run.boss,
+-- not run.enemies, so it is untouched.
+function M.orbital_strike(run)
+  if not M.can_orbital(run) then return false end
+  run.money = run.money - C.ORBITAL_COST
+  local list = run.enemies
+  for i = 1, list.n do
+    enemy.vaporize(list[i])
+  end
   return true
 end
 

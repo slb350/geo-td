@@ -88,6 +88,15 @@ function M.kill(run, e)
   end
 end
 
+-- Remove from play with no bounty, split, score, or life cost -- a pure clear
+-- used by the orbital strike (emergency vaporization, not a kill-for-profit).
+-- The pool cleanup in M.update drops it next tick like any other dead enemy.
+function M.vaporize(e)
+  if e.dead then return end
+  e.dead = true
+  fx.burst(e.x, e.y, e.color, 10)
+end
+
 -- Strongest slow wins; refresh duration.
 function M.slow(e, factor, time)
   if factor < e.slow_factor then e.slow_factor = factor end

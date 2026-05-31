@@ -1,118 +1,14 @@
--- Headless smoke test for the simulation layer. Stubs the Usagi engine globals
--- (gfx/usagi/effect with a tiny JSON reader) and drives the real lib/* logic
--- through several waves, the boss fight, splitter splits, powerups, and a
--- save/load roundtrip. Catches runtime errors (nil indexing, bad arithmetic,
--- pool bugs) that a syntax check can't. Run from the project root:
+-- Headless smoke test for the simulation layer. Loads the engine-stub harness
+-- (tests/harness.lua: fake gfx/usagi/effect/sfx/music + a tiny JSON reader) and
+-- drives the real lib/* logic through several waves, the boss fight, splitter
+-- splits, powerups, towers, the orbital strike, and a save/load roundtrip.
+-- Catches runtime errors (nil indexing, bad arithmetic, pool bugs) that a syntax
+-- check can't. Run from the project root:
 --     luajit tests/smoke.lua
 -- This file is NOT loaded by the engine (it only reads main.lua + assets).
 
--- ---------------------------------------------------------------- JSON reader
-local function parse_json(str)
-  local pos = 1
-  local value
-  local function ws()
-    while pos <= #str do
-      local c = str:sub(pos, pos)
-      if c == " " or c == "\n" or c == "\t" or c == "\r" then pos = pos + 1 else break end
-    end
-  end
-  local function str_val()
-    pos = pos + 1
-    local buf = {}
-    while pos <= #str do
-      local c = str:sub(pos, pos)
-      if c == '"' then pos = pos + 1; return table.concat(buf) end
-      if c == "\\" then
-        local n = str:sub(pos + 1, pos + 1)
-        local map = { n = "\n", t = "\t", r = "\r", ['"'] = '"', ["\\"] = "\\", ["/"] = "/" }
-        buf[#buf + 1] = map[n] or n; pos = pos + 2
-      else
-        buf[#buf + 1] = c; pos = pos + 1
-      end
-    end
-    error("json: unterminated string")
-  end
-  local function num_val()
-    local s = pos
-    while pos <= #str and str:sub(pos, pos):match("[%-%+%d%.eE]") do pos = pos + 1 end
-    return tonumber(str:sub(s, pos - 1))
-  end
-  local function arr_val()
-    pos = pos + 1; local t = {}; ws()
-    if str:sub(pos, pos) == "]" then pos = pos + 1; return t end
-    while true do
-      t[#t + 1] = value(); ws()
-      local c = str:sub(pos, pos)
-      if c == "," then pos = pos + 1; ws()
-      elseif c == "]" then pos = pos + 1; return t
-      else error("json: expected , or ]") end
-    end
-  end
-  local function obj_val()
-    pos = pos + 1; local t = {}; ws()
-    if str:sub(pos, pos) == "}" then pos = pos + 1; return t end
-    while true do
-      ws(); local k = str_val(); ws()
-      assert(str:sub(pos, pos) == ":", "json: expected :"); pos = pos + 1; ws()
-      t[k] = value(); ws()
-      local c = str:sub(pos, pos)
-      if c == "," then pos = pos + 1
-      elseif c == "}" then pos = pos + 1; return t
-      else error("json: expected , or }") end
-    end
-  end
-  value = function()
-    ws(); local c = str:sub(pos, pos)
-    if c == '"' then return str_val()
-    elseif c == "{" then return obj_val()
-    elseif c == "[" then return arr_val()
-    elseif c == "t" then pos = pos + 4; return true
-    elseif c == "f" then pos = pos + 5; return false
-    elseif c == "n" then pos = pos + 4; return nil
-    else return num_val() end
-  end
-  return value()
-end
-
--- --------------------------------------------------------------- engine stubs
-gfx = {}
-local PALETTE = {
-  "BLACK", "DARK_BLUE", "DARK_PURPLE", "DARK_GREEN", "BROWN", "DARK_GRAY",
-  "LIGHT_GRAY", "WHITE", "RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "INDIGO",
-  "PINK", "PEACH",
-}
-for i, name in ipairs(PALETTE) do gfx["COLOR_" .. name] = i end
-local gfx_calls = {}
-for _, fn in ipairs({
-  "clear", "text", "text_ex", "rect", "rect_fill", "rect_ex", "circ", "circ_fill",
-  "circ_ex", "line", "line_ex", "tri", "tri_fill", "px", "spr", "spr_ex",
-  "shader_set", "shader_uniform",
-}) do
-  gfx[fn] = function(...)
-    gfx_calls[#gfx_calls + 1] = { fn = fn, args = { ... } }
-  end
-end
-
-local SAVE
-usagi = {
-  GAME_W = 480, GAME_H = 270, SPRITE_SIZE = 16, PLATFORM = "test", IS_DEV = true, elapsed = 0,
-  measure_text = function(s) return #s * 4, 12 end,
-  read_json = function(p)
-    local f = assert(io.open("data/" .. p, "r"))
-    local s = f:read("*a"); f:close()
-    return parse_json(s)
-  end,
-  save = function(t) SAVE = t end,
-  load = function() return SAVE end,
-  dump = function() return "" end,
-}
-effect = { hitstop = function() end, screen_shake = function() end,
-  flash = function() end, slow_mo = function() end, stop = function() end }
-sfx = { play = function() end, play_ex = function() end }
-music = { play = function() end, loop = function() end, stop = function() end,
-  play_ex = function() end, mutate = function() end }
-
 package.path = "./?.lua;" .. package.path
+local harness = require("tests.harness")  -- installs the fake engine globals
 
 -- ---------------------------------------------------------------- the modules
 local meta    = require("lib.meta")
@@ -162,6 +58,16 @@ local back = meta.load()
 check(back ~= nil and back.currency == 0, "save/load roundtrip")
 check(meta.finish_run(m, 7) == 7 * 2, "finish_run award = wave*2")
 check(m.best_wave == 7, "best_wave recorded")
+
+-- Flak Cannon unlock: locked by default, listed in the shop, and back-filled
+-- onto saves that predate it.
+check(meta.default().unlocks.tower_flak == false, "flak cannon locked by default")
+local flak_in_shop = false
+for i = 1, #meta.SHOP do if meta.SHOP[i].id == "tower_flak" then flak_in_shop = true end end
+check(flak_in_shop, "flak cannon listed in the unlock shop")
+local legacy = meta.default(); legacy.unlocks.tower_flak = nil
+meta.save(legacy)
+check(meta.load().unlocks.tower_flak == false, "load back-fills a missing flak unlock")
 
 -- ----------------------------------------------------------------- run setup
 -- Pin the geometry to Serpentine: the placement coords and boss fixtures below
@@ -341,6 +247,27 @@ end
 check(rail_hit_boss, "rail prioritises the boss over a flyer")
 run.boss = nil
 
+-- anti-air Flak: targets a flyer in range while ignoring a ground enemy and a
+-- (ground) boss sitting right next to it.
+run.towers = {}
+run.enemies.n = 0
+run.projectiles.n = 0
+run.money = 9999
+tower.place(run, 200, 150, "flak")
+local grnd = enemy.spawn(run, "hulk", 1, 1, 10); grnd.x, grnd.y = 208, 150
+local airb = enemy.spawn(run, "wisp", 1, 1, 5);  airb.x, airb.y = 196, 150
+wave.boss_scale(run, 5); boss.spawn(run, "prism", run.hp_scale); run.boss.x, run.boss.y = 204, 150
+tower.update(run, 1.0)
+local flak_air, flak_other = false, false
+for i = 1, run.projectiles.n do
+  local tg = run.projectiles[i].target
+  if tg == airb then flak_air = true end
+  if tg == grnd or tg == run.boss then flak_other = true end
+end
+check(flak_air, "flak targets the flyer")
+check(not flak_other, "flak ignores ground enemies and the ground boss")
+run.boss = nil
+
 -- restore a defensive set (incl. anti-air Rail) for the wave simulation
 run.towers = {}
 run.enemies.n = 0
@@ -467,6 +394,38 @@ for n = 1, 20 do
     :format(n, label, frames, peak))
 end
 
+-- ----------------------------------------------------------------- orbital
+-- The $500 orbital strike vaporizes every enemy on the field (no bounty, no
+-- splits) but never touches the boss, and only fires mid-combat with funds.
+run.phase = "combat"
+run.boss = nil
+run.enemies.n = 0
+run.projectiles.n = 0
+run.money = 1000
+enemy.spawn(run, "wisp", 1, 1, 10)
+enemy.spawn(run, "hulk", 1, 1, 12)
+enemy.spawn(run, "splitter", 1, 1, 8)   -- would normally split on death
+wave.boss_scale(run, 5); boss.spawn(run, "prism", run.hp_scale)
+local orb_count, boss_hp0 = run.enemies.n, run.boss.hp
+check(run_mod.can_orbital(run), "orbital available mid-combat with funds + targets")
+check(run_mod.orbital_strike(run), "orbital strike fires")
+check(run.money == 500, "orbital charged exactly $500 (no bounty refunded)")
+local survivors = 0
+for i = 1, run.enemies.n do if not run.enemies[i].dead then survivors = survivors + 1 end end
+check(survivors == 0, "orbital killed every on-screen enemy")
+check(run.enemies.n == orb_count, "orbital spawned no splitter children")
+check(not run.boss.dead and run.boss.hp == boss_hp0, "orbital left the boss untouched")
+-- gating: needs combat phase, the cost on hand, and a non-empty field
+enemy.update(run, 1 / 60)                -- clear the vaporized pool
+check(run.enemies.n == 0 and not run_mod.can_orbital(run), "orbital unavailable on an empty field")
+enemy.spawn(run, "wisp", 1, 1, 10)
+run.money = 499
+check(not run_mod.can_orbital(run), "orbital unavailable under $500")
+run.money = 1000; run.phase = "building"
+check(not run_mod.can_orbital(run), "orbital unavailable outside combat")
+check(not run_mod.orbital_strike(run), "orbital_strike no-ops when unavailable")
+run.boss = nil; run.enemies.n = 0; run.projectiles.n = 0; run.phase = "building"
+
 -- ------------------------------------------------------------- scene layer
 -- Stub input + the global State/SwitchScene the scenes use, then drive each
 -- scene's update/draw once. This is the layer the upgrade-draft crash hid in
@@ -500,8 +459,9 @@ local upgrade_s  = require("scenes.upgrade")
 local gameover_s = require("scenes.gameover")
 
 menu_s.update(1 / 60); menu_s.draw(1 / 60)
-gfx_calls = {}
+harness.reset_gfx()
 menu_s.draw(1 / 60)
+local gfx_calls = harness.gfx_calls()
 for i = 1, #gfx_calls do
   local call = gfx_calls[i]
   if call.fn == "text" then
@@ -553,6 +513,8 @@ game_s.update(1 / 60)
 clicks.left = false
 check(#State.run.towers >= 1, "game scene placed a tower via click")
 game_s.update(1 / 60); game_s.draw(1 / 60)
+-- exercise the combat-phase HUD (the ORBITAL action button render path)
+State.run.phase = "combat"; game_s.draw(1 / 60); State.run.phase = "building"
 
 State.pending = nil
 upgrade_s.init()

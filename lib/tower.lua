@@ -15,7 +15,7 @@ local M = {}
 M.DEFS = DEFS
 
 -- Stable display order for the build palette.
-M.ORDER = { "pellet", "splash", "frost", "rail" }
+M.ORDER = { "pellet", "splash", "frost", "rail", "flak" }
 
 -- Can this tower hit the given enemy, given air/ground targeting?
 local function can_hit(def, e)

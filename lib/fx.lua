@@ -92,6 +92,9 @@ function fx.hit()        effect.screen_shake(0.06, 1.5) end
 function fx.life_lost()  effect.flash(0.16, gfx.COLOR_RED); effect.screen_shake(0.22, 4); sfx.play("life") end
 function fx.boss_hit()   effect.screen_shake(0.14, 2.5) end
 function fx.boss_death() effect.hitstop(0.18); effect.screen_shake(0.5, 6); effect.flash(0.22, gfx.COLOR_WHITE); sfx.play("boss_die") end
+-- Orbital strike: a heavy white flash + shake. The per-enemy death bursts come
+-- for free via enemy.kill, so this is just the screen-wide wallop.
+function fx.orbital()     effect.hitstop(0.08); effect.flash(0.3, gfx.COLOR_WHITE); effect.screen_shake(0.45, 6); sfx.play("orbital") end
 
 -- Sound hooks. sfx.play no-ops on unknown names, so these are safe even before
 -- the .wav assets exist. shoot is throttled (towers restart the clip otherwise).

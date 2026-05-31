@@ -152,6 +152,20 @@ def sfx_over():
     return render(dur, fn, 0.28)
 
 
+def sfx_orbital():
+    """Orbital-strike nuke: a screaming descending whistle into a noisy boom."""
+    dur = 0.6
+
+    def fn(t):
+        whistle = sine(2200 - 3200 * t, t) * 0.4 * max(0.0, 1.0 - t / 0.3)   # incoming
+        impact = (saw(150 - 180 * t, t) * 0.5
+                  + sine(55 + 25 * math.sin(t * 12), t) * 0.5)               # low boom
+        noise = random.uniform(-1, 1) * max(0.0, 1.0 - t / dur) * 0.55       # blast wash
+        return whistle + impact + noise
+
+    return render(dur, lambda t: fn(t) * env(t, dur, 0.004, 0.28), 0.34)
+
+
 # ---------------------------------------------------------------------- music
 def music_theme():
     """~12.8s seamless minor-key arpeggio loop with a soft drone, low volume."""
@@ -180,6 +194,7 @@ SFX = {
     "shoot": sfx_shoot, "hit": sfx_hit, "kill": sfx_kill, "place": sfx_place,
     "sell": sfx_sell, "wave": sfx_wave, "boss": sfx_boss, "boss_die": sfx_boss_die,
     "life": sfx_life, "upgrade": sfx_upgrade, "click": sfx_click, "over": sfx_over,
+    "orbital": sfx_orbital,
 }
 
 if __name__ == "__main__":

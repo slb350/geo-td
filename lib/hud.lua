@@ -2,11 +2,12 @@
 -- buttons, and a contextual hint line. Owns its own button rects and exposes
 -- button_at() for click hit-testing; the game scene owns selection state (ui).
 
-local C     = require("lib.const")
-local pal   = require("lib.palette")
-local tower = require("lib.tower")
-local shape = require("lib.shape")
-local ui    = require("lib.ui")
+local C       = require("lib.const")
+local pal     = require("lib.palette")
+local tower   = require("lib.tower")
+local shape   = require("lib.shape")
+local ui      = require("lib.ui")
+local run_lib = require("lib.run")
 
 local M = {}
 
@@ -14,17 +15,23 @@ local PAD = 6
 local BX = C.HUD_X + PAD
 local BW = C.HUD_W - PAD * 2
 
--- Tower palette buttons (vertical list).
+-- Tower palette buttons (vertical list). Sized to fit the full palette in the
+-- band above the action buttons (5 towers including the Rail/Flak unlocks).
 local btns = {}
 do
   local y = 80
   for i = 1, #tower.ORDER do
-    btns[i] = { kind = tower.ORDER[i], x = BX, y = y, w = BW, h = 24 }
-    y = y + 28
+    btns[i] = { kind = tower.ORDER[i], x = BX, y = y, w = BW, h = 20 }
+    y = y + 22
   end
 end
-local start_btn = { x = BX, y = C.GAME_H - 46, w = BW, h = 18 }
-local sell_btn  = { x = BX, y = C.GAME_H - 24, w = BW, h = 18 }
+-- The action button doubles as START WAVE (building) and ORBITAL STRIKE (combat).
+local action_btn = { x = BX, y = C.GAME_H - 46, w = BW, h = 18 }
+local sell_btn   = { x = BX, y = C.GAME_H - 24, w = BW, h = 18 }
+-- Tooltip is capped to the lines that fit between the palette and the buttons.
+local MAX_HINT_LINES = 2
+-- Orbital action-button label (cost is constant, so build it once).
+local ORBITAL_LABEL = "ORBITAL $" .. C.ORBITAL_COST
 
 -- Greedy word-wrap to a pixel width, using the real font metrics.
 local function wrap(text, max_w)
@@ -53,7 +60,8 @@ end
 
 -- Returns an action for a sidebar click, or nil. Actions:
 --   { type = "select", kind = <towerkind> }
---   { type = "start" }
+--   { type = "start" }    -- the action button while building
+--   { type = "orbital" }  -- the same button while in combat
 --   { type = "sell" }
 function M.button_at(run, mx, my)
   for i = 1, #btns do
@@ -61,7 +69,9 @@ function M.button_at(run, mx, my)
       return { type = "select", kind = btns[i].kind }
     end
   end
-  if ui.in_rect(mx, my, start_btn) then return { type = "start" } end
+  if ui.in_rect(mx, my, action_btn) then
+    return { type = run.phase == "building" and "start" or "orbital" }
+  end
   if ui.in_rect(mx, my, sell_btn) then return { type = "sell" } end
   return nil
 end
@@ -118,18 +128,22 @@ function M.draw(run, meta, ui)
   end
   local hy = btns[#btns].y + btns[#btns].h + 6
   local lines = wrap_cached(hint, BW)
-  for i = 1, #lines do
+  for i = 1, math.min(#lines, MAX_HINT_LINES) do
     gfx.text(lines[i], BX, hy + (i - 1) * 11, pal.TEXT_DIM)
   end
 
-  -- start-wave button (only while building)
+  -- action button: START WAVE while building, ORBITAL STRIKE while in combat.
   if run.phase == "building" then
-    gfx.rect_fill(start_btn.x, start_btn.y, start_btn.w, start_btn.h, pal.GOOD)
+    gfx.rect_fill(action_btn.x, action_btn.y, action_btn.w, action_btn.h, pal.GOOD)
     local label = "START WAVE " .. (run.wave_index + 1)
-    gfx.text(label, start_btn.x + 4, start_btn.y + 5, gfx.COLOR_BLACK)
+    gfx.text(label, action_btn.x + 4, action_btn.y + 5, gfx.COLOR_BLACK)
   else
-    gfx.rect_fill(start_btn.x, start_btn.y, start_btn.w, start_btn.h, pal.HUD_PANEL)
-    gfx.text("IN PROGRESS", start_btn.x + 4, start_btn.y + 5, pal.TEXT_DIM)
+    -- armed (orange) exactly when an orbital strike would fire right now
+    local armed = run_lib.can_orbital(run)
+    local bg = armed and gfx.COLOR_ORANGE or pal.HUD_PANEL
+    gfx.rect_fill(action_btn.x, action_btn.y, action_btn.w, action_btn.h, bg)
+    gfx.text(ORBITAL_LABEL, action_btn.x + 4, action_btn.y + 5,
+      armed and gfx.COLOR_BLACK or pal.TEXT_DIM)
   end
 
   -- sell toggle
