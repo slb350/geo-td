@@ -6,22 +6,27 @@ local C    = require("lib.const")
 local path = require("lib.path")
 local rng  = require("lib.rng")
 local fx   = require("lib.fx")
-
-local PATHS = usagi.read_json("paths.json")
+local maps = require("lib.maps")
 
 local M = {}
 
-function M.new(meta, seed)
+function M.new(meta, seed, path_name)
   local money, lives = C.START_MONEY, C.START_LIVES
   if meta.unlocks.start_bonus then
     money = money + 50
     lives = lives + 5
   end
   fx.clear()
+  -- an explicit map (map-select / tests) if it names a real layout, else a
+  -- seed-derived fallback so any run still gets a valid map.
+  local key = (path_name and maps.exists(path_name)) and path_name or maps.pick(seed)
+  local layout = maps.get(key)
   return {
     seed = seed,
     rng = rng.new(seed),
-    path = path.build(PATHS.default.nodes),
+    path = path.build(layout.nodes),
+    path_name = key,
+    map_name = layout.name,
     wave_index = 0,
     phase = "building",  -- building | combat | upgrade
     money = money,

@@ -5,6 +5,7 @@
 -- the next frame. See docs/DESIGN.md for the architecture.
 
 local menu     = require("scenes.menu")
+local select   = require("scenes.select")
 local game     = require("scenes.game")
 local upgrade  = require("scenes.upgrade")
 local gameover = require("scenes.gameover")
@@ -12,6 +13,7 @@ local meta     = require("lib.meta")
 
 local SCENES = {
   menu = menu,
+  select = select,
   game = game,
   upgrade = upgrade,
   gameover = gameover,
@@ -41,9 +43,8 @@ function _init()
     pending = nil,
     crt = true,
   }
-  -- Ambient loop (low volume; no-ops if music/theme.* is absent). Mutable via
-  -- the pause-menu music slider.
-  music.play_ex("theme", 0.35, 1, 0, true)
+  -- Background music is scene-driven (menu / combat / boss) via lib/audio,
+  -- which each scene calls from its init/update -- nothing to start here.
   -- CRT / neon-glow post-process, with a pause-menu toggle.
   gfx.shader_set("crt")
   usagi.menu_item("CRT filter", function()

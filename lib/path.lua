@@ -3,6 +3,8 @@
 -- targeting). Also provides the point-to-path distance used to validate
 -- tower placement, and a draw routine.
 
+local shape = require("lib.shape")
+
 local M = {}
 
 -- Build a path object from a list of {x, y} nodes.
@@ -57,43 +59,75 @@ function M.dist_to(path, px, py)
   return math.sqrt(best)
 end
 
--- Render the route (bordered lane + animated flow), spawn portal, and a
--- pulsing core. `elapsed` drives the animation; pass usagi.elapsed.
+local flr = math.floor
+
+-- Render the route as a neon tube (bloom-friendly glow edge, dark body, bright
+-- centre-line) with travelling energy packets, pulsing corner nodes, and
+-- animated spawn / core markers. `elapsed` drives the animation; pass usagi.elapsed.
 function M.draw(path, pal, width, elapsed)
   elapsed = elapsed or 0
-  local segs = path.segs
-  -- neon edge under the lane
-  for i = 1, #segs do
+  local segs, nodes = path.segs, path.nodes
+  local nseg = #segs
+
+  -- lane in three passes: glow edge -> dark body -> bright centre tube
+  for i = 1, nseg do
     local s = segs[i]
-    gfx.line_ex(s.ax, s.ay, s.bx, s.by, width + 3, pal.PATH_EDGE)
+    gfx.line_ex(s.ax, s.ay, s.bx, s.by, width + 4, pal.PATH_EDGE)
   end
-  -- main lane
-  for i = 1, #segs do
+  for i = 1, nseg do
     local s = segs[i]
     gfx.line_ex(s.ax, s.ay, s.bx, s.by, width, pal.PATH)
   end
-  -- soft node joints so corners don't notch
-  for i = 1, #path.nodes do
-    local n = path.nodes[i]
+  -- soft joints so corners don't notch the body
+  for i = 1, #nodes do
+    local n = nodes[i]
     gfx.circ_fill(n[1], n[2], width * 0.5, pal.PATH)
   end
-  -- flow dots drifting toward the core (shows travel direction)
+  local tube = math.max(2, width * 0.28)
+  for i = 1, nseg do
+    local s = segs[i]
+    gfx.line_ex(s.ax, s.ay, s.bx, s.by, tube, pal.PATH_CORE)
+  end
+
   local total = path.total_len
-  local spacing = 28
+
+  -- faint flow dots: a steady drift that reads as "this way to the core"
+  local spacing = 26
   local d = (elapsed * 34) % spacing
   while d < total do
     local x, y = M.point_at(path, d)
-    gfx.circ_fill(x, y, 1.5, pal.TEXT_DIM)
+    gfx.px(flr(x), flr(y), pal.TEXT_DIM)
     d = d + spacing
   end
-  -- spawn portal (pulsing) and core (pulsing concentric rings)
-  local first, last = path.nodes[1], path.nodes[#path.nodes]
-  gfx.circ(first[1], first[2], 5 + math.sin(elapsed * 5) * 1.2, pal.SPAWN)
-  gfx.circ(first[1], first[2], 8, gfx.COLOR_DARK_PURPLE)
-  gfx.circ_fill(last[1], last[2], 6, pal.CORE)
-  local pr = 9 + math.sin(elapsed * 4) * 2
+
+  -- a few bright energy packets sliding the full route (CRT bloom catches them)
+  for p = 0, 2 do
+    local pd = (elapsed * 80 + p * total / 3) % total
+    local x, y = M.point_at(path, pd)
+    gfx.circ_fill(x, y, 2, pal.PULSE)
+    gfx.px(flr(x), flr(y), gfx.COLOR_WHITE)
+  end
+
+  -- pulsing rings on the interior corners
+  for i = 2, #nodes - 1 do
+    local n = nodes[i]
+    gfx.circ(n[1], n[2], 2.5 + math.sin(elapsed * 4 + i) * 1.2, pal.PATH_EDGE)
+  end
+
+  -- spawn portal: pulsing rings + a slow rotating tri marker
+  local first, last = nodes[1], nodes[#nodes]
+  local sp = 5 + math.sin(elapsed * 5) * 1.4
+  gfx.circ_fill(first[1], first[2], 3, pal.SPAWN)
+  gfx.circ(first[1], first[2], sp, pal.SPAWN)
+  gfx.circ(first[1], first[2], sp + 3, gfx.COLOR_ORANGE)
+  shape.poly_line(first[1], first[2], 9, 3, elapsed * 1.5, gfx.COLOR_ORANGE)
+
+  -- core: pulsing concentric rings + a counter-rotating square marker
+  gfx.circ_fill(last[1], last[2], 3, pal.CORE)
+  local pr = 7 + math.sin(elapsed * 4) * 2
   gfx.circ(last[1], last[2], pr, pal.CORE)
   gfx.circ(last[1], last[2], pr + 4, gfx.COLOR_DARK_GREEN)
+  shape.poly_line(last[1], last[2], pr + 7, 4, -elapsed * 1.2, gfx.COLOR_DARK_GREEN)
 end
 
 return M

@@ -117,7 +117,9 @@ package.path = "./?.lua;" .. package.path
 -- ---------------------------------------------------------------- the modules
 local meta    = require("lib.meta")
 local C       = require("lib.const")
+local maps    = require("lib.maps")
 local run_mod = require("lib.run")
+local path    = require("lib.path")
 local wave    = require("lib.wave")
 local enemy   = require("lib.enemy")
 local tower   = require("lib.tower")
@@ -162,11 +164,67 @@ check(meta.finish_run(m, 7) == 7 * 2, "finish_run award = wave*2")
 check(m.best_wave == 7, "best_wave recorded")
 
 -- ----------------------------------------------------------------- run setup
-local run = run_mod.new(m, 4242)
+-- Pin the geometry to Serpentine: the placement coords and boss fixtures below
+-- are tuned to that route. Layout variety is exercised separately just below.
+local run = run_mod.new(m, 4242, "serpentine")
 run.money = 99999
 run.lives = 99999 -- keep alive so every wave runs regardless of balance
+check(run.path_name == "serpentine", "explicit layout pin honored")
 check(run.path.total_len > 0, "path has length")
 check(run.enemies.n == 0 and run.projectiles.n == 0, "empty pools")
+
+-- ------------------------------------------------------------- path layouts
+-- Every shipped layout must be in-bounds, long enough to play, and leave room
+-- to build; seed-derived selection must be deterministic and pick a real map.
+check(#maps.ORDER >= 2, "multiple path layouts available")
+local function in_field(x, y)
+  return x >= 0 and x < C.FIELD_W and y >= 0 and y < C.FIELD_H
+end
+for _, name in ipairs(maps.ORDER) do
+  local layout = maps.get(name)
+  check(layout ~= nil, "layout '" .. name .. "' present")
+  local r = run_mod.new(m, 1, name)
+  check(r.path_name == name and r.map_name == layout.name, name .. " run carries its name")
+  check(r.path.total_len > 100, name .. " has a substantial route")
+  check(#layout.nodes >= 2, name .. " has >= 2 waypoints")
+  local in_bounds = true
+  for _, nd in ipairs(layout.nodes) do
+    if not in_field(nd[1], nd[2]) then in_bounds = false end
+  end
+  check(in_bounds, name .. " stays in field bounds")
+  local buildable = false
+  for gx = 20, C.FIELD_W - 20, 16 do
+    for gy = 20, C.FIELD_H - 20, 16 do
+      if path.dist_to(r.path, gx, gy) > C.PLACE_MARGIN then buildable = true; break end
+    end
+    if buildable then break end
+  end
+  check(buildable, name .. " leaves room to build")
+end
+local function seed_map(s) return run_mod.new(m, s).path_name end
+check(seed_map(20260530) == seed_map(20260530), "seed-derived map is deterministic")
+local known = false
+for _, name in ipairs(maps.ORDER) do
+  if seed_map(7) == name then known = true end
+end
+check(known, "seed-derived map is one of the known layouts")
+
+-- ---------------------------------------------------------- map progression
+-- Each map unlocks the next harder one (maps.ORDER) by reaching UNLOCK_WAVE.
+local pm = meta.default()
+local second = maps.ORDER[2]
+check(meta.is_map_unlocked(pm, maps.first), "first (easiest) map unlocked by default")
+check(not meta.is_map_unlocked(pm, second), "next map locked initially")
+meta.finish_run(pm, maps.UNLOCK_WAVE - 1, 0, maps.first)
+check(not meta.is_map_unlocked(pm, second), "a sub-threshold finish does not unlock the next map")
+local _, unlocked = meta.finish_run(pm, maps.UNLOCK_WAVE, 0, maps.first)
+check(meta.is_map_unlocked(pm, second), "reaching the unlock wave unlocks the next map")
+check(unlocked == second, "finish_run reports the newly unlocked map")
+check(pm.map_best[maps.first] == maps.UNLOCK_WAVE, "per-map best wave recorded")
+local _, again = meta.finish_run(pm, maps.UNLOCK_WAVE, 0, maps.first)
+check(again == nil, "re-clearing an already-unlocked map reports no new unlock")
+meta.save(pm)
+check(meta.load().map_unlocked[second] == true, "unlocked maps survive save/load")
 
 -- ----------------------------------------------------------------- placement
 local function place(kind, x, y)
@@ -248,6 +306,41 @@ for i = 1, run.projectiles.n do
   if p.target == fly and p.splash > 0 then splash_hit_fly = true end
 end
 check(not splash_hit_fly, "a ground-only tower (splash) ignores the flyer")
+
+-- rail target priority: a frail flyer must outrank a higher-HP ground enemy
+-- (with "strongest" alone the flyer is ignored), and the boss outranks both.
+run.towers = {}
+run.enemies.n = 0
+run.projectiles.n = 0
+run.money = 9999
+tower.place(run, 290, 150, "rail")
+local beefy = enemy.spawn(run, "ward", 50, 1, 10)
+beefy.x, beefy.y, beefy.hp = 300, 150, 9999     -- highest HP in range
+local frail_fly = enemy.spawn(run, "wisp", 1, 1, 5)
+frail_fly.x, frail_fly.y = 280, 150
+tower.update(run, 1.0)
+local rail_hit_fly = false
+for i = 1, run.projectiles.n do
+  if run.projectiles[i].target == frail_fly then rail_hit_fly = true end
+end
+check(rail_hit_fly, "rail prioritises a flyer over a higher-HP ground enemy")
+
+run.enemies.n = 0
+run.projectiles.n = 0
+run.towers[1].cooldown = 0                       -- rail fires slowly; let it shoot again
+local fly2 = enemy.spawn(run, "wisp", 1, 1, 5)
+fly2.x, fly2.y = 280, 150
+wave.boss_scale(run, 5)
+boss.spawn(run, "prism", run.hp_scale)
+run.boss.x, run.boss.y = 300, 150
+tower.update(run, 1.0)
+local rail_hit_boss = false
+for i = 1, run.projectiles.n do
+  if run.projectiles[i].target == run.boss then rail_hit_boss = true end
+end
+check(rail_hit_boss, "rail prioritises the boss over a flyer")
+run.boss = nil
+
 -- restore a defensive set (incl. anti-air Rail) for the wave simulation
 run.towers = {}
 run.enemies.n = 0
@@ -289,7 +382,7 @@ local function place_layout(r, layout)
 end
 
 local function sim_boss_fixture(n, kind, layout, mods)
-  local r = run_mod.new(m, 1777 + n)
+  local r = run_mod.new(m, 1777 + n, "serpentine")
   r.lives = 99999
   for k, v in pairs(mods) do r.mods[k] = v end -- override mods for this fixture
   place_layout(r, layout)
@@ -401,6 +494,7 @@ State = {
 function SwitchScene(k) State.pending = k end
 
 local menu_s     = require("scenes.menu")
+local select_s   = require("scenes.select")
 local game_s     = require("scenes.game")
 local upgrade_s  = require("scenes.upgrade")
 local gameover_s = require("scenes.gameover")
@@ -433,7 +527,25 @@ for i = 1, #gfx_calls do
   end
 end
 
-State.run = run_mod.new(State.meta, 9); State.run.money = 9999
+-- map-select scene: a locked tile is inert; an unlocked tile launches its map.
+State.run = nil
+State.pending = nil
+select_s.init()
+select_s.draw(1 / 60)
+local TW, TG, TILE_CY = 84, 6, 116
+local sx0 = (C.GAME_W - (#maps.ORDER * TW + (#maps.ORDER - 1) * TG)) * 0.5
+local function tile_cx(i) return sx0 + (i - 1) * (TW + TG) + TW * 0.5 end
+clicks.left, clicks.mx, clicks.my = true, tile_cx(#maps.ORDER), TILE_CY  -- hardest = locked
+select_s.update(1 / 60)
+check(State.run == nil and State.pending == nil, "map-select ignores a locked map")
+clicks.mx, clicks.my = tile_cx(1), TILE_CY                               -- easiest = unlocked
+select_s.update(1 / 60)
+clicks.left = false
+check(State.run ~= nil and State.run.path_name == maps.ORDER[1], "map-select launches the chosen map")
+check(State.pending == "game", "map-select switches to the game scene")
+State.pending = nil
+
+State.run = run_mod.new(State.meta, 9, "serpentine"); State.run.money = 9999
 game_s.init()
 State.ui.selected = "pellet"
 clicks.left, clicks.mx, clicks.my = true, 200, 150

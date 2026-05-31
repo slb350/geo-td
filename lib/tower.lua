@@ -99,37 +99,66 @@ function M.at(run, x, y)
   return nil
 end
 
+-- Priority tier for a candidate, from the tower's optional `priority` list
+-- (e.g. {"boss","air"}). Earlier entries rank higher; 0 = no priority match.
+-- A higher tier always beats a lower one regardless of the `targeting` score.
+local function target_tier(def, is_boss, is_fly)
+  local pr = def.priority
+  if not pr then return 0 end
+  for i = 1, #pr do
+    local c = pr[i]
+    if (c == "boss" and is_boss) or (c == "air" and is_fly) then
+      return #pr - i + 1
+    end
+  end
+  return 0
+end
+
+-- Tie-break score within a tier, per the tower's `targeting` policy. Higher
+-- wins: "closest" = nearest, "strongest" = most HP, default ("first") = furthest
+-- along the path (closest to the core).
+local function score(policy, dist2, hp, progress)
+  if policy == "closest" then return -dist2
+  elseif policy == "strongest" then return hp end
+  return progress
+end
+
+-- True when (tier, sc) outranks the current best: higher tier always wins, an
+-- equal tier breaks on score; a nil best (best_tier == nil) loses to anything.
+local function better(tier, sc, best_tier, best_score)
+  return best_tier == nil or tier > best_tier or (tier == best_tier and sc > best_score)
+end
+
 local function acquire(run, t, range)
   local r2 = range * range
   local list = run.enemies
-  local best, best_key
-  local policy = t.def.targeting
+  local def = t.def
+  local policy = def.targeting
+  local best, best_tier, best_score
   for i = 1, list.n do
     local e = list[i]
-    if not e.dead and can_hit(t.def, e) then
+    if not e.dead and can_hit(def, e) then
       local dx, dy = e.x - t.x, e.y - t.y
-      if dx * dx + dy * dy <= r2 then
-        local key
-        if policy == "closest" then
-          key = -(dx * dx + dy * dy)
-        elseif policy == "strongest" then
-          key = e.hp
-        else
-          key = e.d
+      local d2 = dx * dx + dy * dy
+      if d2 <= r2 then
+        local tier = target_tier(def, false, e.fly)
+        local sc = score(policy, d2, e.hp, e.d)
+        if better(tier, sc, best_tier, best_score) then
+          best, best_tier, best_score = e, tier, sc
         end
-        if not best or key > best_key then best, best_key = e, key end
       end
     end
   end
   local b = run.boss
-  if b and not b.dead and can_hit(t.def, b) then
+  if b and not b.dead and can_hit(def, b) then
     local dx, dy = b.x - t.x, b.y - t.y
-    if dx * dx + dy * dy <= r2 then
-      local key
-      if policy == "closest" then key = -(dx * dx + dy * dy)
-      elseif policy == "strongest" then key = b.hp
-      else key = run.path.total_len end
-      if not best or key > best_key then best, best_key = b, key end
+    local d2 = dx * dx + dy * dy
+    if d2 <= r2 then
+      local tier = target_tier(def, true, b.fly)
+      local sc = score(policy, d2, b.hp, run.path.total_len)
+      if better(tier, sc, best_tier, best_score) then
+        best, best_tier, best_score = b, tier, sc
+      end
     end
   end
   return best

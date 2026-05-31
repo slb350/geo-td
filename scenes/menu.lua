@@ -1,14 +1,18 @@
 -- Main menu: start a run, and spend meta-currency ("bank") on permanent
 -- unlocks. Reads/writes the global State (State.meta, State.run, State.ui).
 
-local C    = require("lib.const")
-local pal  = require("lib.palette")
-local run  = require("lib.run")
-local meta = require("lib.meta")
-local fx   = require("lib.fx")
-local ui   = require("lib.ui")
+local C     = require("lib.const")
+local pal   = require("lib.palette")
+local meta  = require("lib.meta")
+local fx    = require("lib.fx")
+local ui    = require("lib.ui")
+local audio = require("lib.audio")
 
 local M = {}
+
+function M.init()
+  audio.set("menu")
+end
 
 local start_btn = { x = 190, y = 104, w = 100, h = 24 }
 
@@ -37,26 +41,21 @@ local function layout_rows()
   return row_text_h
 end
 
-local function start_run()
-  local t = os.time and os.time() or 0
-  local seed = t + State.meta.total_runs * 7919 + math.floor(usagi.elapsed * 1000)
-  State.run = run.new(State.meta, seed)
-  State.ui.selected = "pellet"
-  State.ui.sell_mode = false
+local function open_select()
   fx.click_sfx()
-  SwitchScene("game")
+  SwitchScene("select")
 end
 
 function M.update(dt)
   if input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER)
     or input.pressed(input.BTN1) then
-    start_run()
+    open_select()
     return
   end
   if input.mouse_pressed(input.MOUSE_LEFT) then
     local mx, my = input.mouse()
     if ui.in_rect(mx, my, start_btn) then
-      start_run()
+      open_select()
       return
     end
     layout_rows()
@@ -79,7 +78,7 @@ function M.draw(dt)
 
   -- start button
   gfx.rect_fill(start_btn.x, start_btn.y, start_btn.w, start_btn.h, pal.GOOD)
-  ui.center_text("START RUN", start_btn.y + 8, gfx.COLOR_BLACK, 1)
+  ui.center_text("SELECT MAP", start_btn.y + 8, gfx.COLOR_BLACK, 1)
 
   ui.center_text("UNLOCKS", 148, pal.TEXT, 1)
   for i = 1, #meta.SHOP do
@@ -99,7 +98,7 @@ function M.draw(dt)
     gfx.text(it.desc, r.x + SHOP_TEXT_X_PAD, desc_y, pal.TEXT_DIM)
   end
 
-  ui.center_text("click START or press Z / Space", C.GAME_H - text_h, pal.TEXT_DIM, 1)
+  ui.center_text("click SELECT MAP or press Z / Space", C.GAME_H - text_h, pal.TEXT_DIM, 1)
 end
 
 return M

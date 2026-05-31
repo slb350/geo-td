@@ -13,6 +13,7 @@ local boss  = require("lib.boss")
 local fx    = require("lib.fx")
 local hud   = require("lib.hud")
 local field = require("lib.field")
+local audio = require("lib.audio")
 
 local M = {}
 
@@ -20,6 +21,7 @@ local function start_wave(run)
   local n = run.wave_index + 1
   run.phase = "combat"
   fx.wave_sfx()
+  audio.set(wave.is_boss(n) and "boss" or "combat")
   -- start-of-wave economy from upgrades
   local mods = run.mods
   if mods.interest > 0 then
@@ -41,6 +43,9 @@ function M.init()
   -- Run is created by the menu; just reset transient UI on (re)entry.
   if not State.run then SwitchScene("menu"); return end
   State.ui.sell_mode = false
+  -- Combat bed for the field/build/upgrade loop; boss waves swap to the boss
+  -- track in start_wave. (No-op if it is already the current track.)
+  audio.set("combat")
 end
 
 local function handle_field_click(run, ui, meta, mx, my)
@@ -161,7 +166,7 @@ function M.draw(dt)
   -- field banner
   local banner
   if run.phase == "building" then
-    banner = "BUILD  -  place towers, then START"
+    banner = "BUILD  -  " .. run.map_name .. "  -  place towers, then START"
   elseif wave.is_boss(run.wave_index) then
     banner = "BOSS  -  wave " .. run.wave_index
   else
