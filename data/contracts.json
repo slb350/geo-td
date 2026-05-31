@@ -1,0 +1,6 @@
+{
+  "enrage":   { "name": "Enrage",   "shape": "tri",    "min_wave": 3, "risk": { "hp_mult": 1.25 },   "reward": { "charge": 18 },          "desc": "+25% enemy HP -- pays charge." },
+  "swarm":    { "name": "Swarm",    "shape": "circ",   "min_wave": 3, "risk": { "count_mult": 1.3 }, "reward": { "money": 60 },           "desc": "+30% enemies -- pays money." },
+  "blackout": { "name": "Blackout", "shape": "hex",    "min_wave": 6, "risk": { "disable": 8 },      "reward": { "bank_shard": 1 },       "desc": "A random tower offline 8s -- pays a bank shard." },
+  "nosell":   { "name": "No Sell",  "shape": "square", "min_wave": 3, "risk": { "no_sell": true },   "reward": { "module_discount": 30 }, "desc": "No selling this wave -- discounts a module." }
+}

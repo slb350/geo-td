@@ -404,8 +404,8 @@ function M.run(check, near)
   -- (the lib-only tests above never touched scenes/).
   local clicks = { left = false, mx = 0, my = 0 }
   input = {
-    KEY_1 = 1, KEY_2 = 2, KEY_3 = 3, KEY_4 = 7, KEY_5 = 8, KEY_S = 4, KEY_O = 9,
-    KEY_F = 10, KEY_SPACE = 5, KEY_ENTER = 6,
+    KEY_1 = 1, KEY_2 = 2, KEY_3 = 3, KEY_4 = 7, KEY_5 = 8, KEY_6 = 11, KEY_S = 4,
+    KEY_O = 9, KEY_F = 10, KEY_D = 12, KEY_SPACE = 5, KEY_ENTER = 6,
     MOUSE_LEFT = 1, MOUSE_RIGHT = 2, MOUSE_MIDDLE = 3, BTN1 = 1,
     _keys = {},      -- settable simulated key-press state (tests toggle entries)
     _clicks = clicks, -- shared click state, so later suites can drive HUD clicks

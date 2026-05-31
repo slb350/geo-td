@@ -189,15 +189,10 @@ function M.draft(run)
       pool[#pool + 1] = make_card(run, id, nodes, false)
     end
   end
-  -- Deterministic Fisher-Yates shuffle, then take up to two. A DERIVED rng (from
-  -- the run + current wave) keeps the draft deterministic per (seed, map, wave)
-  -- without perturbing later wave generation, and shuffles fairly even on a
-  -- freshly seeded run (see rng.derive).
-  local r = rng.derive(run.seed, run.wave_index)
-  for i = #pool, 2, -1 do
-    local j = r:int(1, i)
-    pool[i], pool[j] = pool[j], pool[i]
-  end
+  -- Shuffle then take up to two. A DERIVED rng (from the run + current wave) keeps
+  -- the draft deterministic per (seed, map, wave) without perturbing later wave
+  -- generation, and shuffles fairly even on a freshly seeded run (see rng.derive).
+  rng.derive(run.seed, run.wave_index):shuffle(pool)
   local cards = {}
   for i = 1, math.min(2, #pool) do cards[#cards + 1] = pool[i] end
   cards[#cards + 1] = make_card(run, "null", base, true)   -- Hold (keep current)

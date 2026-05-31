@@ -9,6 +9,7 @@ local select   = require("scenes.select")
 local game     = require("scenes.game")
 local upgrade  = require("scenes.upgrade")
 local route    = require("scenes.route")
+local contract = require("scenes.contract")
 local gameover = require("scenes.gameover")
 local meta     = require("lib.meta")
 
@@ -18,6 +19,7 @@ local SCENES = {
   game = game,
   upgrade = upgrade,
   route = route,
+  contract = contract,
   gameover = gameover,
 }
 

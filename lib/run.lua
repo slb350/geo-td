@@ -11,6 +11,8 @@ local enemy = require("lib.enemy")
 local modes = require("lib.modes")
 local wave  = require("lib.wave")
 local boss  = require("lib.boss")
+local resource = require("lib.resource")
+local contracts = require("lib.contracts")
 
 local M = {}
 
@@ -27,7 +29,7 @@ function M.new(meta, seed, path_name, mode_id)
   -- seed-derived fallback so any run still gets a valid map.
   local key = (path_name and maps.exists(path_name)) and path_name or maps.pick(seed)
   local layout = maps.get(key)
-  return {
+  local run = {
     seed = seed,
     rng = rng.new(seed),
     path = path.build(layout.nodes),
@@ -58,8 +60,20 @@ function M.new(meta, seed, path_name, mode_id)
     spawn_interval = C.SPAWN_INTERVAL,
     powerups = {},
     -- One-shot route-draft risks (V2-M2), consumed by the next wave.start and
-    -- then reset. resources is forward-compat for the M3 resource nodes.
+    -- then reset.
     route_mods = { next_budget_mult = 1, next_flyer_bias = false, resources = {} },
+    -- Resource + contract economy (V2-M3). charge is the second in-run currency
+    -- (Drills fill it, Discharge spends it). resource_nodes are seeded below.
+    -- active_contract is the signed wave contract (or nil); its risk hits the next
+    -- wave and its reward lands on wave clear. bank_shards convert to meta at
+    -- run end; module_discount is a one-shot socket discount; no_sell gates selling.
+    charge = 0,
+    resource_nodes = {},
+    active_contract = nil,
+    contract_history = {},
+    bank_shards = 0,
+    module_discount = 0,
+    no_sell = false,
     mods = {
       dmg_mult = 1, rate_mult = 1, range_mult = 1, bounty_mult = 1, cost_mult = 1,
       proj_mult = 1, splash_mult = 1, crit_chance = 0, interest = 0, life_per_wave = 0,
@@ -68,6 +82,8 @@ function M.new(meta, seed, path_name, mode_id)
       pierce = 0, ricochet = 0, brittle = 0, ring = 0, flyer_burst = 0,
     },
   }
+  resource.spawn_nodes(run)
+  return run
 end
 
 -- Advance the run into the next wave's combat: apply start-of-wave economy
@@ -93,6 +109,7 @@ function M.begin_wave(run)
   else
     run.boss = nil
     wave.start(run, n)
+    contracts.arm(run)        -- blackout / no-sell, once the wave + towers are set
   end
   return n
 end
@@ -167,6 +184,29 @@ function M.orbital_strike(run)
   for i = 1, list.n do
     enemy.vaporize(list[i])
   end
+  return true
+end
+
+-- Discharge availability: mid-combat, with enough charge banked, and something on
+-- the field to hit. The charge economy's active sink (separate from money/orbital).
+function M.can_discharge(run)
+  return run.phase == "combat" and run.charge >= C.DISCHARGE_MIN
+    and (run.enemies.n > 0 or (run.boss and not run.boss.dead))
+end
+
+-- Spend ALL banked charge for a field-wide damage burst: every enemy and the boss
+-- take charge * DISCHARGE_FACTOR. Unlike the orbital, this is real damage (kills
+-- pay bounty + split), so a bigger bank hits harder. Returns true if it fired.
+function M.discharge(run)
+  if not M.can_discharge(run) then return false end
+  local dmg = run.charge * C.DISCHARGE_FACTOR
+  run.charge = 0
+  local list = run.enemies
+  local n = list.n                       -- snapshot: a kill may split-spawn
+  for i = 1, n do
+    if not list[i].dead then enemy.damage(run, list[i], dmg) end
+  end
+  if run.boss and not run.boss.dead then boss.hurt(run, dmg) end
   return true
 end
 

@@ -10,6 +10,7 @@ local fx    = require("lib.fx")
 local shape = require("lib.shape")
 local modifier = require("lib.modifier")
 local target = require("lib.target")
+local resource = require("lib.resource")
 
 local DEFS = usagi.read_json("towers.json")
 
@@ -17,7 +18,7 @@ local M = {}
 M.DEFS = DEFS
 
 -- Stable display order for the build palette.
-M.ORDER = { "pellet", "splash", "frost", "rail", "flak" }
+M.ORDER = { "pellet", "splash", "frost", "rail", "flak", "drill" }
 
 -- Per-tower targeting overrides (M1), cycled from the inspect panel. false =
 -- "auto" (the tower's data-driven priority + policy). "first"/"closest"/
@@ -96,6 +97,9 @@ function M.can_place(run, x, y, kind)
   if run.money < M.cost(run, kind) then
     return false, "not enough money"
   end
+  if DEFS[kind].role == "support" and not resource.near_node(run, x, y) then
+    return false, "must be near a prism"   -- the Drill extracts only beside a node
+  end
   return true, nil
 end
 
@@ -125,6 +129,7 @@ function M.place(run, x, y, kind)
 end
 
 function M.sell(run, t)
+  if run.no_sell then return end          -- "No Sell" contract gates selling this wave
   local towers = run.towers
   for i = 1, #towers do
     if towers[i] == t then
@@ -240,7 +245,9 @@ function M.update(run, dt)
   for i = 1, #towers do
     local t = towers[i]
     if t.flash > 0 then t.flash = t.flash - dt end
-    if t.disabled_t > 0 then
+    if t.def.role == "support" then
+      -- support towers (Drill) don't acquire or fire; lib/resource extracts charge
+    elseif t.disabled_t > 0 then
       t.disabled_t = t.disabled_t - dt
     else
       local def = t.def

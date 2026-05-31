@@ -34,6 +34,16 @@ function M:pick(arr)
   return arr[self:int(1, #arr)]
 end
 
+-- In-place Fisher-Yates shuffle (returns the same array). The shared draft-lottery
+-- primitive -- pair with rng.derive for a deterministic, main-rng-safe shuffle.
+function M:shuffle(arr)
+  for i = #arr, 2, -1 do
+    local j = self:int(1, i)
+    arr[i], arr[j] = arr[j], arr[i]
+  end
+  return arr
+end
+
 -- True with probability p.
 function M:chance(p)
   return self:next() < p

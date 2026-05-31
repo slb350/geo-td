@@ -91,10 +91,17 @@ function M.start(run, n)
   set_scaling(run, n)
   run.spawn_timer = 0.3
 
+  -- a signed wave contract (V2-M3) can spike enemy HP and count for this wave;
+  -- it persists until wave clear (so the reward can be granted), unlike route_mods.
+  local ac = run.active_contract
+  if ac and ac.risk.hp_mult then run.hp_scale = run.hp_scale * ac.risk.hp_mult end
+
   local q = run.spawn_queue
   q.n, q.i = 0, 0
   local rm = run.route_mods
-  local budget = M.budget_for(run, n) * ((rm and rm.next_budget_mult) or 1)
+  local budget = M.budget_for(run, n)
+    * ((rm and rm.next_budget_mult) or 1)
+    * ((ac and ac.risk.count_mult) or 1)
   local flyer_bias = (run.mode and run.mode.flyer_bias) or (rm and rm.next_flyer_bias) or false
   local pool = M.weighted_pool(pool_for(n), flyer_bias)
   while budget > 0 and q.n < 200 do

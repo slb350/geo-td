@@ -20,13 +20,13 @@ local BW = C.HUD_W - PAD * 2
 local speed_btn = { x = C.HUD_X + C.HUD_W - PAD - 22, y = 6, w = 22, h = 13 }
 
 -- Tower palette buttons (vertical list). Single-line rows (icon + name left,
--- cost right) keep the full 5-tower palette compact above the action buttons.
+-- cost right) keep the full 6-tower palette compact above the action buttons.
 local btns = {}
 do
-  local y = 80
+  local y = 74
   for i = 1, #tower.ORDER do
-    btns[i] = { kind = tower.ORDER[i], x = BX, y = y, w = BW, h = 18 }
-    y = y + 20
+    btns[i] = { kind = tower.ORDER[i], x = BX, y = y, w = BW, h = 16 }
+    y = y + 17
   end
 end
 -- The action button doubles as START WAVE (building) and ORBITAL STRIKE (combat).
@@ -96,6 +96,9 @@ function M.draw(run, meta, ui)
   gfx.text("$" .. run.money, BX, 26, pal.MONEY)
   gfx.text("LIVES " .. run.lives, BX, 42, pal.LIVES)
   gfx.text("SCORE " .. run.score, BX, 58, pal.TEXT_DIM)
+  -- charge (the second economy), right-aligned on the LIVES line
+  local chg = "CHG " .. math.floor(run.charge)
+  gfx.text(chg, BX + BW - usagi.measure_text(chg), 42, gfx.COLOR_PEACH)
 
   -- speed toggle: lit when faster than 1x
   local spd = speed.clamp(ui.speed or 1)
@@ -119,7 +122,7 @@ function M.draw(run, meta, ui)
     local body = avail and (afford and pal.resolve(def.color) or gfx.COLOR_DARK_GRAY) or gfx.COLOR_DARK_GRAY
     icon(kind, b.x + 12, b.y + b.h * 0.5, body)
     -- one centered line: name on the left, cost (or LOCKED) right-aligned
-    local ty = b.y + 5
+    local ty = b.y + 4
     gfx.text(def.name, b.x + 24, ty, avail and pal.TEXT or pal.TEXT_DIM)
     local tag = avail and ("$" .. cost) or "LOCKED"
     local tag_col = avail and (afford and pal.MONEY or pal.BAD) or pal.TEXT_DIM

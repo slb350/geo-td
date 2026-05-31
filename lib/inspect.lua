@@ -76,8 +76,9 @@ function M.draw(run, t)
     gfx.text(mod.name, BX + 16, MOD_Y, pal.TEXT)
     gfx.text(mod.desc, BX + 3, MOD_Y + 16, pal.TEXT_DIM)
   else
-    gfx.text("MODULE $" .. C.MODULE_COST, BX, MOD_Y - 12, pal.TEXT_DIM)
-    local afford = run.money >= C.MODULE_COST
+    local mcost = modifier.module_cost(run)
+    gfx.text("MODULE $" .. mcost, BX, MOD_Y - 12, pal.TEXT_DIM)
+    local afford = run.money >= mcost
     for i = 1, #modifier.MODULE_ORDER do
       local mod, r = modifier.MODULES[modifier.MODULE_ORDER[i]], mod_rect(i)
       gfx.rect_fill(r.x, r.y, r.w, r.h, pal.HUD_PANEL)

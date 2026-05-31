@@ -88,4 +88,19 @@ C.MAX_SIM_STEPS = 8
 C.EARLY_CALL_MAX   = 4   -- max stragglers left for an early call to be offered
 C.EARLY_CALL_BONUS = 20  -- money granted for calling the next wave early
 
+-- Resource nodes + charge (V2-M3). A Drill (support tower) within DRILL_RANGE of a
+-- resource prism generates charge during combat. Charge fuels the Discharge
+-- ability: spend it all for a field-wide damage burst (charge * DISCHARGE_FACTOR).
+C.RESOURCE_NODES   = 2     -- prisms seeded per run
+C.DRILL_RANGE      = 32    -- max px from a prism for a Drill to extract
+C.DRILL_RATE       = 6     -- charge per second per active Drill (combat only)
+C.DISCHARGE_MIN    = 24    -- minimum charge to fire a Discharge
+C.DISCHARGE_FACTOR = 0.9   -- damage dealt to every enemy/boss = charge spent * this
+
+-- Wave contracts (V2-M3). An optional risk/reward signed before some waves (never
+-- a boss wave). The risk applies to that one wave; the reward is granted only on
+-- wave clear (not on death).
+C.CONTRACT_EVERY   = 3     -- a contract is offered before every Nth wave
+C.BANK_SHARD_VALUE = 5     -- meta-currency per bank shard earned from contracts
+
 return C

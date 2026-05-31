@@ -14,11 +14,13 @@ local boss  = require("lib.boss")
 local tower = require("lib.tower")
 local proj  = require("lib.projectile")
 local ring  = require("lib.ring")
+local resource = require("lib.resource")
 
 local M = {}
 
 -- Advance one combat frame. Returns true once the wave's spawn queue is drained
--- (boss waves carry no queue, so they are always "done" spawning).
+-- (boss waves carry no queue, so they are always "done" spawning). Charge accrues
+-- only here (combat), so a Drill can't be idle-farmed during the build phase.
 function M.step(run, dt)
   local boss_wave = wave.is_boss_for(run, run.wave_index)
   local spawns_done = boss_wave or wave.update(run, dt)
@@ -27,6 +29,7 @@ function M.step(run, dt)
   tower.update(run, dt)
   proj.update(run, dt)
   ring.update(run, dt)
+  resource.update(run, dt)
   return spawns_done
 end
 

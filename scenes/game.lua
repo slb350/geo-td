@@ -22,6 +22,8 @@ local modifier = require("lib.modifier")
 local loop    = require("lib.loop")
 local speed   = require("lib.speed")
 local threat  = require("lib.threat")
+local resource = require("lib.resource")
+local contracts = require("lib.contracts")
 
 local M = {}
 
@@ -117,8 +119,14 @@ function M.update(dt)
   if input.key_pressed(input.KEY_5) and tower.available(meta, "flak", run.mode) then
     ui.selected = "flak"; ui.sell_mode = false; ui.inspect = nil
   end
+  if input.KEY_6 and input.key_pressed(input.KEY_6) then
+    ui.selected = "drill"; ui.sell_mode = false; ui.inspect = nil
+  end
   if input.key_pressed(input.KEY_O) then
     if run_lib.orbital_strike(run) then fx.orbital() end
+  end
+  if input.KEY_D and input.key_pressed(input.KEY_D) then   -- D: Discharge (spend charge)
+    if run_lib.discharge(run) then fx.orbital() end
   end
   if input.key_pressed(input.KEY_S) then ui.sell_mode = not ui.sell_mode; ui.selected = nil; ui.inspect = nil end
   if input.KEY_F and input.key_pressed(input.KEY_F) then   -- F: cycle combat speed
@@ -156,14 +164,19 @@ function M.update(dt)
       run.sim_acc = run.sim_acc - C.SIM_DT
       steps = steps + 1
       local spawns_done = loop.step(run, C.SIM_DT)   -- canonical combat step (shared with the sim)
+      -- Death is decisive even on a frame the wave also clears: a fatal leak means
+      -- the wave was NOT held, so no contract reward -- we fall through to gameover
+      -- (the run.lives<=0 check below). Matches lib/sim's clear-vs-death ordering.
+      if run.lives <= 0 then break end
       local cleared = run.enemies.n == 0 and (not run.boss or run.boss.dead)
       if spawns_done and cleared then
         run.phase = "building"
         run.draft = nil
+        contracts.grant_reward(run)   -- wave held: pay the contract, then clear it
+        contracts.expire(run)
         SwitchScene("upgrade")
         break
       end
-      if run.lives <= 0 then break end
     end
   else
     -- build phase: only in-flight projectiles + lingering rings keep ticking
@@ -260,6 +273,7 @@ function M.draw(dt)
   gfx.clear(pal.BG)
   field.draw(pal, usagi.elapsed)
   path.draw(run.path, pal, C.PATH_WIDTH, usagi.elapsed)
+  resource.draw(run)   -- resource prisms + extract radius (under towers)
   ring.draw(run)   -- ground-layer splash rings, under towers/enemies
 
   for i = 1, #run.towers do
@@ -301,6 +315,9 @@ function M.draw(dt)
   if run.phase == "combat" and run_lib.can_call_early(run) then
     gfx.text("SPACE: call next wave early  +$" .. C.EARLY_CALL_BONUS,
       6, C.GAME_H - 26, gfx.COLOR_GREEN)
+  end
+  if run.phase == "combat" and run_lib.can_discharge(run) then
+    gfx.text("D: DISCHARGE  " .. math.floor(run.charge) .. " charge", 6, C.GAME_H - 38, gfx.COLOR_PEACH)
   end
 
   if ui.inspect then

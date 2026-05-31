@@ -76,8 +76,9 @@ end
 -- Award currency for a finished run, update records, and (when a map was
 -- played) record its best wave and unlock the next harder map on a wave >=
 -- UNLOCK_WAVE finish. Persists. Returns: award, newly_unlocked_map_or_nil.
-function M.finish_run(meta, wave_reached, bosses_killed, map_name)
+function M.finish_run(meta, wave_reached, bosses_killed, map_name, bank_shards)
   local award = wave_reached * C.META_PER_WAVE + (bosses_killed or 0) * 8
+    + (bank_shards or 0) * C.BANK_SHARD_VALUE
   meta.currency = meta.currency + award
   meta.total_runs = meta.total_runs + 1
   if wave_reached > meta.best_wave then meta.best_wave = wave_reached end

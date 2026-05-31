@@ -10,6 +10,7 @@ local powerup = require("lib.powerup")
 local fx      = require("lib.fx")
 local ui      = require("lib.ui")
 local pathmut = require("lib.pathmut")
+local contracts = require("lib.contracts")
 
 local M = {}
 
@@ -36,8 +37,10 @@ local function choose(i)
   if card then powerup.apply(run, card) end
   run.draft = nil
   fx.upgrade_sfx()
-  -- a route-mutation event may intervene before the next wave (M7)
-  SwitchScene(pathmut.pending(run) and "route" or "game")
+  -- between-wave chain (M7 route, M3 contract): route event first, then a contract
+  -- offer, then back to building the next wave.
+  SwitchScene(pathmut.pending(run) and "route"
+    or (contracts.pending(run) and "contract" or "game"))
 end
 
 function M.update(dt)

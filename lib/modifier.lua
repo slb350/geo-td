@@ -132,17 +132,24 @@ function M.buy_upgrade(run, t, id)
   return true
 end
 
+-- Effective module-socket cost, after a one-shot "No Sell" contract discount (M3).
+function M.module_cost(run)
+  return math.max(0, C.MODULE_COST - (run.module_discount or 0))
+end
+
 -- A tower has a single module socket; it can be filled once.
 function M.can_socket(run, t, module_id)
-  return M.MODULES[module_id] ~= nil and t.module == nil and run.money >= C.MODULE_COST
+  return M.MODULES[module_id] ~= nil and t.module == nil and run.money >= M.module_cost(run)
 end
 
 function M.socket_module(run, t, module_id)
   if not M.can_socket(run, t, module_id) then return false end
-  run.money = run.money - C.MODULE_COST
-  run.money_spent = run.money_spent + C.MODULE_COST   -- gross spend (M1 run-report stat)
+  local cost = M.module_cost(run)
+  run.money = run.money - cost
+  run.money_spent = run.money_spent + cost            -- gross spend (M1 run-report stat)
+  run.module_discount = 0                             -- one-shot discount consumed
   t.module = module_id
-  t.invested = (t.invested or 0) + C.MODULE_COST      -- counts toward the M7 full auto-refund
+  t.invested = (t.invested or 0) + cost               -- counts toward the M7 full auto-refund
   return true
 end
 

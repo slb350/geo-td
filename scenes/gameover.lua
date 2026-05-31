@@ -22,7 +22,8 @@ function M.init()
   local run = State.run
   if not run then SwitchScene("menu"); return end
   local stats = report.build(run)
-  local award, unlocked = meta.finish_run(State.meta, stats.wave, stats.bosses_killed, run.path_name)
+  local award, unlocked = meta.finish_run(State.meta, stats.wave, stats.bosses_killed,
+    run.path_name, stats.bank_shards)
   stats.award = award
   stats.bank = State.meta.currency
   stats.unlocked = unlocked and maps.get(unlocked).name or nil
@@ -78,6 +79,9 @@ function M.draw(dt)
   end
   y = y + 15
   row(y, "favorite", s.favorite_name or "none"); y = y + 15
+  if s.contracts and s.contracts > 0 then
+    row(y, "contracts", s.contracts .. "  (" .. s.bank_shards .. " shards)", gfx.COLOR_ORANGE); y = y + 15
+  end
 
   ui.center_text("+" .. s.award .. " bank   (total " .. s.bank .. ")", y + 6, gfx.COLOR_YELLOW, 1)
   if s.unlocked then

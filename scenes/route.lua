@@ -14,6 +14,7 @@ local fx        = require("lib.fx")
 local ui        = require("lib.ui")
 local shape     = require("lib.shape")
 local routedraft = require("lib.routedraft")
+local contracts = require("lib.contracts")
 
 local M = {}
 
@@ -74,7 +75,7 @@ local function choose(run, i)
     fx.click_sfx()
   end
   run.route_draft = nil
-  SwitchScene("game")
+  SwitchScene(contracts.pending(run) and "contract" or "game")   -- contract may follow (M3)
 end
 
 function M.update(dt)
