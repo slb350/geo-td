@@ -68,6 +68,14 @@ end
 -- (run.resonance_dirty). Treats nil as dirty so a live-reloaded pre-M4 run
 -- self-heals on first touch. O(towers^2 * proofs), and only on change.
 function M.update(run)
+  -- Null Field affix (M5): circuits go dark for its duration. Clear all resonance
+  -- and keep dirty so it recomputes the moment the affix lapses (affix.update).
+  if run.affix_null_active then
+    local towers = run.towers
+    for i = 1, #towers do towers[i].resonance = nil end
+    run.resonance_dirty = true
+    return
+  end
   if run.resonance_dirty == false then return end
   run.resonance_dirty = false
   local towers = run.towers

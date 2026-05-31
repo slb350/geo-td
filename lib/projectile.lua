@@ -65,7 +65,7 @@ local function next_chain_target(run, p)
   local best, best_d2
   for i = 1, list.n do
     local e = list[i]
-    if not e.dead and not p.hits[e] and not e.aura_stealth
+    if not e.dead and not p.hits[e] and not e.aura_stealth and not e.affix_stealth
       and (not def or target.can_hit(def, e)) then
       local dx, dy = e.x - p.x, e.y - p.y
       local d2 = dx * dx + dy * dy

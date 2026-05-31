@@ -30,7 +30,7 @@ for _, name in ipairs(maps.ORDER) do
   local plan = helpers.map_cordon(m, name, { step = STEP })
   local r = sim.run({
     seed = SEED, map = name, mode = "standard", waves = WAVES,
-    money = 99999, meta = m, plan = plan,
+    money = 99999, meta = m, plan = plan, affixes = false,   -- affix-free baseline (M5)
   })
   local top = r.tower_damage.list[1]
   print(("%-11s %4d %4s %5d %5d %5d %7d %6d  %s"):format(

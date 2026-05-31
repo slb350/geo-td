@@ -9,6 +9,7 @@ local wave    = require("lib.wave")
 local enemy   = require("lib.enemy")
 local boss    = require("lib.boss")
 local pathmut = require("lib.pathmut")
+local affix   = require("lib.affix")
 
 local M = {}
 
@@ -47,6 +48,11 @@ function M.preview(run, n)
     out.boss_kind = run.mode.boss_rush and boss.cycle(n) or boss.for_wave(n)
     return out
   end
+
+  -- affix (M5): the same derived roll wave.start will resolve, so preview == actual
+  local aid = affix.for_wave(run, n)
+  out.affix = aid and affix.DEFS[aid].name or nil
+  out.affix_id = aid
 
   out.boss = false
   out.budget = wave.budget_for(run, n)

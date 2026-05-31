@@ -5,6 +5,7 @@
 
 local C     = require("lib.const")
 local enemy = require("lib.enemy")
+local affix = require("lib.affix")
 
 local M = {}
 
@@ -121,7 +122,8 @@ function M.update(run, dt)
   run.spawn_timer = run.spawn_timer - dt
   if run.spawn_timer <= 0 then
     q.i = q.i + 1
-    enemy.spawn(run, q[q.i], run.hp_scale, run.speed_scale, 0)
+    local e = enemy.spawn(run, q[q.i], run.hp_scale, run.speed_scale, 0)
+    affix.apply_spawn(run, e, q.i, q.n)        -- spawn-time affix (derived fields) (M5)
     run.spawn_timer = run.spawn_interval
   end
   return q.i >= q.n

@@ -25,6 +25,7 @@ local threat  = require("lib.threat")
 local resource = require("lib.resource")
 local contracts = require("lib.contracts")
 local resonance = require("lib.resonance")
+local affix    = require("lib.affix")
 
 local M = {}
 
@@ -176,6 +177,7 @@ function M.update(dt)
         run.draft = nil
         contracts.grant_reward(run)   -- wave held: pay the contract, then clear it
         contracts.expire(run)
+        affix.expire(run)             -- clear the wave's affix (M5)
         SwitchScene("upgrade")
         break
       end
@@ -313,6 +315,7 @@ function M.draw(dt)
     banner = "BOSS  -  wave " .. run.wave_index
   else
     banner = "WAVE " .. run.wave_index
+    if run.wave_affix then banner = banner .. "   [" .. run.wave_affix.name .. "]" end   -- affix (M5)
   end
   gfx.text(banner, 6, C.GAME_H - 14, pal.TEXT_DIM)
   if run.phase == "combat" and run_lib.can_call_early(run) then

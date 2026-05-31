@@ -92,8 +92,14 @@ function M.kill(run, e)
   fx.kill_sfx()
   local split = e.def.split
   if split then
-    for k = 1, split.count do
-      M.spawn(run, split.type, run.hp_scale, run.speed_scale, math.max(0, e.d - k * 3))
+    local count, hp_mult = split.count, 1
+    local a = run.wave_affix
+    if a and a.fracture then          -- Fracture affix (M5): fewer, tougher children
+      count = math.max(1, count - 1)
+      hp_mult = a.child_hp_mult or 1.5
+    end
+    for k = 1, count do
+      M.spawn(run, split.type, run.hp_scale * hp_mult, run.speed_scale, math.max(0, e.d - k * 3))
     end
   end
   -- flyer burst (M2 "Flak Burst" card): a dying flyer detonates, damaging nearby

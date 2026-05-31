@@ -86,6 +86,9 @@ function M.run(opts)
   local run = run_mod.new(mt, opts.seed or 1, opts.map, opts.mode)
   if opts.money then run.money = opts.money end
   if opts.lives then run.lives = opts.lives end
+  -- affixes are ON by default (faithful to the game); the balance fixtures pass
+  -- affixes = false for a stable, affix-free baseline (V2-M5).
+  if opts.affixes == false then run.no_affixes = true end
   local waves = opts.waves or 20
 
   -- bucket plan actions by the wave whose build phase they belong to

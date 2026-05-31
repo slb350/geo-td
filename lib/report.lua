@@ -65,6 +65,8 @@ function M.build(run)
     -- M3 economy: contracts signed + bank shards earned (nil/0 when unused)
     contracts     = run.contract_history and #run.contract_history or 0,
     bank_shards   = run.bank_shards or 0,
+    -- M5: number of affix-bearing waves survived
+    affixes       = run.affix_history and #run.affix_history or 0,
   }
 end
 

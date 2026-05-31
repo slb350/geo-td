@@ -13,6 +13,7 @@ local wave  = require("lib.wave")
 local boss  = require("lib.boss")
 local resource = require("lib.resource")
 local contracts = require("lib.contracts")
+local affix = require("lib.affix")
 
 local M = {}
 
@@ -75,6 +76,14 @@ function M.new(meta, seed, path_name, mode_id)
     module_discount = 0,
     no_sell = false,
     resonance_dirty = true,    -- recompute tower resonance on the next touch (M4)
+    -- Enemy affixes (V2-M5). wave_affix is the current wave's resolved affix row
+    -- (or nil); affix_history lists ids for the report; no_affixes lets the balance
+    -- sim opt out; the null-field timer suppresses resonance for its duration.
+    wave_affix = nil,
+    affix_history = {},
+    affix_timer = 0,
+    affix_null_active = false,
+    no_affixes = false,
     mods = {
       dmg_mult = 1, rate_mult = 1, range_mult = 1, bounty_mult = 1, cost_mult = 1,
       proj_mult = 1, splash_mult = 1, crit_chance = 0, interest = 0, life_per_wave = 0,
@@ -112,6 +121,7 @@ function M.begin_wave(run)
     wave.start(run, n)
     contracts.arm(run)        -- blackout / no-sell, once the wave + towers are set
   end
+  affix.choose(run, n)        -- pick/clear this wave's affix (nil on boss waves) (M5)
   return n
 end
 

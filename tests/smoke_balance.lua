@@ -21,8 +21,9 @@ function M.run(check, near)
   local function cordon_run(map, mode, waves)
     local plan = plans[map]
     if not plan then plan = helpers.map_cordon(m, map, { step = 30 }); plans[map] = plan end
+    -- affixes off: the anchors are a stable, affix-free balance baseline (V2-M5)
     return sim.run({ seed = 1234, map = map, mode = mode or "standard",
-      waves = waves or 30, money = 99999, meta = m, plan = plan })
+      waves = waves or 30, money = 99999, meta = m, plan = plan, affixes = false })
   end
 
   -- Regression anchors. A uniform pellet cordon (non-rail) on each map reaches an

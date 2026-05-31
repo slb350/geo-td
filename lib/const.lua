@@ -97,6 +97,13 @@ C.DRILL_RATE       = 6     -- charge per second per active Drill (combat only)
 C.DISCHARGE_MIN    = 24    -- minimum charge to fire a Discharge
 C.DISCHARGE_FACTOR = 0.9   -- damage dealt to every enemy/boss = charge spent * this
 
+-- Enemy affixes (V2-M5). From a per-affix min_wave a qualifying (non-boss) wave
+-- may carry one affix, picked by a derived roll (doesn't consume the run rng, so
+-- the spawn SEQUENCE is unchanged -- only the affix effects differ; the balance
+-- sim disables affixes for stable baselines). Affixes apply DERIVED enemy fields
+-- or wave-level flags, never base-def mutation.
+C.AFFIX_CHANCE = 0.7    -- chance a qualifying wave actually gets an affix
+
 -- Wave contracts (V2-M3). An optional risk/reward signed before some waves (never
 -- a boss wave). The risk applies to that one wave; the reward is granted only on
 -- wave clear (not on death).

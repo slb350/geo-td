@@ -15,6 +15,7 @@ local tower = require("lib.tower")
 local proj  = require("lib.projectile")
 local ring  = require("lib.ring")
 local resource = require("lib.resource")
+local affix = require("lib.affix")
 
 local M = {}
 
@@ -30,6 +31,7 @@ function M.step(run, dt)
   proj.update(run, dt)
   ring.update(run, dt)
   resource.update(run, dt)
+  affix.update(run, dt)            -- tick the Null-Field timer (M5)
   return spawns_done
 end
 
