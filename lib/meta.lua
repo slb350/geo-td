@@ -25,7 +25,7 @@ function M.default()
     contract_board = {},        -- active meta-contract ids (the 3-goal board)
     completed_contracts = {},   -- [meta-contract id] = true (done at least once)
     daily = {},                 -- { day = <n>, done = bool, best = wave }
-    settings = settings.defaults(),   -- V2-M9 volumes + comfort/accessibility toggles
+    settings = settings.defaults(),   -- V2-M9 comfort/accessibility toggles
   }
 end
 

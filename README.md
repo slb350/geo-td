@@ -70,8 +70,9 @@ Run from the repo root:
   bank shards, and deterministic local daily challenges.
 - Share codes and replay snapshots for local bug reports and run verification,
   including route, contract, targeting, reroll, and timed active-ability decisions.
-- Settings/accessibility: music/SFX volume, CRT toggle, screen-shake toggle,
-  damage-number toggle, high-contrast palette, pause-menu quick toggles.
+- Settings/accessibility: CRT toggle, screen-shake toggle, damage-number toggle,
+  high-contrast palette, pause-menu quick toggles. (Music/SFX volume is Usagi's
+  built-in pause-menu control.)
 - MiniMax-generated multi-track soundtrack, procedural SFX, desktop/web CRT
   shaders, and a documented export checklist.
 

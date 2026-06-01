@@ -1,4 +1,4 @@
--- Player settings (V2-M9): volumes + accessibility/comfort toggles, persisted as
+-- Player settings (V2-M9): accessibility/comfort toggles, persisted as
 -- part of the meta save (so they survive restart + ride the meta version migration
 -- -- backfill adds any missing key). The model lives here; the systems read live
 -- values via settings.value(id), which is SAFE before State/State.settings exist
