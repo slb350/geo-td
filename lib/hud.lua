@@ -33,7 +33,9 @@ end
 local action_btn = { x = BX, y = C.GAME_H - 46, w = BW, h = 18 }
 local sell_btn = { x = BX, y = C.GAME_H - 24, w = BW, h = 18 }
 -- Tooltip is capped to the lines that fit between the palette and the buttons.
-local MAX_HINT_LINES = 2
+-- The hint row starts at hy (~181) and the action button sits at GAME_H-46
+-- (224); at 11px/line that leaves room for 3 lines (3rd ends ~215).
+local MAX_HINT_LINES = 3
 -- Orbital action-button label (cost is constant, so build it once).
 local ORBITAL_LABEL = "ORBITAL $" .. C.ORBITAL_COST
 
