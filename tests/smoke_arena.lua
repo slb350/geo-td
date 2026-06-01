@@ -127,6 +127,18 @@ function M.run(check, near)
   boss.kill(rc)
   check(arena.count(rc, "shield_battery") == 0, "boss death clears the arena so the wave can finish")
 
+  -- -------------------------------- arena ALSO cleared when the boss LEAKS (regression)
+  -- A leaked boss is dead too. It used to skip arena.clear, so Hydra heads kept
+  -- spawning adds with no boss to kill -> enemies.n never hit 0 -> the wave never
+  -- cleared (softlock). The leak path must clear the arena just like a kill does.
+  local rleak = spawn(m, 15, "hydra")
+  check(arena.count(rleak, "hydra_head") == 3, "Hydra heads present before the boss leaks")
+  rleak.lives = 99
+  rleak.boss.d = rleak.path.total_len + 1 -- shove the boss onto the core
+  boss.update(rleak, 1 / 60)
+  check(rleak.boss.dead and rleak.boss.leaked, "the boss leaks at the path end")
+  check(arena.count(rleak, "hydra_head") == 0, "a leaked boss clears its arena objects (no softlock)")
+
   -- ----------------------- arena objects are not buffable by enemy auras
   -- (a veil cloaking a battery would block the destroy mechanic -- can happen if
   -- a boss wave is called early with a veil straggler still on the field)

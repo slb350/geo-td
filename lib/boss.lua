@@ -168,6 +168,10 @@ function M.update(run, dt)
     run.lives = run.lives - 5
     run.leaked = run.leaked + 1
     fx.life_lost()
+    -- a leaked boss is dead too, so clear its arena objects (same as M.kill). Else
+    -- Hydra heads / Bulwark batteries keep spawning adds with no boss to kill, and
+    -- enemies.n never reaches 0 -> the wave never clears (softlock).
+    arena.clear(run)
     return
   end
   b.x, b.y = path.point_at(run.path, b.d)
