@@ -14,6 +14,7 @@ local gameover = require("scenes.gameover")
 local meta     = require("lib.meta")
 local settings = require("lib.settings")
 local pal      = require("lib.palette")
+local C        = require("lib.const")
 
 local SCENES = {
   menu = menu,
@@ -26,11 +27,13 @@ local SCENES = {
 }
 
 function _config()
+  -- Resolution is single-sourced from lib.const (the game-layout source of truth)
+  -- so _config and the C.GAME_* the HUD/field math read can't drift apart.
   return {
     name = "usagi-geo-td",
     game_id = "com.brandon.usagigeotd",
-    game_width = 480,
-    game_height = 270,
+    game_width = C.GAME_W,
+    game_height = C.GAME_H,
   }
 end
 
