@@ -21,7 +21,6 @@ M.DEFS = {
 
 local DEFAULTS = {}
 for i = 1, #M.DEFS do DEFAULTS[M.DEFS[i].id] = M.DEFS[i].default end
-M.DEFAULTS = DEFAULTS
 
 -- A fresh settings table at the defaults.
 function M.defaults()
