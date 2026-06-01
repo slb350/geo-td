@@ -59,13 +59,13 @@ function M.run(check, near)
   dummy(r, 205, 150)
   fire_and_settle(r, pel)
   check(r.tower_stats[pel.id].damage > 0, "tower stat accrued applied damage from its shot")
-  check(near(r.tower_stats[pel.id].damage, 7), "direct hit credits applied damage (pellet = 7)")
+  check(near(r.tower_stats[pel.id].damage, 9), "direct hit credits applied damage (pellet = 9)")
 
   -- sold tower's damage survives (kept on run.tower_stats, not the tower table)
   tower.sell(r, pel)
-  check(r.tower_stats[pel.id].damage == 7, "selling a tower keeps its damage stat")
+  check(r.tower_stats[pel.id].damage == 9, "selling a tower keeps its damage stat")
   local rep = report.build(r)
-  check(rep.top_tower and rep.top_tower.kind == "pellet" and near(rep.top_tower.damage, 7),
+  check(rep.top_tower and rep.top_tower.kind == "pellet" and near(rep.top_tower.damage, 9),
     "report top-tower survives a sell")
 
   -- splash credits both the direct target and every splash victim to the source
@@ -92,7 +92,7 @@ function M.run(check, near)
   rc.enemies.n = 0
   dummy(rc, 205, 150)
   fire_and_settle(rc, cpel)
-  check(near(rc.tower_stats[cpel.id].damage, 14), "a crit (7 x2) credits doubled applied damage")
+  check(near(rc.tower_stats[cpel.id].damage, 18), "a crit (9 x2) credits doubled applied damage")
 
   -- a tower sold while its shot is still in flight is still credited on impact,
   -- because tower_stats is keyed by id on the run, not held on the tower table
@@ -108,7 +108,7 @@ function M.run(check, near)
     if rf.projectiles.n == 0 then break end
     proj.update(rf, 1 / 60)
   end
-  check(near(rf.tower_stats[fpel.id].damage, 7), "an in-flight shot credits its sold tower")
+  check(near(rf.tower_stats[fpel.id].damage, 9), "an in-flight shot credits its sold tower")
 
   -- splash credits post-armor applied damage per victim, just like a direct hit
   local ra = run_mod.new(m, 14, "serpentine"); ra.money = 99999

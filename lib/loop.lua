@@ -29,6 +29,7 @@ function M.step(run, dt)
   enemy.update(run, dt)
   affix.update(run, dt)            -- source-based veil stealth must refresh before tower acquisition (M5)
   if boss_wave then boss.update(run, dt); arena.update(run, dt) end   -- arena hooks (M6)
+  tower.reveal(run)                -- anti-veil: uncloak stealthed enemies in a detector's range before acquisition
   tower.update(run, dt)
   proj.update(run, dt)
   ring.update(run, dt)

@@ -58,7 +58,7 @@ function M.run(check, near)
     t.cooldown = 0; tower.update(r, 1 / 60)
     settle(r)
     check(a.hp < a.maxhp and b.hp < b.maxhp, "a ricochet shot damages two enemies")
-    check(near(r.tower_stats[t.id].damage, 14), "both ricochet hits credit the source tower (7 + 7)")
+    check(near(r.tower_stats[t.id].damage, 18), "both ricochet hits credit the source tower (9 + 9)")
   end
 
   -- ---------------------------------------------------------- pierce hits a line
@@ -79,7 +79,7 @@ function M.run(check, near)
     local t = tower.place(r, 200, 150, "pellet")
     r.enemies.n = 0; dummy(r, 205, 150)   -- the only enemy
     t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
-    check(near(r.tower_stats[t.id].damage, 7), "pierce with no target ahead hits once")
+    check(near(r.tower_stats[t.id].damage, 9), "pierce with no target ahead hits once")
     check(r.projectiles.n == 0, "pierce shot with nothing ahead expires cleanly")
   end
 
@@ -89,7 +89,7 @@ function M.run(check, near)
     local t = tower.place(r, 200, 150, "pellet")
     r.enemies.n = 0; dummy(r, 205, 150); dummy(r, 214, 150)
     t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
-    check(near(r.tower_stats[t.id].damage, 14), "ricochet=2 with two enemies hits both then stops")
+    check(near(r.tower_stats[t.id].damage, 18), "ricochet=2 with two enemies hits both then stops")
     check(r.projectiles.n == 0, "ricochet shot expires when out of fresh targets")
   end
 
@@ -101,7 +101,7 @@ function M.run(check, near)
     local a = dummy(r, 205, 150); enemy.slow(a, 0.5, 5)
     local b = dummy(r, 215, 150); enemy.slow(b, 0.5, 5)
     t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
-    check(near(r.tower_stats[t.id].damage, 21), "brittle applies to each chained hit on slowed enemies (10.5 + 10.5)")
+    check(near(r.tower_stats[t.id].damage, 27), "brittle applies to each chained hit on slowed enemies (13.5 + 13.5)")
   end
 
   -- a chained shot must obey the firing tower's targeting rules: a ground-only
@@ -157,14 +157,14 @@ function M.run(check, near)
     local e = dummy(r, 205, 150)
     enemy.slow(e, 0.5, 5)   -- slowed -> brittle applies
     t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
-    check(near(r.tower_stats[t.id].damage, 10.5), "brittle: slowed target takes 7 x1.5 = 10.5")
+    check(near(r.tower_stats[t.id].damage, 13.5), "brittle: slowed target takes 9 x1.5 = 13.5")
   end
   do
     local r = fresh(6); r.mods.brittle = 0.5
     local t = tower.place(r, 200, 150, "pellet")
     r.enemies.n = 0; dummy(r, 205, 150)   -- NOT slowed
     t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
-    check(near(r.tower_stats[t.id].damage, 7), "brittle does nothing to an unslowed target")
+    check(near(r.tower_stats[t.id].damage, 9), "brittle does nothing to an unslowed target")
   end
 
   -- ---------------------------------------------------------- splash ring

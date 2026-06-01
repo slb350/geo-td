@@ -140,7 +140,7 @@ function M.run(check, near)
     r.mods.crit_chance = 0.75                   -- +75% global -> total 1.0, always crits
     r.enemies.n = 0; dummy(r, 205, 150)
     t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
-    check(near(r.tower_stats[t.id].damage, 14), "crit module + global crit doubles damage in the firing path (7 -> 14)")
+    check(near(r.tower_stats[t.id].damage, 18), "crit module + global crit doubles damage in the firing path (9 -> 18)")
   end
 
   -- live-reload resilience: usagi dev preserves the run, so a tower placed before

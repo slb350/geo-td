@@ -17,8 +17,22 @@ end
 -- cloak) and untargetable arena objects (Specter anchors). Shared by tower
 -- acquisition AND the projectile pierce/ricochet chain so they can't drift -- a
 -- chained shot skips exactly what the firing tower would.
+--
+-- An untargetable arena object (a Specter phase anchor) is never a valid target
+-- and is never uncloaked by detection -- its protection outranks both. The single
+-- predicate, shared by targetable() AND tower.reveal so the rule sits in one place.
+function M.arena_untargetable(e)
+  return e.arena ~= nil and e.arena.untargetable == true
+end
+
+-- `e.revealed` (set each frame by tower.reveal for a detector's anti-veil pass)
+-- overrides stealth, so a Pellet uncloaks a veiled pack for every tower. It does
+-- NOT override arena untargetability: a Specter phase anchor stays protected even
+-- if a detector's radius covers it (the reveal pass never marks anchors anyway).
 function M.targetable(e)
-  return not e.aura_stealth and not e.affix_stealth and not (e.arena and e.arena.untargetable)
+  if M.arena_untargetable(e) then return false end
+  if e.revealed then return true end
+  return not e.aura_stealth and not e.affix_stealth
 end
 
 return M

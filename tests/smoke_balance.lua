@@ -30,13 +30,18 @@ function M.run(check, near)
   -- exact wave, clears an exact boss count, and spends an exact gross amount. The
   -- boss-count anchors also stand in for "non-rail fixtures still clear Prism +
   -- Bulwark" (waves 5 + 10): every map below clears at least two.
+  -- These anchors moved up one wave (14 -> 16 on serpentine/zigzag) with the
+  -- V2 Pellet pass (range 58->64, damage 7->9): the higher per-shot damage cuts
+  -- through flat armor that previously gutted the cordon, so it survives deeper.
+  -- The exponential HP wall still tops a pure-Pellet cordon out at ~16 -- deep
+  -- waves still need qualitative DPS (Rail), not more Pellets.
   local s = cordon_run("serpentine")
-  check(s.final_wave == 14, "balance anchor: serpentine cordon reaches exactly wave 14")
+  check(s.final_wave == 16, "balance anchor: serpentine cordon reaches exactly wave 16")
   check(s.bosses_killed == 2, "balance anchor: serpentine cordon clears Prism + Bulwark (non-rail)")
   check(s.money_spent == 2475, "balance anchor: serpentine cordon gross spend == 2475")
 
   local z = cordon_run("zigzag")
-  check(z.final_wave == 14, "balance anchor: zigzag cordon reaches exactly wave 14")
+  check(z.final_wave == 16, "balance anchor: zigzag cordon reaches exactly wave 16")
   check(z.bosses_killed == 2, "balance anchor: zigzag cordon clears two bosses")
   check(z.money_spent == 2160, "balance anchor: zigzag cordon gross spend == 2160")
 
@@ -63,8 +68,9 @@ function M.run(check, near)
 
   -- Opt-in modes must never make the run easier than standard. Hardcore spikes
   -- difficulty a tier early, so it dies no later than standard (which is `s`, the
-  -- same serpentine cordon that reached wave 14 above -- no extra sim needed).
-  local hard = cordon_run("serpentine", "hardcore", 14)
+  -- same serpentine cordon that reached wave 16 above -- cap the sim there, no
+  -- need to simulate past where standard already died).
+  local hard = cordon_run("serpentine", "hardcore", s.final_wave)
   check(hard.final_wave <= s.final_wave, "balance: hardcore is no easier than standard")
 end
 

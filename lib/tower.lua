@@ -263,6 +263,42 @@ local function apply_slow_aura(run, t, radius)
   end
 end
 
+-- Anti-veil stealth detection: a tower with `def.detect` (the Pellet) strips
+-- stealth from enemies inside its effective range, marking them `e.revealed` so
+-- EVERY tower -- and the projectile pierce/ricochet chain -- can acquire them
+-- this frame (target.targetable honours `revealed`). A full pass BEFORE
+-- tower.update so a detector uncloaks for all towers regardless of iteration
+-- order; called from lib/loop. Pure geometry (no rng) and recomputed each frame:
+-- an enemy that leaves every detector's radius re-cloaks, and a field with no
+-- stealth reveals nothing -- so a veil-free run is byte-identical. An untargetable
+-- arena anchor (Specter) is never revealed; its protection outranks detection.
+function M.reveal(run)
+  local list = run.enemies
+  local n = list.n
+  for i = 1, n do list[i].revealed = false end
+  local towers = run.towers
+  for j = 1, #towers do
+    local t = towers[j]
+    local revealing = false
+    if t.def.detect and t.disabled_t <= 0 then
+      local range = modifier.effective(run, t, t.eff).range
+      local r2 = range * range
+      for i = 1, n do
+        local e = list[i]
+        if not e.dead and (e.aura_stealth or e.affix_stealth)
+           and not target.arena_untargetable(e) then
+          local dx, dy = e.x - t.x, e.y - t.y
+          if dx * dx + dy * dy <= r2 then
+            e.revealed = true
+            revealing = true
+          end
+        end
+      end
+    end
+    t.revealing = revealing   -- drives the build-phase-free detection ring in M.draw
+  end
+end
+
 function M.update(run, dt)
   resonance.update(run)            -- recompute only if the topology changed (M4)
   local towers = run.towers
@@ -324,6 +360,10 @@ function M.draw(run, t, show_range)
   local color = disabled and gfx.COLOR_DARK_GRAY or t.color
   if show_range then
     gfx.circ(t.x, t.y, modifier.effective(run, t, t.eff).range, pal.RANGE)
+  elseif t.revealing then
+    -- combat-phase feedback: a detector lights its reveal radius only while it is
+    -- actually uncloaking a veiled enemy (dim; the CRT bloom lifts it off the field).
+    gfx.circ(t.x, t.y, modifier.effective(run, t, t.eff).range, gfx.COLOR_DARK_PURPLE)
   end
   local body_rot = t.shape == "hex" and (usagi.elapsed * 0.6) or 0
   shape.line(t.shape, t.x, t.y, r + 1, gfx.COLOR_DARK_GRAY, body_rot)
