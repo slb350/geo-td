@@ -163,9 +163,11 @@ function M.update(dt)
   if input.KEY_F and input.key_pressed(input.KEY_F) then   -- F: cycle combat speed
     ui.speed = speed.cycle(ui.speed or 1)
   end
-  -- Space/Enter starts the wave while building, or calls the next wave early
-  -- while in combat (when the field is nearly clear and no route event is due).
-  if input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER) then
+  -- Space starts the wave while building, or calls the next wave early while in
+  -- combat (when the field is nearly clear and no route event is due). Enter is
+  -- NOT read here -- the engine reserves it for the built-in pause menu; the HUD
+  -- action button is the mouse-driven equivalent.
+  if input.key_pressed(input.KEY_SPACE) then
     if run.phase == "building" then
       start_wave(run)
     elseif run.phase == "combat" then

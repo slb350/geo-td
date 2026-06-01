@@ -33,7 +33,7 @@ Run from the repo root:
 - **Right-click**: cancel selection, close inspect, exit sell mode
 - **1 / 2 / 3 / 4 / 5 / 6**: Pellet / Splash / Frost / Rail / Flak / Drill
 - **S**: sell mode
-- **Space / Enter**: start wave; in combat, call the next wave early when allowed
+- **Space**: start wave; in combat, call the next wave early when allowed
 - **F**: cycle 1x/2x combat speed
 - **O**: orbital strike, a money-based emergency clear
 - **D**: Discharge, spending stored charge for field-wide damage

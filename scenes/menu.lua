@@ -138,8 +138,9 @@ local function click_row(tab, id)
 end
 
 function M.update(dt)
-  if input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER)
-    or input.pressed(input.BTN1) then
+  -- Space or BTN1 (default keyboard Z / gamepad primary) plays. Enter is NOT
+  -- read: the engine reserves Esc / P / Enter / Start for its built-in pause menu.
+  if input.key_pressed(input.KEY_SPACE) or input.pressed(input.BTN1) then
     open_select()
     return
   end

@@ -45,8 +45,10 @@ function M.init()
 end
 
 function M.update(dt)
+  -- Click / Space / BTN1 returns to the menu. Enter is NOT read: the engine
+  -- reserves Esc / P / Enter / Start for its built-in pause menu.
   if input.mouse_pressed(input.MOUSE_LEFT)
-    or input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER)
+    or input.key_pressed(input.KEY_SPACE)
     or input.pressed(input.BTN1) then
     State.run = nil
     SwitchScene("menu")
