@@ -11,6 +11,7 @@ local fx      = require("lib.fx")
 local ui      = require("lib.ui")
 local pathmut = require("lib.pathmut")
 local contracts = require("lib.contracts")
+local run_lib = require("lib.run")
 
 local M = {}
 
@@ -34,7 +35,10 @@ end
 local function choose(i)
   local run = State.run
   local card = run.draft and run.draft[i]
-  if card then powerup.apply(run, card) end
+  if card then
+    powerup.apply(run, card)
+    run_lib.record(run, { powerup = { key = card.key, rarity = card.rarity } })   -- replay log (M9)
+  end
   run.draft = nil
   fx.upgrade_sfx()
   -- between-wave chain (M7 route, M3 contract): route event first, then a contract

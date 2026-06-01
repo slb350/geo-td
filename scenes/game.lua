@@ -54,11 +54,13 @@ local function handle_field_click(run, ui, meta, mx, my)
     local t = tower.at(run, mx, my)
     if t then
       if ui.inspect == t then ui.inspect = nil end
-      tower.sell(run, t)
+      local id = t.id
+      if tower.sell(run, t) then run_lib.record(run, { sell = { tower = id } }) end   -- replay log (M9)
     end
   elseif ui.selected then
     if tower.can_place(run, mx, my, ui.selected) then
       tower.place(run, mx, my, ui.selected)
+      run_lib.record(run, { place = { kind = ui.selected, x = mx, y = my } })          -- replay log (M9)
     end
   elseif run.phase == "building" then
     -- inspect a placed tower (or click empty space to close the panel)
@@ -71,9 +73,15 @@ local function handle_hud_click(run, ui, meta, mx, my)
   if ui.inspect then
     local act = inspect.button_at(run, ui.inspect, mx, my)
     if act and act.type == "upgrade" then
-      if modifier.buy_upgrade(run, ui.inspect, act.id) then fx.place_sfx() end
+      if modifier.buy_upgrade(run, ui.inspect, act.id) then
+        fx.place_sfx()
+        run_lib.record(run, { upgrade = { tower = ui.inspect.id, id = act.id } })   -- replay log (M9)
+      end
     elseif act and act.type == "module" then
-      if modifier.socket_module(run, ui.inspect, act.id) then fx.place_sfx() end
+      if modifier.socket_module(run, ui.inspect, act.id) then
+        fx.place_sfx()
+        run_lib.record(run, { module = { tower = ui.inspect.id, id = act.id } })    -- replay log (M9)
+      end
     elseif act and act.type == "targeting" then
       ui.inspect.targeting_override = tower.cycle_targeting(ui.inspect.def, ui.inspect.targeting_override)
       fx.click_sfx()

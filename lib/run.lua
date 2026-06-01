@@ -63,6 +63,7 @@ function M.new(meta, seed, path_name, mode_id)
     spawn_timer = 0,
     spawn_interval = C.SPAWN_INTERVAL,
     powerups = {},
+    log = {},              -- V2-M9 replay: recorded player build actions (the sim plan)
     -- One-shot route-draft risks (V2-M2), consumed by the next wave.start and
     -- then reset.
     route_mods = { next_budget_mult = 1, next_flyer_bias = false, resources = {} },
@@ -127,6 +128,18 @@ function M.begin_wave(run)
   end
   affix.choose(run, n)        -- pick/clear this wave's affix (nil on boss waves) (M5)
   return n
+end
+
+-- Record a player build action into the run's replay log -- the SAME shape lib/sim
+-- replays ({place/upgrade/module/sell/powerup}). The wave stamped is the upcoming
+-- wave whose build phase the action belongs to: +1 while building, +2 mid-combat
+-- (a tower placed during a wave only contributes from the next build, which is when
+-- the headless driver applies it). Only the interactive scenes call this; the sim
+-- drives the core functions directly, so a replay/verify re-run never re-logs.
+function M.record(run, action)
+  action.wave = run.wave_index + (run.phase == "combat" and 2 or 1)
+  run.log[#run.log + 1] = action
+  return action
 end
 
 -- Credit applied damage to a tower's run-level stat entry (seeded at placement,

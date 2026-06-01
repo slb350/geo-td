@@ -1,10 +1,20 @@
 -- Replay / verification metadata (V2-M9): a deterministic snapshot of a run that
--- is enough to RECREATE it (seed + map + mode, as a share code) and to VERIFY its
--- summary (wave/bosses/score/contracts/affixes). Pure -- given the same run +
--- report it returns identical metadata -- so it doubles as a bug-report artifact
--- and a local "did this seed really reach wave N" check. No online dependency.
+-- is enough to RECREATE it (seed + map + mode + the recorded build plan) and to
+-- VERIFY its summary by replaying that plan through the headless sim. Given the
+-- same run + report it returns identical metadata, so it doubles as a bug-report
+-- artifact and a local "did this seed + build really reach wave N" check. No online
+-- dependency.
+--
+-- The plan (run.log) is the player's build-action stream -- placements, sells,
+-- upgrades, module sockets, and draft picks -- the SAME shape lib/sim replays.
+-- M.verify re-runs it and is EXACT for runs whose decisions were all build-phase
+-- actions + draft picks. A run that leaned on interactive route swaps, signed
+-- contracts, or active abilities (orbital / discharge / call-early) is not fully
+-- reproducible by the headless driver, so reproduced=false is expected and honest
+-- there (the recorded contract_ids / affix_ids still document what happened).
 
 local share = require("lib.share")
+local sim   = require("lib.sim")
 
 local M = {}
 M.VERSION = 1
@@ -28,6 +38,27 @@ function M.snapshot(run, report)
     contracts  = report.contracts,
     affixes    = report.affixes,
     arena_kills = report.arena_kills,
+    -- the replayable build plan + the decision ids (what happened, not just counts)
+    plan        = run.log,
+    contract_ids = run.contract_history,
+    affix_ids    = run.affix_history,
+  }
+end
+
+-- Replay a snapshot's plan through the headless sim and report whether it
+-- reproduces the recorded final wave. Deterministic (same snapshot -> same result).
+-- See the module header for the exactness caveat (build-only runs reproduce; runs
+-- that used interactive route/contract/ability events are not fully reproducible).
+function M.verify(snap)
+  local res = sim.run({
+    seed = snap.seed, map = snap.map, mode = snap.mode,
+    waves = snap.wave, plan = snap.plan,
+  })
+  return {
+    reproduced    = res.final_wave == snap.wave,
+    expected_wave = snap.wave,
+    actual_wave   = res.final_wave,
+    survived      = res.survived,
   }
 end
 

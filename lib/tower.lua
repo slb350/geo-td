@@ -130,8 +130,10 @@ function M.place(run, x, y, kind)
   return t
 end
 
+-- Sell a tower; returns true if it was sold, false if blocked or not found (so the
+-- caller can record a successful sell for the replay log).
 function M.sell(run, t)
-  if run.no_sell then return end          -- "No Sell" contract gates selling this wave
+  if run.no_sell then return false end    -- "No Sell" contract gates selling this wave
   local towers = run.towers
   for i = 1, #towers do
     if towers[i] == t then
@@ -139,9 +141,10 @@ function M.sell(run, t)
       table.remove(towers, i)
       run.resonance_dirty = true     -- topology changed (M4)
       fx.sell_sfx()
-      return
+      return true
     end
   end
+  return false
 end
 
 function M.at(run, x, y)

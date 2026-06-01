@@ -8,6 +8,10 @@ local run_mod = require("lib.run")
 local report  = require("lib.report")
 local replay  = require("lib.replay")
 local share   = require("lib.share")
+local sim     = require("lib.sim")
+local path    = require("lib.path")
+local C       = require("lib.const")
+local game_s  = require("scenes.game")
 
 local M = {}
 
@@ -46,6 +50,55 @@ function M.run(check, near)
   check(type(txt) == "string" and txt:find("GTD2") and txt:find("4242")
     and txt:find("serpentine") and txt:find("wave 17"),
     "format produces a human-readable seed/map/mode/wave block")
+
+  -- ------------------------------------------- snapshot carries the build plan + ids
+  local rl = run_mod.new(m, 7, "serpentine")
+  rl.log = { { wave = 1, place = { kind = "pellet", x = 100, y = 80 } } }
+  rl.contract_history = { "enrage" }; rl.affix_history = { "overclock" }
+  local sl = replay.snapshot(rl, report.build(rl))
+  check(sl.plan == rl.log and #sl.plan == 1, "snapshot carries the recorded build plan")
+  check(sl.contract_ids[1] == "enrage" and sl.affix_ids[1] == "overclock",
+    "snapshot carries the decision ids (not just counts)")
+
+  -- ------------------------------------------------ verify replays the plan via sim
+  local plan = {
+    { wave = 1, place = { kind = "pellet", x = 96,  y = 92 } },
+    { wave = 1, place = { kind = "pellet", x = 150, y = 70 } },
+    { wave = 2, place = { kind = "pellet", x = 210, y = 120 } },
+    { wave = 3, place = { kind = "pellet", x = 120, y = 150 } },
+  }
+  local probe = sim.run({ seed = 1234, map = "serpentine", mode = "standard", waves = 30, plan = plan })
+  local F = probe.final_wave
+  local snap = { seed = 1234, map = "serpentine", mode = "standard", wave = F, plan = plan }
+  local v = replay.verify(snap)
+  check(v.reproduced and v.actual_wave == F, "verify replays the plan and reproduces the final wave")
+  check(replay.verify(snap).actual_wave == v.actual_wave, "verify is deterministic")
+  local bad = { seed = 1234, map = "serpentine", mode = "standard", wave = F + 5, plan = plan }
+  check(not replay.verify(bad).reproduced, "verify rejects a tampered final wave")
+
+  -- ------------------------------------- the game scene records a placement to the log
+  do
+    State.meta = meta.default()
+    State.run = run_mod.new(State.meta, 8, "serpentine"); State.run.money = 9999
+    State.run.phase = "building"; State.run.wave_index = 2        -- building for wave 3
+    State.ui.selected = "pellet"; State.ui.sell_mode = false; State.ui.inspect = nil
+    local bx, by
+    for gx = 16, C.HUD_X - 16, 8 do
+      for gy = 16, C.GAME_H - 16, 8 do
+        if path.dist_to(State.run.path, gx, gy) > C.PLACE_MARGIN + 4 then bx, by = gx, gy; break end
+      end
+      if bx then break end
+    end
+    local before = #State.run.log
+    input._clicks.left, input._clicks.mx, input._clicks.my = true, bx, by
+    game_s.update(1 / 60)
+    input._clicks.left = false
+    check(#State.run.log == before + 1, "the game scene records a placement to the replay log")
+    local last = State.run.log[#State.run.log]
+    check(last.place and last.place.kind == "pellet", "the recorded action is the placement")
+    check(last.wave == 3, "the placement is stamped with the upcoming wave (build phase)")
+    State.run = nil; State.ui.selected = nil
+  end
 end
 
 return M
