@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Procedural audio generator for usagi-geo-td.
 
-Synthesizes the SFX set (sfx/*.wav) and a low ambient loop (music/theme.wav)
+Synthesizes the SFX set (sfx/*.wav) and a low ambient loop (music_src/theme.wav)
 from pure-Python oscillators — no external deps, no binary assets to commit by
 hand. Re-run after tweaking to regenerate:
 
@@ -203,5 +203,9 @@ if __name__ == "__main__":
     for name, gen in SFX.items():
         write_wav(os.path.join(root, "sfx", f"{name}.wav"), gen())
     print("music:")
-    write_wav(os.path.join(root, "music", "theme.wav"), music_theme())
+    # theme is the legacy no-dependency fallback loop -- not a runtime track
+    # (lib/audio.lua never plays "theme"). It lives in music_src/ with the other
+    # WAV masters so it stays out of the runtime export root (music/ ships OGG).
+    os.makedirs(os.path.join(root, "music_src"), exist_ok=True)
+    write_wav(os.path.join(root, "music_src", "theme.wav"), music_theme())
     print("done.")
