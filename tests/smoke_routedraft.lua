@@ -100,9 +100,12 @@ function M.run(check, near)
   do
     local r = run_mod.new(m, 7, "zigzag"); r.money = 1000
     local cards = routedraft.draft(r)
-    -- find a non-current transform card (loop/shortcut/braid/convergence)
+    -- find a non-current TRANSFORM card (loop/shortcut/braid/convergence -- skip
+    -- Prism, which keeps the route rather than swapping it)
     local card
-    for i = 1, #cards do if not cards[i].current then card = cards[i]; break end end
+    for i = 1, #cards do
+      if not cards[i].current and cards[i].id ~= "prism" then card = cards[i]; break end
+    end
     check(card ~= nil, "draft offers at least one route-changing card on zigzag")
     local before_money = r.money
     routedraft.apply(r, card)
@@ -129,6 +132,37 @@ function M.run(check, near)
     check(r.money == (card.reward and card.reward.money or 0), "Hold grants its stipend")
     check(r.route_mods.next_budget_mult == 1 and r.route_mods.next_flyer_bias == false,
       "Hold arms no next-wave risk")
+  end
+
+  -- Prism: keeps the route, seeds a resource prism, arms a next-wave shield (M2)
+  do
+    -- the Prism card is offered across seeds
+    local seen_prism = false
+    for s = 1, 20 do
+      for _, c in ipairs(routedraft.draft(run_mod.new(m, s, "zigzag"))) do
+        if c.id == "prism" then seen_prism = true end
+      end
+    end
+    check(seen_prism, "the Prism card can be drafted")
+
+    local r = run_mod.new(m, 1, "serpentine"); r.money = 100
+    local nodes0, before_path = #r.resource_nodes, r.path.nodes
+    local prism = { id = "prism", nodes = r.path.nodes, current = false,
+                    reward = { money = 0 }, risk = { shield = 6 } }
+    routedraft.apply(r, prism)
+    check(#r.resource_nodes == nodes0 + 1, "Prism seeds an extra resource prism")
+    check(r.path.nodes == before_path, "Prism keeps the current route (no swap)")
+    check(r.route_mods.next_shield == 6, "Prism arms a next-wave shield risk")
+
+    -- wave.start consumes the shield; the drip shields each spawned enemy
+    wave.start(r, 3)
+    check(r.wave_shield == 6, "wave.start consumes the shield into the wave")
+    check(r.route_mods.next_shield == 0, "the shield risk is one-shot (consumed)")
+    r.spawn_timer, r.spawn_interval = 0, 0.5
+    wave.update(r, 1.0)
+    local shielded = false
+    for i = 1, r.enemies.n do if r.enemies[i].shield_max >= 6 then shielded = true end end
+    check(shielded, "Prism's shield buff lands on the wave's enemies")
   end
 
   -- ------------------------------------------------ route_mods consumed once

@@ -42,6 +42,31 @@ function M.spawn_nodes(run)
   run.resource_nodes = nodes
 end
 
+-- Add one more resource prism (the M2 Prism route card). Deterministic per
+-- (seed, wave), off-path, and spread from the existing nodes. Returns the node, or
+-- nil if no spot is free.
+function M.add_node(run)
+  local r = rng.derive(run.seed, 7000 + run.wave_index)
+  local nodes = run.resource_nodes
+  local cands = {}
+  for gx = 30, C.FIELD_W - 30, 18 do
+    for gy = 30, C.FIELD_H - 30, 18 do
+      if path.dist_to(run.path, gx, gy) > C.PLACE_MARGIN + 12 then
+        local ok = true
+        for i = 1, #nodes do
+          local dx, dy = nodes[i].x - gx, nodes[i].y - gy
+          if dx * dx + dy * dy < 60 * 60 then ok = false; break end
+        end
+        if ok then cands[#cands + 1] = { x = gx, y = gy } end
+      end
+    end
+  end
+  if #cands == 0 then return nil end
+  local node = cands[r:int(1, #cands)]
+  nodes[#nodes + 1] = node
+  return node
+end
+
 -- Is (x, y) within extraction range of a resource prism? (The Drill placement
 -- rule, on top of the normal tower placement checks.)
 function M.near_node(run, x, y)

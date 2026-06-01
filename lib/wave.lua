@@ -111,7 +111,8 @@ function M.start(run, n)
     q[q.n] = pick.kind
     budget = budget - pick.cost
   end
-  if rm then rm.next_budget_mult, rm.next_flyer_bias = 1, false end   -- consume once
+  run.wave_shield = (rm and rm.next_shield) or 0                     -- Prism shield buff (M2)
+  if rm then rm.next_budget_mult, rm.next_flyer_bias, rm.next_shield = 1, false, 0 end   -- consume once
   return q.n
 end
 
@@ -124,6 +125,10 @@ function M.update(run, dt)
     q.i = q.i + 1
     local e = enemy.spawn(run, q[q.i], run.hp_scale, run.speed_scale, 0)
     affix.apply_spawn(run, e, q.i, q.n)        -- spawn-time affix (derived fields) (M5)
+    if run.wave_shield and run.wave_shield > 0 then   -- Prism route card's shield buff (M2)
+      e.shield_max = e.shield_max + run.wave_shield
+      e.shield = e.shield + run.wave_shield
+    end
     run.spawn_timer = run.spawn_interval
   end
   return q.i >= q.n

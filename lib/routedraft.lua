@@ -12,10 +12,11 @@
 -- lengths, 65%-160% of the base length, and still buildable), so a drafted route
 -- is interchangeable with the base and a route swap is always field-clear-safe.
 
-local C       = require("lib.const")
-local path    = require("lib.path")
-local pathmut = require("lib.pathmut")
-local rng     = require("lib.rng")
+local C        = require("lib.const")
+local path     = require("lib.path")
+local pathmut  = require("lib.pathmut")
+local rng      = require("lib.rng")
+local resource = require("lib.resource")
 
 local DEFS = usagi.read_json("route_events.json")
 
@@ -169,6 +170,9 @@ function M.draft(run)
       pool[#pool + 1] = make_card(run, id, nodes, false)
     end
   end
+  -- Prism keeps the current route (no geometry change) but seeds a resource prism
+  -- and shields the next wave -- a resource/risk proposition rather than a transform.
+  pool[#pool + 1] = make_card(run, "prism", base, false)
   -- Shuffle then take up to two. A DERIVED rng (from the run + current wave) keeps
   -- the draft deterministic per (seed, map, wave) without perturbing later wave
   -- generation, and shuffles fairly even on a freshly seeded run (see rng.derive).
@@ -184,7 +188,9 @@ end
 -- the number of towers refunded by the swap. Must run with a clear field.
 function M.apply(run, card)
   local refunded = 0
-  if not card.current then
+  if card.id == "prism" then
+    resource.add_node(run)        -- seed a prism (no route swap); shield risk below
+  elseif not card.current then
     refunded = pathmut.apply(run, card.nodes)
   end
   if card.reward and card.reward.money and card.reward.money > 0 then
@@ -194,6 +200,7 @@ function M.apply(run, card)
   if rm and risk then
     if risk.budget_mult then rm.next_budget_mult = risk.budget_mult end
     if risk.flyer_bias then rm.next_flyer_bias = true end
+    if risk.shield then rm.next_shield = risk.shield end
   end
   return refunded
 end

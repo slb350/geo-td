@@ -41,6 +41,7 @@ local function reward_risk_text(card)
       parts[#parts + 1] = ("+%d%% wave"):format(math.floor((k.budget_mult - 1) * 100 + 0.5))
     end
     if k.flyer_bias then parts[#parts + 1] = "+flyers" end
+    if k.shield then parts[#parts + 1] = "+shield" end       -- Prism (M2)
   end
   return table.concat(parts, "  ")
 end

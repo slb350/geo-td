@@ -65,8 +65,9 @@ function M.new(meta, seed, path_name, mode_id)
     powerups = {},
     log = {},              -- V2-M9 replay: recorded player build actions (the sim plan)
     -- One-shot route-draft risks (V2-M2), consumed by the next wave.start and
-    -- then reset.
-    route_mods = { next_budget_mult = 1, next_flyer_bias = false, resources = {} },
+    -- then reset. next_shield is the Prism card's shield buff on the next wave.
+    route_mods = { next_budget_mult = 1, next_flyer_bias = false, next_shield = 0 },
+    wave_shield = 0,       -- per-wave enemy shield bonus from a Prism route card (M2)
     -- Resource + contract economy (V2-M3). charge is the second in-run currency
     -- (Drills fill it, Discharge spends it). resource_nodes are seeded below.
     -- active_contract is the signed wave contract (or nil); its risk hits the next
