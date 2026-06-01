@@ -4,7 +4,7 @@
 -- tower placement, and a draw routine.
 
 local shape = require("lib.shape")
-local C     = require("lib.const")
+local C = require("lib.const")
 
 local M = {}
 
@@ -16,8 +16,7 @@ function M.draw_preview(nodes, bx, by, bw, bh, line_col, spawn_col, core_col)
   local ox = bx + (bw - C.FIELD_W * s) * 0.5
   local oy = by + (bh - C.FIELD_H * s) * 0.5
   for i = 1, #nodes - 1 do
-    gfx.line(ox + nodes[i][1] * s, oy + nodes[i][2] * s,
-             ox + nodes[i + 1][1] * s, oy + nodes[i + 1][2] * s, line_col)
+    gfx.line(ox + nodes[i][1] * s, oy + nodes[i][2] * s, ox + nodes[i + 1][1] * s, oy + nodes[i + 1][2] * s, line_col)
   end
   local a, b = nodes[1], nodes[#nodes]
   gfx.circ_fill(ox + a[1] * s, oy + a[2] * s, 1.5, spawn_col)
@@ -32,8 +31,13 @@ function M.build(nodes)
     local dx, dy = b[1] - a[1], b[2] - a[2]
     local len = math.sqrt(dx * dx + dy * dy)
     segs[i] = {
-      ax = a[1], ay = a[2], bx = b[1], by = b[2],
-      len = len, ux = dx / len, uy = dy / len,
+      ax = a[1],
+      ay = a[2],
+      bx = b[1],
+      by = b[2],
+      len = len,
+      ux = dx / len,
+      uy = dy / len,
     }
     total = total + len
   end
@@ -47,9 +51,7 @@ function M.point_at(path, d)
   local rem = d
   for i = 1, #segs do
     local s = segs[i]
-    if rem <= s.len then
-      return s.ax + s.ux * rem, s.ay + s.uy * rem
-    end
+    if rem <= s.len then return s.ax + s.ux * rem, s.ay + s.uy * rem end
     rem = rem - s.len
   end
   local last = segs[#segs]
@@ -67,7 +69,11 @@ function M.dist_to(path, px, py)
     local wx, wy = px - s.ax, py - s.ay
     local denom = vx * vx + vy * vy
     local t = denom > 0 and (wx * vx + wy * vy) / denom or 0
-    if t < 0 then t = 0 elseif t > 1 then t = 1 end
+    if t < 0 then
+      t = 0
+    elseif t > 1 then
+      t = 1
+    end
     local cx, cy = s.ax + vx * t, s.ay + vy * t
     local ddx, ddy = px - cx, py - cy
     local d2 = ddx * ddx + ddy * ddy

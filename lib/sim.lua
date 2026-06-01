@@ -11,22 +11,22 @@
 -- thrown), and does not drive interactive route-mutation events (those are
 -- between-wave player choices; a later milestone can extend the driver).
 
-local meta_m   = require("lib.meta")
-local run_mod  = require("lib.run")
-local wave     = require("lib.wave")
-local tower    = require("lib.tower")
+local meta_m = require("lib.meta")
+local run_mod = require("lib.run")
+local wave = require("lib.wave")
+local tower = require("lib.tower")
 local modifier = require("lib.modifier")
-local powerup  = require("lib.powerup")
-local loop     = require("lib.loop")
-local metrics  = require("lib.metrics")
+local powerup = require("lib.powerup")
+local loop = require("lib.loop")
+local metrics = require("lib.metrics")
 local routedraft = require("lib.routedraft")
-local contracts  = require("lib.contracts")
-local affix      = require("lib.affix")
+local contracts = require("lib.contracts")
+local affix = require("lib.affix")
 
 local M = {}
 
-local DT = metrics.DT          -- the game's fixed combat step (1/60)
-local FRAME_CAP = 30000        -- ~500s stall guard, matching the smoke runner
+local DT = metrics.DT -- the game's fixed combat step (1/60)
+local FRAME_CAP = 30000 -- ~500s stall guard, matching the smoke runner
 
 -- Resolve a plan action's `tower` reference to a placed tower by its STABLE id.
 -- run.tower_seq assigns ids 1, 2, 3, ... in placement order, so `tower = 1` is
@@ -50,9 +50,7 @@ local function apply_action(run, a)
   if a.place then
     local p = a.place
     local ok, why = tower.can_place(run, p.x, p.y, p.kind)
-    if not ok then
-      return ("place %s @%d,%d: %s"):format(p.kind, p.x, p.y, tostring(why))
-    end
+    if not ok then return ("place %s @%d,%d: %s"):format(p.kind, p.x, p.y, tostring(why)) end
     tower.place(run, p.x, p.y, p.kind)
   elseif a.upgrade then
     local t = tower_by_id(run, a.upgrade.tower)
@@ -80,7 +78,10 @@ local function apply_action(run, a)
     local cards = routedraft.draft(run)
     local card
     for i = 1, #cards do
-      if cards[i].id == a.route.id then card = cards[i]; break end
+      if cards[i].id == a.route.id then
+        card = cards[i]
+        break
+      end
     end
     if not card then return "route " .. tostring(a.route.id) .. ": not offered" end
     routedraft.apply(run, card)
@@ -91,7 +92,10 @@ local function apply_action(run, a)
       local cards = contracts.draft(run)
       local card
       for i = 1, #cards do
-        if cards[i].id == a.contract.id then card = cards[i]; break end
+        if cards[i].id == a.contract.id then
+          card = cards[i]
+          break
+        end
       end
       if not card then return "contract " .. tostring(a.contract.id) .. ": not offered" end
       contracts.sign(run, card)
@@ -132,7 +136,10 @@ function M.run(opts)
     local timed = run_mod.is_combat_timed(plan[i])
     local buckets = timed and combat_by_wave or plan_by_wave
     local bucket = buckets[w]
-    if not bucket then bucket = {}; buckets[w] = bucket end
+    if not bucket then
+      bucket = {}
+      buckets[w] = bucket
+    end
     bucket[#bucket + 1] = plan[i]
   end
 
@@ -184,7 +191,7 @@ function M.run(opts)
         end
       end
       local t0 = os.clock()
-      local spawns_done = loop.step(run, DT)   -- canonical combat step (shared with the game)
+      local spawns_done = loop.step(run, DT) -- canonical combat step (shared with the game)
       local step_time = os.clock() - t0
       if step_time > max_step_time then max_step_time = step_time end
       frames = frames + 1
@@ -195,7 +202,10 @@ function M.run(opts)
       -- means the wave was NOT held, and the real game routes to gameover (the
       -- lives<=0 transition overrides the wave-clear one that same frame), so the
       -- wave counts as not-cleared (waves_cleared = final_wave - 1) here too.
-      if run.lives <= 0 then survived = false; break end
+      if run.lives <= 0 then
+        survived = false
+        break
+      end
       local cleared = run.enemies.n == 0 and (not run.boss or run.boss.dead)
       if spawns_done and cleared then break end
       if frames >= FRAME_CAP then
@@ -205,10 +215,15 @@ function M.run(opts)
       end
     end
 
-    final_wave = run.wave_index   -- captures any mid-combat call_early advance
+    final_wave = run.wave_index -- captures any mid-combat call_early advance
     records[#records + 1] = {
-      wave = run.wave_index, frames = frames, peak_enemies = peak_e, peak_proj = peak_p,
-      leaks = run.leaked - leaks_before, money_after = run.money, boss = wave.is_boss_for(run, run.wave_index),
+      wave = run.wave_index,
+      frames = frames,
+      peak_enemies = peak_e,
+      peak_proj = peak_p,
+      leaks = run.leaked - leaks_before,
+      money_after = run.money,
+      boss = wave.is_boss_for(run, run.wave_index),
     }
     if not survived then break end
     run.phase = "building"

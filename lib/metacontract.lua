@@ -14,8 +14,15 @@ M.BOARD_SIZE = 3
 
 -- Stable pool order, used to deterministically fill the board.
 M.ORDER = {
-  "first_blood", "boss_trio", "centurion", "broker",
-  "affix_breaker", "arena_wrecker", "chicane_climb", "ironclad", "lattice_seen",
+  "first_blood",
+  "boss_trio",
+  "centurion",
+  "broker",
+  "affix_breaker",
+  "arena_wrecker",
+  "chicane_climb",
+  "ironclad",
+  "lattice_seen",
 }
 
 -- Does a run report satisfy every condition of a goal?
@@ -40,7 +47,9 @@ end
 function M.refresh(meta)
   local board = meta.contract_board or {}
   local present = {}
-  for i = 1, #board do present[board[i]] = true end
+  for i = 1, #board do
+    present[board[i]] = true
+  end
   local completed = meta.completed_contracts or {}
   for i = 1, #M.ORDER do
     if #board >= M.BOARD_SIZE then break end

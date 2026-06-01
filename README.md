@@ -81,9 +81,12 @@ Run from the repo root:
 Run from the repo root:
 
 ```bash
-luajit tests/smoke.lua       # full headless suite: 1007 checks
+luajit tests/smoke.lua       # full headless suite: 1025 checks
 luajit tools/map_lab.lua     # validate every layout + route variant
 luajit tests/baseline.lua    # deterministic balance baseline, waves 1-30
+luacheck main.lua lib scenes tests tools
+stylua --check --output-format Summary main.lua lib scenes tests tools
+tools/pre_commit.sh       # same Lua quality gate Git runs before commit
 
 # LuaJIT syntax gate; keep Lua syntax portable
 for f in main.lua lib/*.lua scenes/*.lua tests/*.lua tools/*.lua; do
@@ -96,6 +99,18 @@ modes, path mutation, route drafts, resources, contracts, resonance, affixes,
 boss arenas, tactical UX, mastery, dailies, share codes, settings, replay, sim,
 balance, and performance gates. `tests/baseline.lua` pins the standard balance
 anchors; `tools/map_lab.lua` catches malformed route content before runtime.
+`meta/usagi.lua` is generated API metadata and is excluded from the normal
+Luacheck/StyLua gate.
+
+The repository ships a tracked pre-commit hook at `tools/pre_commit.sh`. Install
+it in a checkout with:
+
+```bash
+ln -s ../../tools/pre_commit.sh .git/hooks/pre-commit
+```
+
+By default the hook runs StyLua check, Luacheck, the LuaJIT syntax gate, and the
+smoke suite. Set `USAGI_PRECOMMIT_SMOKE=0` to skip only the smoke suite.
 
 ## Project Layout
 

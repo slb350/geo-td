@@ -4,15 +4,15 @@
 -- Towers target it via tower.acquire; projectiles route damage here (the
 -- target carries is_boss = true). Bosses cycle by wave (M.for_wave).
 
-local C      = require("lib.const")
-local pal    = require("lib.palette")
-local path   = require("lib.path")
-local enemy  = require("lib.enemy")
-local fx     = require("lib.fx")
-local shape  = require("lib.shape")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local path = require("lib.path")
+local enemy = require("lib.enemy")
+local fx = require("lib.fx")
+local shape = require("lib.shape")
 local combat = require("lib.combat")
-local audio  = require("lib.audio")
-local arena  = require("lib.arena")
+local audio = require("lib.audio")
+local arena = require("lib.arena")
 
 local DEFS = usagi.read_json("bosses.json")
 
@@ -21,7 +21,9 @@ M.DEFS = DEFS
 M.ROTATION = { "prism", "bulwark", "hydra", "specter" }
 
 -- Every FINAL_BOSS_EVERY-th wave is the final-act boss, The Lattice (M6).
-local function is_final(n) return n % C.FINAL_BOSS_EVERY == 0 end
+local function is_final(n)
+  return n % C.FINAL_BOSS_EVERY == 0
+end
 
 -- Which boss spawns on (boss) wave n: the final boss on its cadence, else the
 -- four-boss rotation.
@@ -42,24 +44,39 @@ function M.spawn(run, kind, hp_scale)
   local def = DEFS[kind] or DEFS.prism
   local hp = def.hp * (hp_scale or 1)
   local b = {
-    is_boss = true, def = def, kind = kind,
-    maxhp = hp, hp = hp,
-    d = 0, base_speed = def.speed, size = def.size,
-    color = pal.resolve(def.color), shape = def.shape or "tri",
-    armor = def.armor or 0, regen = def.regen or 0,
-    shield_max = def.shield or 0, shield = def.shield or 0,
-    shield_regen = def.shield_regen or 0, shield_hit_t = 0, shield_hit_delay = 0.6,
-    phase = 1, angle = 0,
+    is_boss = true,
+    def = def,
+    kind = kind,
+    maxhp = hp,
+    hp = hp,
+    d = 0,
+    base_speed = def.speed,
+    size = def.size,
+    color = pal.resolve(def.color),
+    shape = def.shape or "tri",
+    armor = def.armor or 0,
+    regen = def.regen or 0,
+    shield_max = def.shield or 0,
+    shield = def.shield or 0,
+    shield_regen = def.shield_regen or 0,
+    shield_hit_t = 0,
+    shield_hit_delay = 0.6,
+    phase = 1,
+    angle = 0,
     shock_t = def.shockwave_every or 0,
     spawn_t = def.spawn_every or 0,
-    invuln_t = 0, invuln_cd = def.invuln_every or 0,
-    shock_warn = false, invuln_warn = false, spawn_warn = false,  -- telegraphs (M5)
-    dead = false, leaked = false,
+    invuln_t = 0,
+    invuln_cd = def.invuln_every or 0,
+    shock_warn = false,
+    invuln_warn = false,
+    spawn_warn = false, -- telegraphs (M5)
+    dead = false,
+    leaked = false,
   }
   b.x, b.y = path.point_at(run.path, 0)
   run.boss = b
-  if kind == "lattice" then run.final_boss_reached = true end   -- final-act boss (M6)
-  arena.spawn_for(run, b, "spawn")     -- boss-arena objects placed on the route (M6)
+  if kind == "lattice" then run.final_boss_reached = true end -- final-act boss (M6)
+  arena.spawn_for(run, b, "spawn") -- boss-arena objects placed on the route (M6)
   fx.boss_sfx()
   return b
 end
@@ -80,9 +97,9 @@ function M.hurt(run, dmg)
   fx.boss_hit()
   if b.phase == 1 and b.def.phase2_at and b.hp <= b.maxhp * b.def.phase2_at then
     b.phase = 2
-    audio.stinger("boss_phase")          -- one-shot dramatic sting (M5)
+    audio.stinger("boss_phase") -- one-shot dramatic sting (M5)
     effect.flash(0.15, gfx.COLOR_RED)
-    arena.spawn_for(run, b, "phase2")    -- phase-2 arena objects (e.g. Prism mirrors) (M6)
+    arena.spawn_for(run, b, "phase2") -- phase-2 arena objects (e.g. Prism mirrors) (M6)
   end
   if killed then M.kill(run) end
   return killed, applied
@@ -106,7 +123,7 @@ function M.kill(run)
       enemy.spawn(run, split.type, hp_scale, run.speed_scale, math.max(0, b.d - k * 4))
     end
   end
-  arena.clear(run)        -- vaporize the arena objects so the wave can clear (M6)
+  arena.clear(run) -- vaporize the arena objects so the wave can clear (M6)
 end
 
 local function emit_add(run, b)
@@ -121,8 +138,7 @@ function M.update(run, dt)
   combat.tick_regen(b, dt)
   -- Bulwark arena (M6): once every shield battery is destroyed, the shield drops.
   local arena_def = b.def.arena
-  if arena_def and arena_def.drop_shield and b.shield_max > 0
-    and arena.count(run, arena_def.kind) == 0 then
+  if arena_def and arena_def.drop_shield and b.shield_max > 0 and arena.count(run, arena_def.kind) == 0 then
     b.shield, b.shield_max = 0, 0
   end
   -- invulnerability windows (telegraphed: warn in the last BOSS_TELEGRAPH
@@ -225,10 +241,10 @@ function M.draw(run)
     gfx.circ(b.x, b.y, b.def.shockwave_radius * (0.5 + 0.5 * (b.shock_t / C.BOSS_TELEGRAPH)), gfx.COLOR_ORANGE)
   end
   if b.invuln_warn then
-    gfx.circ(b.x, b.y, r + 8, gfx.COLOR_YELLOW)   -- about to phase out (time your damage)
+    gfx.circ(b.x, b.y, r + 8, gfx.COLOR_YELLOW) -- about to phase out (time your damage)
   end
   if b.spawn_warn then
-    local sx, sy = path.point_at(run.path, 0)     -- adds enter at the path start
+    local sx, sy = path.point_at(run.path, 0) -- adds enter at the path start
     gfx.circ(sx, sy, 6 + math.sin(usagi.elapsed * 10) * 2, gfx.COLOR_PINK)
   end
 

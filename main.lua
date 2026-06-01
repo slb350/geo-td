@@ -4,17 +4,17 @@
 -- Scenes are modules exposing init/update/draw; `SwitchScene` swaps them on
 -- the next frame. See docs/DESIGN.md for the architecture.
 
-local menu     = require("scenes.menu")
-local select   = require("scenes.select")
-local game     = require("scenes.game")
-local upgrade  = require("scenes.upgrade")
-local route    = require("scenes.route")
+local menu = require("scenes.menu")
+local select = require("scenes.select")
+local game = require("scenes.game")
+local upgrade = require("scenes.upgrade")
+local route = require("scenes.route")
 local contract = require("scenes.contract")
 local gameover = require("scenes.gameover")
-local meta     = require("lib.meta")
+local meta = require("lib.meta")
 local settings = require("lib.settings")
-local pal      = require("lib.palette")
-local C        = require("lib.const")
+local pal = require("lib.palette")
+local C = require("lib.const")
 
 local SCENES = {
   menu = menu,
@@ -46,9 +46,18 @@ function _init()
   local m = meta.load()
   State = {
     meta = m,
-    settings = m.settings,   -- M9: live settings (a reference into the meta save)
+    settings = m.settings, -- M9: live settings (a reference into the meta save)
     run = nil,
-    ui = { selected = nil, sell_mode = false, hover_x = 0, hover_y = 0, hover_valid = false, inspect = nil, mode = "standard", speed = 1 },
+    ui = {
+      selected = nil,
+      sell_mode = false,
+      hover_x = 0,
+      hover_y = 0,
+      hover_valid = false,
+      inspect = nil,
+      mode = "standard",
+      speed = 1,
+    },
     summary = nil,
     current = nil,
     pending = nil,
@@ -100,9 +109,7 @@ function _update(dt)
 end
 
 function _draw(dt)
-  if State.crt then
-    gfx.shader_uniform("u_resolution", { usagi.GAME_W, usagi.GAME_H })
-  end
+  if State.crt then gfx.shader_uniform("u_resolution", { usagi.GAME_W, usagi.GAME_H }) end
   local s = SCENES[State.current]
   if s and s.draw then
     s.draw(dt)

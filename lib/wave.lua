@@ -3,10 +3,10 @@
 -- scales enemy hp/speed. Every Nth wave is a boss wave (handled by the game
 -- scene + lib/boss).
 
-local C     = require("lib.const")
+local C = require("lib.const")
 local enemy = require("lib.enemy")
 local affix = require("lib.affix")
-local rng   = require("lib.rng")
+local rng = require("lib.rng")
 
 local M = {}
 
@@ -27,7 +27,7 @@ function M.weighted_pool(pool, flyer_bias)
   local out = {}
   for i = 1, #pool do
     out[#out + 1] = pool[i]
-    if enemy.DEFS[pool[i].kind].fly then          -- triple a flyer's pick weight
+    if enemy.DEFS[pool[i].kind].fly then -- triple a flyer's pick weight
       out[#out + 1] = pool[i]
       out[#out + 1] = pool[i]
     end
@@ -41,11 +41,11 @@ end
 function M.pool_for(n)
   local pool = {}
   for kind, def in pairs(enemy.DEFS) do
-    if (def.unlock_wave or 1) <= n then
-      pool[#pool + 1] = { kind = kind, cost = def.cost or 1 }
-    end
+    if (def.unlock_wave or 1) <= n then pool[#pool + 1] = { kind = kind, cost = def.cost or 1 } end
   end
-  table.sort(pool, function(a, b) return a.kind < b.kind end)
+  table.sort(pool, function(a, b)
+    return a.kind < b.kind
+  end)
   return pool
 end
 local pool_for = M.pool_for
@@ -80,8 +80,11 @@ end
 local function mirrored_queue(run, n, pool)
   local flyer, ground = {}, {}
   for i = 1, #pool do
-    if enemy.DEFS[pool[i].kind].fly then flyer[#flyer + 1] = pool[i].kind
-    else ground[#ground + 1] = pool[i].kind end
+    if enemy.DEFS[pool[i].kind].fly then
+      flyer[#flyer + 1] = pool[i].kind
+    else
+      ground[#ground + 1] = pool[i].kind
+    end
   end
   if #flyer == 0 or #ground == 0 then return end
   local r = rng.derive(run.seed, n * 71 + 23)
@@ -116,9 +119,7 @@ function M.start(run, n)
   local q = run.spawn_queue
   q.n, q.i = 0, 0
   local rm = run.route_mods
-  local budget = M.budget_for(run, n)
-    * ((rm and rm.next_budget_mult) or 1)
-    * ((ac and ac.risk.count_mult) or 1)
+  local budget = M.budget_for(run, n) * ((rm and rm.next_budget_mult) or 1) * ((ac and ac.risk.count_mult) or 1)
   local flyer_bias = (run.mode and run.mode.flyer_bias) or (rm and rm.next_flyer_bias) or false
   local pool = M.weighted_pool(pool_for(n), flyer_bias)
   while budget > 0 and q.n < 200 do
@@ -128,8 +129,10 @@ function M.start(run, n)
     budget = budget - pick.cost
   end
   if run.wave_affix and run.wave_affix.mirror_pairs then mirrored_queue(run, n, pool) end
-  run.wave_shield = (rm and rm.next_shield) or 0                     -- Prism shield buff (M2)
-  if rm then rm.next_budget_mult, rm.next_flyer_bias, rm.next_shield = 1, false, 0 end   -- consume once
+  run.wave_shield = (rm and rm.next_shield) or 0 -- Prism shield buff (M2)
+  if rm then
+    rm.next_budget_mult, rm.next_flyer_bias, rm.next_shield = 1, false, 0
+  end -- consume once
   return q.n
 end
 
@@ -141,8 +144,8 @@ function M.update(run, dt)
   if run.spawn_timer <= 0 then
     q.i = q.i + 1
     local e = enemy.spawn(run, q[q.i], run.hp_scale, run.speed_scale, 0)
-    affix.apply_spawn(run, e, q.i, q.n)        -- spawn-time affix (derived fields) (M5)
-    if run.wave_shield and run.wave_shield > 0 then   -- Prism route card's shield buff (M2)
+    affix.apply_spawn(run, e, q.i, q.n) -- spawn-time affix (derived fields) (M5)
+    if run.wave_shield and run.wave_shield > 0 then -- Prism route card's shield buff (M2)
       e.shield_max = e.shield_max + run.wave_shield
       e.shield = e.shield + run.wave_shield
     end

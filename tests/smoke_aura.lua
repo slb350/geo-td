@@ -2,11 +2,11 @@
 -- emitter dies), no self-buff, per-kind effects, combat integration (armor/
 -- shield/regen), stealth targeting, and the enemy.update pass. Run by smoke.lua.
 
-local meta    = require("lib.meta")
-local enemy   = require("lib.enemy")
-local combat  = require("lib.combat")
-local aura    = require("lib.aura")
-local tower   = require("lib.tower")
+local meta = require("lib.meta")
+local enemy = require("lib.enemy")
+local combat = require("lib.combat")
+local aura = require("lib.aura")
+local tower = require("lib.tower")
 local helpers = require("tests.helpers")
 
 local M = {}
@@ -20,16 +20,22 @@ end
 
 function M.run(check, near)
   local m = meta.default()
-  local function fresh(seed) return helpers.fresh(m, seed) end
+  local function fresh(seed)
+    return helpers.fresh(m, seed)
+  end
   -- a fresh run with an empty enemy pool (the common aura-test starting point)
-  local function clean() local r = fresh(); r.enemies.n = 0; return r end
+  local function clean()
+    local r = fresh()
+    r.enemies.n = 0
+    return r
+  end
 
   -- a target inside an emitter's radius gains the derived buff; the emitter
   -- never buffs itself
   do
     local r = clean()
-    local em = at(r, "warden", 100, 100)   -- shield aura, radius 38, value 12
-    local tgt = at(r, "mote", 110, 100)    -- 10px away, inside radius
+    local em = at(r, "warden", 100, 100) -- shield aura, radius 38, value 12
+    local tgt = at(r, "mote", 110, 100) -- 10px away, inside radius
     aura.update(r)
     check(near(tgt.aura_shield, 12), "an enemy inside a shield-carrier radius gains the ward")
     check(em.aura_shield == 0, "the emitter does not buff itself")
@@ -40,7 +46,8 @@ function M.run(check, near)
     local r = clean()
     at(r, "warden", 100, 100)
     local tgt = at(r, "mote", 110, 100)
-    aura.update(r); check(near(tgt.aura_shield, 12), "buffed while in range")
+    aura.update(r)
+    check(near(tgt.aura_shield, 12), "buffed while in range")
     tgt.x, tgt.y = 300, 300
     aura.update(r)
     check(tgt.aura_shield == 0, "leaving the radius drops the buff")
@@ -51,7 +58,8 @@ function M.run(check, near)
     local r = clean()
     local em = at(r, "warden", 100, 100)
     local tgt = at(r, "mote", 110, 100)
-    aura.update(r); check(near(tgt.aura_shield, 12), "buffed while emitter lives")
+    aura.update(r)
+    check(near(tgt.aura_shield, 12), "buffed while emitter lives")
     em.dead = true
     aura.update(r)
     check(tgt.aura_shield == 0, "a dead emitter buffs no one")
@@ -60,10 +68,14 @@ function M.run(check, near)
   -- each aura kind sets its own derived field
   do
     local r = clean()
-    at(r, "accelerant", 100, 100); local s = at(r, "mote", 108, 100)
-    at(r, "totem", 100, 200);      local g = at(r, "mote", 108, 200)
-    at(r, "lattice", 100, 250);    local a = at(r, "mote", 108, 250)
-    at(r, "veil", 300, 100);       local v = at(r, "mote", 308, 100)
+    at(r, "accelerant", 100, 100)
+    local s = at(r, "mote", 108, 100)
+    at(r, "totem", 100, 200)
+    local g = at(r, "mote", 108, 200)
+    at(r, "lattice", 100, 250)
+    local a = at(r, "mote", 108, 250)
+    at(r, "veil", 300, 100)
+    local v = at(r, "mote", 308, 100)
     aura.update(r)
     check(near(s.aura_speed, 1.4), "speed prism grants a speed multiplier")
     check(near(g.aura_regen, 10), "regen node grants regen")
@@ -76,11 +88,14 @@ function M.run(check, near)
   -- is 0), so two-emitter cases pin the design decision.
   do
     local r = clean()
-    at(r, "lattice", 100, 100); at(r, "lattice", 120, 100)
-    local a = at(r, "mote", 110, 100)                 -- inside both lattice radii
-    at(r, "totem", 100, 200); at(r, "totem", 120, 200)
+    at(r, "lattice", 100, 100)
+    at(r, "lattice", 120, 100)
+    local a = at(r, "mote", 110, 100) -- inside both lattice radii
+    at(r, "totem", 100, 200)
+    at(r, "totem", 120, 200)
     local g = at(r, "mote", 110, 200)
-    at(r, "warden", 100, 300); at(r, "warden", 120, 300)
+    at(r, "warden", 100, 300)
+    at(r, "warden", 120, 300)
     local s = at(r, "mote", 110, 300)
     aura.update(r)
     check(near(a.aura_armor, 6), "two armor lattices stack additively (3 + 3)")
@@ -114,7 +129,8 @@ function M.run(check, near)
     aura.update(r)
     check(hidden.aura_stealth and not veil.aura_stealth, "veil stealths the pack, not itself")
     r.projectiles.n = 0
-    local tw = r.towers[1]; tw.cooldown = 0
+    local tw = r.towers[1]
+    tw.cooldown = 0
     tower.update(r, 1 / 60)
     local hit_hidden, hit_veil = false, false
     for i = 1, r.projectiles.n do
@@ -139,7 +155,8 @@ function M.run(check, near)
   do
     local r = clean()
     at(r, "accelerant", 100, 100)
-    local fast = at(r, "mote", 108, 100); fast.d = 10
+    local fast = at(r, "mote", 108, 100)
+    fast.d = 10
     enemy.update(r, 1 / 60)
     local base = enemy.DEFS.mote.speed
     check(near(fast.d, 10 + base * 1.4 * (1 / 60)), "speed prism makes a neighbor move faster")

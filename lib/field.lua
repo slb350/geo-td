@@ -10,8 +10,8 @@ local C = require("lib.const")
 
 local M = {}
 
-local W, H  = C.HUD_X, C.GAME_H
-local GRID  = 24
+local W, H = C.HUD_X, C.GAME_H
+local GRID = 24
 local STARS = 52
 local TWO_PI = math.pi * 2
 local flr = math.floor
@@ -26,8 +26,12 @@ end
 -- rate) are baked once at load; the draw loop only animates drift + twinkle.
 local STAR = {}
 for i = 1, STARS do
-  STAR[i] = { x = math.floor(hash(i) * W), speed = 4 + hash(i + 11) * 10,
-              y0 = hash(i + 99) * H, rate = 1.5 + hash(i + 3) * 2 }
+  STAR[i] = {
+    x = math.floor(hash(i) * W),
+    speed = 4 + hash(i + 11) * 10,
+    y0 = hash(i + 99) * H,
+    rate = 1.5 + hash(i + 3) * 2,
+  }
 end
 
 function M.draw(pal, elapsed)
@@ -36,11 +40,14 @@ function M.draw(pal, elapsed)
   -- 1. parallax starfield: dim motes drifting down, the odd one twinkling.
   for i = 1, STARS do
     local s = STAR[i]
-    local sy = (s.y0 + elapsed * s.speed) % H         -- nearer motes fall faster
+    local sy = (s.y0 + elapsed * s.speed) % H -- nearer motes fall faster
     local tw = math.sin(elapsed * s.rate + i)
     local col = gfx.COLOR_DARK_PURPLE
-    if tw > 0.93 then col = gfx.COLOR_LIGHT_GRAY
-    elseif tw > 0.45 then col = gfx.COLOR_INDIGO end
+    if tw > 0.93 then
+      col = gfx.COLOR_LIGHT_GRAY
+    elseif tw > 0.45 then
+      col = gfx.COLOR_INDIGO
+    end
     gfx.px(s.x, flr(sy), col)
   end
 
@@ -56,7 +63,7 @@ function M.draw(pal, elapsed)
   end
 
   -- 3. a faint diagonal scan line sweeping the field on a slow cycle.
-  local sweep = (elapsed * 46) % (W + H) - H          -- x-intercept of the line
+  local sweep = (elapsed * 46) % (W + H) - H -- x-intercept of the line
   gfx.line(sweep, 0, sweep + H, H, gfx.COLOR_DARK_PURPLE)
 
   -- 4. ambient motif: one big, very dim, slowly rotating hexagon ring.
@@ -66,7 +73,7 @@ function M.draw(pal, elapsed)
   for k = 0, 6 do
     local ang = a + k * (TWO_PI / 6)
     local x2 = cx + math.cos(ang) * r
-    local y2 = cy + math.sin(ang) * r * 0.7           -- squashed to suit 16:9
+    local y2 = cy + math.sin(ang) * r * 0.7 -- squashed to suit 16:9
     if k > 0 then gfx.line(px0, py0, x2, y2, gfx.COLOR_DARK_PURPLE) end
     px0, py0 = x2, y2
   end

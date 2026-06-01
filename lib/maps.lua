@@ -5,7 +5,7 @@
 -- zigzag is the most forgiving, switchback demands the most coverage. Clearing
 -- wave >= UNLOCK_WAVE on a map unlocks the next one in ORDER.
 
-local C    = require("lib.const")
+local C = require("lib.const")
 local path = require("lib.path")
 
 local M = {}
@@ -16,8 +16,12 @@ M.ORDER = { "zigzag", "spiral", "serpentine", "chicane", "switchback" }
 M.first = M.ORDER[1]
 M.UNLOCK_WAVE = 20
 
-function M.get(name) return DATA.layouts[name] end
-function M.exists(name) return DATA.layouts[name] ~= nil end
+function M.get(name)
+  return DATA.layouts[name]
+end
+function M.exists(name)
+  return DATA.layouts[name] ~= nil
+end
 
 -- Alternate route polylines for a map (the M7 path-mutation variants), or {} if
 -- the map defines none. Each variant is a complete node-list (single polyline).
@@ -80,8 +84,7 @@ end
 -- same place). NOT the route-draft length band -- a variant may be a deliberate
 -- shortcut, far shorter than the base, which is fine for a between-wave swap.
 local function endpoints_match(a, b)
-  return a[1][1] == b[1][1] and a[1][2] == b[1][2]
-     and a[#a][1] == b[#b][1] and a[#a][2] == b[#b][2]
+  return a[1][1] == b[1][1] and a[1][2] == b[1][2] and a[#a][1] == b[#b][1] and a[#a][2] == b[#b][2]
 end
 
 -- Validate a named layout and (if any) each of its route variants: the base by the

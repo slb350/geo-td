@@ -11,7 +11,7 @@
 -- free marker (e.g. "D20235" for a daily's day index). decode round-trips encode
 -- and fails GRACEFULLY (nil, reason) on a bad marker/schema/seed/map/mode.
 
-local maps  = require("lib.maps")
+local maps = require("lib.maps")
 local modes = require("lib.modes")
 
 local M = {}
@@ -27,7 +27,7 @@ local function to36(n)
   local s = ""
   while n > 0 do
     local d = n % 36
-    s = DIGITS:sub(d + 1, d + 1) .. s   -- prepend (seeds are <= ~7 digits)
+    s = DIGITS:sub(d + 1, d + 1) .. s -- prepend (seeds are <= ~7 digits)
     n = math.floor(n / 36)
   end
   return s
@@ -46,7 +46,9 @@ end
 
 local function split_dash(str)
   local out = {}
-  for piece in (str .. "-"):gmatch("([^%-]*)%-") do out[#out + 1] = piece end
+  for piece in (str .. "-"):gmatch("([^%-]*)%-") do
+    out[#out + 1] = piece
+  end
   return out
 end
 
@@ -59,8 +61,11 @@ end
 -- Encode a run config -> share code. cfg = { seed, map, mode?, tag? }.
 function M.encode(cfg)
   local parts = {
-    M.MARKER, tostring(M.SCHEMA), to36(cfg.seed),
-    string.upper(cfg.map), string.upper(cfg.mode or modes.DEFAULT),
+    M.MARKER,
+    tostring(M.SCHEMA),
+    to36(cfg.seed),
+    string.upper(cfg.map),
+    string.upper(cfg.mode or modes.DEFAULT),
   }
   if cfg.tag then parts[#parts + 1] = string.upper(cfg.tag) end
   return table.concat(parts, "-")

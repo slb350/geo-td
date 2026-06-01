@@ -5,11 +5,11 @@
 -- exact roster. Consumers: the build-phase HUD/field preview and (later) the
 -- affix/contract previews.
 
-local wave    = require("lib.wave")
-local enemy   = require("lib.enemy")
-local boss    = require("lib.boss")
+local wave = require("lib.wave")
+local enemy = require("lib.enemy")
+local boss = require("lib.boss")
 local pathmut = require("lib.pathmut")
-local affix   = require("lib.affix")
+local affix = require("lib.affix")
 
 local M = {}
 
@@ -17,8 +17,13 @@ local M = {}
 -- counter this enemy property demands".
 M.TAG_ORDER = { "flyers", "armor", "shield", "regen", "stealth", "splits", "aura" }
 M.TAG_LABEL = {
-  flyers = "flyers", armor = "armor", shield = "shield", regen = "regen",
-  stealth = "stealth", splits = "splitters", aura = "aura",
+  flyers = "flyers",
+  armor = "armor",
+  shield = "shield",
+  regen = "regen",
+  stealth = "stealth",
+  splits = "splitters",
+  aura = "aura",
 }
 
 -- Fold one enemy def's threatening properties into the tag set.
@@ -60,7 +65,9 @@ function M.preview(run, n)
   -- only duplicates flyer entries), so read pool_for directly.
   local pool = wave.pool_for(n)
   local tags = {}
-  for i = 1, #pool do def_tags(enemy.DEFS[pool[i].kind], tags) end
+  for i = 1, #pool do
+    def_tags(enemy.DEFS[pool[i].kind], tags)
+  end
   if run.mode.flyer_bias or run.route_mods.next_flyer_bias then tags.flyers = true end
   out.tags = tags
 

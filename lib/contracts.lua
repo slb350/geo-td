@@ -10,8 +10,8 @@
 -- gates tower.sell. Reward channels: charge / money / bank_shard (-> meta at run
 -- end) / module_discount (one-shot off the next module socket).
 
-local C    = require("lib.const")
-local rng  = require("lib.rng")
+local C = require("lib.const")
+local rng = require("lib.rng")
 local wave = require("lib.wave")
 
 local DEFS = usagi.read_json("contracts.json")
@@ -47,7 +47,9 @@ function M.draft(run)
   end
   rng.derive(run.seed, w * 31 + 99):shuffle(pool)
   local out = {}
-  for i = 1, math.min(3, #pool) do out[#out + 1] = make_card(pool[i]) end
+  for i = 1, math.min(3, #pool) do
+    out[#out + 1] = make_card(pool[i])
+  end
   return out
 end
 

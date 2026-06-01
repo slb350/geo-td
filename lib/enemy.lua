@@ -3,14 +3,14 @@
 -- allocated fresh and dropped on removal (projectiles hold references to them;
 -- pooling would alias a recycled table onto a stale projectile target).
 
-local C      = require("lib.const")
-local pal    = require("lib.palette")
-local path   = require("lib.path")
-local fx     = require("lib.fx")
-local shape  = require("lib.shape")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local path = require("lib.path")
+local fx = require("lib.fx")
+local shape = require("lib.shape")
 local combat = require("lib.combat")
-local aura   = require("lib.aura")
-local affix  = require("lib.affix")
+local aura = require("lib.aura")
+local affix = require("lib.affix")
 
 local DEFS = usagi.read_json("enemies.json")
 
@@ -32,7 +32,7 @@ function M.spawn(run, kind, hp_scale, speed_scale, start_d)
   e.d = start_d or 0
   e.slow_t = 0
   e.slow_factor = 1
-  e.mark_t = 0           -- Green Vector mark (M4): amplifies damage taken while > 0
+  e.mark_t = 0 -- Green Vector mark (M4): amplifies damage taken while > 0
   e.mark_mult = 1
   e.size = def.size
   e.armor = def.armor or 0
@@ -51,7 +51,7 @@ function M.spawn(run, kind, hp_scale, speed_scale, start_d)
   e.leaked = false
   e.fly = def.fly == true
   e.trail = def.trail == true
-  aura.reset(e)   -- derived formation-aura fields (M4); recomputed each tick
+  aura.reset(e) -- derived formation-aura fields (M4); recomputed each tick
 
   if e.fly then
     -- flyers beeline straight from spawn to core, ignoring the path
@@ -78,7 +78,7 @@ function M.damage(run, e, dmg)
   if e.dead then return false, 0 end
   local b = run.mods.brittle
   if b > 0 and e.slow_factor < 1 then dmg = dmg * (1 + b) end
-  if e.mark_t and e.mark_t > 0 then dmg = dmg * e.mark_mult end   -- Green Vector mark (M4)
+  if e.mark_t and e.mark_t > 0 then dmg = dmg * e.mark_mult end -- Green Vector mark (M4)
   local died, applied = combat.apply_damage(e, dmg)
   if died then M.kill(run, e) end
   return died, applied
@@ -107,7 +107,7 @@ function M.kill(run, e)
   if split then
     local count, hp_mult = split.count, 1
     local a = run.wave_affix
-    if a and a.fracture then          -- Fracture affix (M5): fewer, tougher children
+    if a and a.fracture then -- Fracture affix (M5): fewer, tougher children
       count = math.max(1, count - 1)
       hp_mult = a.child_hp_mult or 1.5
     end
@@ -151,7 +151,7 @@ function M.slow(e, factor, time)
 end
 
 function M.update(run, dt)
-  aura.update(run)   -- recompute every enemy's derived aura buffs for this tick
+  aura.update(run) -- recompute every enemy's derived aura buffs for this tick
   local list = run.enemies
   local total = run.path.total_len
   local i = 1
@@ -161,11 +161,10 @@ function M.update(run, dt)
       e.slow_t = e.slow_t - dt
       if e.slow_t <= 0 then e.slow_factor = 1 end
     end
-    if e.mark_t and e.mark_t > 0 then e.mark_t = e.mark_t - dt end   -- mark decay (M4)
+    if e.mark_t and e.mark_t > 0 then e.mark_t = e.mark_t - dt end -- mark decay (M4)
     combat.tick_regen(e, dt)
-    if not e.dead and e.arena then
-      -- arena objects (M6) are fixed route hazards: they never move or leak
-    elseif not e.dead then
+    -- Arena objects (M6) are fixed route hazards: they never move or leak.
+    if not e.dead and not e.arena then
       local affix_speed = e.affix_speed_mult or 1
       if e.affix_overclock and not run.affix_overclock_active then affix_speed = 1 end
       e.d = e.d + e.base_speed * affix_speed * e.slow_factor * e.aura_speed * dt
@@ -211,8 +210,11 @@ function M.draw(run)
         local td = e.d - k * (s + 1)
         if td > 0 then
           local gx, gy
-          if e.fly then gx, gy = e.sx + e.fly_ux * td, e.sy + e.fly_uy * td - 5
-          else gx, gy = path.point_at(run.path, td) end
+          if e.fly then
+            gx, gy = e.sx + e.fly_ux * td, e.sy + e.fly_uy * td - 5
+          else
+            gx, gy = path.point_at(run.path, td)
+          end
           shape.fill(e.shape, gx, gy, s - k, gfx.COLOR_DARK_GRAY, rot)
         end
       end
@@ -225,22 +227,16 @@ function M.draw(run)
       gfx.circ_fill(e.x, by, math.max(1, s * 0.4), gfx.COLOR_WHITE)
     end
     -- armor: outline ring
-    if e.armor > 0 then
-      shape.line(e.shape, e.x, by, s + 1, gfx.COLOR_LIGHT_GRAY, rot)
-    end
+    if e.armor > 0 then shape.line(e.shape, e.x, by, s + 1, gfx.COLOR_LIGHT_GRAY, rot) end
     -- shield: outer ring whose thickness tracks the remaining pool
     if e.shield_max > 0 and e.shield > 0 then
       local th = 1 + math.floor((e.shield / e.shield_max) * 2)
       gfx.circ_ex(e.x, by, s + 3, th, gfx.COLOR_LIGHT_GRAY)
     end
     -- regen: soft pulsing ring
-    if e.regen > 0 then
-      gfx.circ(e.x, by, s + 2 + math.sin(t * 6 + e.phase) * 1.5, gfx.COLOR_GREEN)
-    end
+    if e.regen > 0 then gfx.circ(e.x, by, s + 2 + math.sin(t * 6 + e.phase) * 1.5, gfx.COLOR_GREEN) end
     -- slow: blue ring
-    if e.slow_factor < 1 then
-      gfx.circ(e.x, by, s + 2, gfx.COLOR_BLUE)
-    end
+    if e.slow_factor < 1 then gfx.circ(e.x, by, s + 2, gfx.COLOR_BLUE) end
     -- hp bar (only when wounded)
     if e.hp < e.maxhp then
       local w = s * 2

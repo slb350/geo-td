@@ -5,18 +5,18 @@
 -- suite drives scenes/game with simulated clicks (input._clicks) and keys
 -- (input._keys).
 
-local C       = require("lib.const")
+local C = require("lib.const")
 local harness = require("tests.harness")
-local meta    = require("lib.meta")
+local meta = require("lib.meta")
 local run_mod = require("lib.run")
-local enemy   = require("lib.enemy")
-local tower   = require("lib.tower")
-local boss    = require("lib.boss")
-local wave    = require("lib.wave")
-local speed   = require("lib.speed")
-local threat  = require("lib.threat")
+local enemy = require("lib.enemy")
+local tower = require("lib.tower")
+local boss = require("lib.boss")
+local wave = require("lib.wave")
+local speed = require("lib.speed")
+local threat = require("lib.threat")
 local inspect = require("lib.inspect")
-local game_s  = require("scenes.game")
+local game_s = require("scenes.game")
 
 local M = {}
 
@@ -30,12 +30,18 @@ end
 
 local function sum_d(r)
   local s = 0
-  for i = 1, r.enemies.n do s = s + r.enemies[i].d end
+  for i = 1, r.enemies.n do
+    s = s + r.enemies[i].d
+  end
   return s
 end
 
-local function click_at(mx, my) input._clicks.left, input._clicks.mx, input._clicks.my = true, mx, my end
-local function release() input._clicks.left = false end
+local function click_at(mx, my)
+  input._clicks.left, input._clicks.mx, input._clicks.my = true, mx, my
+end
+local function release()
+  input._clicks.left = false
+end
 
 function M.run(check, near)
   local m = meta.default()
@@ -60,42 +66,58 @@ function M.run(check, near)
   local t5 = threat.preview(r, 5)
   check(t5.boss and t5.boss_kind == "prism" and t5.budget == nil, "threat: wave 5 is the Prism boss (no normal pool)")
   -- modes
-  check(threat.preview(run_mod.new(m, 1, "serpentine", "boss_rush"), 1).boss,
-    "threat: boss_rush flags wave 1 as a boss")
-  check(threat.preview(run_mod.new(m, 1, "serpentine", "flyer_swarm"), 1).tags.flyers,
-    "threat: flyer_swarm flags flyers from wave 1")
+  check(
+    threat.preview(run_mod.new(m, 1, "serpentine", "boss_rush"), 1).boss,
+    "threat: boss_rush flags wave 1 as a boss"
+  )
+  check(
+    threat.preview(run_mod.new(m, 1, "serpentine", "flyer_swarm"), 1).tags.flyers,
+    "threat: flyer_swarm flags flyers from wave 1"
+  )
   -- route warning looks one wave past the previewed one; V2-M2 hosts events on
   -- ANY map (procedural transforms), so even no-variant serpentine flags one
-  check(threat.preview(run_mod.new(m, 1, "zigzag"), 3).route_event,
-    "threat: route event flagged before the cadence wave (variant map)")
+  check(
+    threat.preview(run_mod.new(m, 1, "zigzag"), 3).route_event,
+    "threat: route event flagged before the cadence wave (variant map)"
+  )
   check(threat.preview(r, 3).route_event, "threat: route event flagged on a no-variant map too")
   check(not threat.preview(r, 2).route_event, "threat: no route event off the cadence")
 
   -- ------------------------------------------------------- targeting override
-  local rt = run_mod.new(m, 2, "serpentine"); rt.money = 99999
+  local rt = run_mod.new(m, 2, "serpentine")
+  rt.money = 99999
   local pel = tower.place(rt, 200, 150, "pellet")
   rt.enemies.n = 0
-  local a = enemy.spawn(rt, "hulk", 1, 1, 100); a.x, a.y, a.armor = 240, 150, 0  -- far along, dist 40
-  local b = enemy.spawn(rt, "hulk", 1, 1, 10);  b.x, b.y, b.armor = 210, 150, 0  -- near, dist 10
+  local a = enemy.spawn(rt, "hulk", 1, 1, 100)
+  a.x, a.y, a.armor = 240, 150, 0 -- far along, dist 40
+  local b = enemy.spawn(rt, "hulk", 1, 1, 10)
+  b.x, b.y, b.armor = 210, 150, 0 -- near, dist 10
   check(fired_target(rt, pel) == a, "targeting default 'first' picks the furthest-along enemy")
   pel.targeting_override = "closest"
   check(fired_target(rt, pel) == b, "targeting override 'closest' picks the nearest enemy")
-  pel.targeting_override = "strongest"; b.hp = 5000
+  pel.targeting_override = "strongest"
+  b.hp = 5000
   check(fired_target(rt, pel) == b, "targeting override 'strongest' picks the highest-hp enemy")
-  check(tower.DEFS.pellet.targeting == "first" and tower.DEFS.pellet.priority == nil,
-    "targeting override never mutates the tower def")
+  check(
+    tower.DEFS.pellet.targeting == "first" and tower.DEFS.pellet.priority == nil,
+    "targeting override never mutates the tower def"
+  )
 
   -- focus overrides: prefer a target type regardless of progress/policy
-  local ra = run_mod.new(m, 3, "serpentine"); ra.money = 99999
+  local ra = run_mod.new(m, 3, "serpentine")
+  ra.money = 99999
   local pa = tower.place(ra, 200, 150, "pellet")
   ra.enemies.n = 0
-  enemy.spawn(ra, "hulk", 1, 1, 100).x = 240        -- ground, far along
-  local fly = enemy.spawn(ra, "wisp", 1, 1, 5); fly.x, fly.y = 210, 150
+  enemy.spawn(ra, "hulk", 1, 1, 100).x = 240 -- ground, far along
+  local fly = enemy.spawn(ra, "wisp", 1, 1, 5)
+  fly.x, fly.y = 210, 150
   pa.targeting_override = "air"
   check(fired_target(ra, pa) == fly, "targeting override 'air' focuses the flyer over a higher-progress ground enemy")
   ra.enemies.n = 0
   enemy.spawn(ra, "hulk", 1, 1, 100).x = 240
-  wave.boss_scale(ra, 5); boss.spawn(ra, "prism", ra.hp_scale); ra.boss.x, ra.boss.y = 210, 150
+  wave.boss_scale(ra, 5)
+  boss.spawn(ra, "prism", ra.hp_scale)
+  ra.boss.x, ra.boss.y = 210, 150
   pa.targeting_override = "boss"
   check(fired_target(ra, pa) == ra.boss, "targeting override 'boss' focuses the boss")
   ra.boss = nil
@@ -103,12 +125,16 @@ function M.run(check, near)
   local pdef = tower.DEFS.pellet
   check(tower.cycle_targeting(pdef, nil) == "first", "targeting cycles auto -> first")
   check(tower.cycle_targeting(pdef, "boss") == false, "targeting cycle wraps boss -> auto")
-  check(tower.targeting_label(false) == "auto" and tower.targeting_label("air") == "air",
-    "targeting labels (auto + explicit)")
+  check(
+    tower.targeting_label(false) == "auto" and tower.targeting_label("air") == "air",
+    "targeting labels (auto + explicit)"
+  )
 
   -- focus options are filtered to what a tower can actually hit
   local function offers(def, focus)
-    for _, o in ipairs(tower.targeting_options(def)) do if o == focus then return true end end
+    for _, o in ipairs(tower.targeting_options(def)) do
+      if o == focus then return true end
+    end
     return false
   end
   check(offers(pdef, "air") and offers(pdef, "boss"), "an all-target tower offers air + boss focuses")
@@ -116,17 +142,26 @@ function M.run(check, near)
   check(not offers(tower.DEFS.flak, "boss"), "an air-only tower can't cycle to a 'boss' focus")
 
   -- --------------------------------------------------------- call wave early
-  local rc = run_mod.new(m, 4, "serpentine"); rc.money = 100
-  rc.phase = "combat"; rc.wave_index = 2
+  local rc = run_mod.new(m, 4, "serpentine")
+  rc.money = 100
+  rc.phase = "combat"
+  rc.wave_index = 2
   rc.enemies.n = 0
-  enemy.spawn(rc, "mote", 1, 1, 10); enemy.spawn(rc, "mote", 1, 1, 20)
+  enemy.spawn(rc, "mote", 1, 1, 10)
+  enemy.spawn(rc, "mote", 1, 1, 20)
   check(run_mod.can_call_early(rc), "early call: combat + drained queue + few stragglers + no boss/route")
-  rc.phase = "building"; check(not run_mod.can_call_early(rc), "early call needs the combat phase"); rc.phase = "combat"
-  rc.enemies.n = 0; check(not run_mod.can_call_early(rc), "early call needs stragglers on the field")
-  for i = 1, 5 do enemy.spawn(rc, "mote", 1, 1, i * 3) end
+  rc.phase = "building"
+  check(not run_mod.can_call_early(rc), "early call needs the combat phase")
+  rc.phase = "combat"
+  rc.enemies.n = 0
+  check(not run_mod.can_call_early(rc), "early call needs stragglers on the field")
+  for i = 1, 5 do
+    enemy.spawn(rc, "mote", 1, 1, i * 3)
+  end
   check(not run_mod.can_call_early(rc), "early call unavailable with too many enemies")
   rc.enemies.n = 2
-  wave.boss_scale(rc, 5); boss.spawn(rc, "prism", rc.hp_scale)
+  wave.boss_scale(rc, 5)
+  boss.spawn(rc, "prism", rc.hp_scale)
   check(not run_mod.can_call_early(rc), "early call unavailable with a live boss")
   rc.boss = nil
   rc.spawn_queue.n, rc.spawn_queue.i = 5, 0
@@ -141,15 +176,18 @@ function M.run(check, near)
   check(not run_mod.call_early(rc), "call_early no-ops when unavailable")
 
   -- route gate (a variant map): no overlap when a route event is due next
-  local rr = run_mod.new(m, 5, "zigzag"); rr.phase = "combat"
-  rr.enemies.n = 0; enemy.spawn(rr, "mote", 1, 1, 10)
-  rr.wave_index = 3   -- nxt = 4: route event due on a variant map
+  local rr = run_mod.new(m, 5, "zigzag")
+  rr.phase = "combat"
+  rr.enemies.n = 0
+  enemy.spawn(rr, "mote", 1, 1, 10)
+  rr.wave_index = 3 -- nxt = 4: route event due on a variant map
   check(not run_mod.can_call_early(rr), "early call blocked when a route event is due before the next wave")
-  rr.wave_index = 1   -- nxt = 2: no route event
+  rr.wave_index = 1 -- nxt = 2: no route event
   check(run_mod.can_call_early(rr), "early call allowed when no route event is due")
 
   -- ------------------------------------------------- inspect panel additions
-  local ri = run_mod.new(m, 6, "serpentine"); ri.money = 99999
+  local ri = run_mod.new(m, 6, "serpentine")
+  ri.money = 99999
   local it = tower.place(ri, 200, 150, "pellet")
   harness.reset_gfx()
   inspect.draw(ri, it)
@@ -169,9 +207,11 @@ function M.run(check, near)
   check(act and act.type == "targeting", "inspect targeting button hit-tests")
 
   -- --------------------------------------------------- HUD speed button click
-  State.run = run_mod.new(State.meta, 7, "serpentine"); State.run.money = 9999
-  State.ui.speed = 1; State.pending = nil
-  click_at(C.HUD_X + C.HUD_W - 17, 11)   -- center of the top-right speed toggle
+  State.run = run_mod.new(State.meta, 7, "serpentine")
+  State.run.money = 9999
+  State.ui.speed = 1
+  State.pending = nil
+  click_at(C.HUD_X + C.HUD_W - 17, 11) -- center of the top-right speed toggle
   game_s.update(1 / 60)
   release()
   check(State.ui.speed == 2, "clicking the HUD speed button cycles to 2x")
@@ -179,25 +219,39 @@ function M.run(check, near)
 
   -- ------------------------------------------------ speed substep determinism
   local function combat_run(seed)
-    local rr2 = run_mod.new(State.meta, seed, "serpentine"); rr2.money = 99999; rr2.lives = 9999
-    tower.place(rr2, 200, 150, "pellet"); tower.place(rr2, 110, 95, "splash")
-    run_mod.begin_wave(rr2)   -- wave 1 -> combat
+    local rr2 = run_mod.new(State.meta, seed, "serpentine")
+    rr2.money = 99999
+    rr2.lives = 9999
+    tower.place(rr2, 200, 150, "pellet")
+    tower.place(rr2, 110, 95, "splash")
+    run_mod.begin_wave(rr2) -- wave 1 -> combat
     return rr2
   end
   State.pending = nil
-  local rA = combat_run(2024); State.run = rA; State.ui.speed = 1
-  game_s.update(1 / 60); game_s.update(1 / 60)
-  local enA, dA, moneyA = rA.enemies.n, sum_d(rA), rA.money
-  local rB = combat_run(2024); State.run = rB; State.ui.speed = 2
+  local rA = combat_run(2024)
+  State.run = rA
+  State.ui.speed = 1
   game_s.update(1 / 60)
-  check(rB.enemies.n == enA and near(sum_d(rB), dA) and rB.money == moneyA,
-    "2x (one frame) matches 1x (two frames) exactly -- substeps stay deterministic")
-  State.ui.speed = 1; State.pending = nil
+  game_s.update(1 / 60)
+  local enA, dA, moneyA = rA.enemies.n, sum_d(rA), rA.money
+  local rB = combat_run(2024)
+  State.run = rB
+  State.ui.speed = 2
+  game_s.update(1 / 60)
+  check(
+    rB.enemies.n == enA and near(sum_d(rB), dA) and rB.money == moneyA,
+    "2x (one frame) matches 1x (two frames) exactly -- substeps stay deterministic"
+  )
+  State.ui.speed = 1
+  State.pending = nil
 
   -- ----------------------------------------------- early call via SPACE (scene)
-  State.run = run_mod.new(State.meta, 9, "serpentine"); State.run.money = 50
-  State.run.phase = "combat"; State.run.wave_index = 1
-  State.run.enemies.n = 0; enemy.spawn(State.run, "mote", 1, 1, 10)
+  State.run = run_mod.new(State.meta, 9, "serpentine")
+  State.run.money = 50
+  State.run.phase = "combat"
+  State.run.wave_index = 1
+  State.run.enemies.n = 0
+  enemy.spawn(State.run, "mote", 1, 1, 10)
   State.pending = nil
   input._keys[input.KEY_SPACE] = true
   game_s.update(1 / 60)
@@ -205,15 +259,17 @@ function M.run(check, near)
   check(State.run.wave_index == 2, "SPACE in combat calls the next wave early")
 
   -- ----------------------------------------- build-phase threat render bounds
-  State.run = run_mod.new(State.meta, 8, "serpentine"); State.run.money = 9999
-  State.run.wave_index = 11; State.run.phase = "building"   -- next wave has many tags
+  State.run = run_mod.new(State.meta, 8, "serpentine")
+  State.run.money = 9999
+  State.run.wave_index = 11
+  State.run.phase = "building" -- next wave has many tags
   State.ui.hover_x, State.ui.hover_y = 0, 0
   harness.reset_gfx()
   game_s.draw(1 / 60)
   local dcalls = harness.gfx_calls()
   for i = 1, #dcalls do
     local c = dcalls[i]
-    if c.fn == "text" and c.args[2] < C.HUD_X then   -- field-area text only
+    if c.fn == "text" and c.args[2] < C.HUD_X then -- field-area text only
       local x, w = c.args[2], usagi.measure_text(c.args[1])
       check(x + w <= C.HUD_X, "build-phase field text stays out of the HUD: " .. c.args[1])
     end
@@ -222,8 +278,10 @@ function M.run(check, near)
   -- the build-phase preview ANNOUNCES the next wave's affix by name (M5 fix): the
   -- affix was computed in threat.preview but not drawn, so it never reached the
   -- player before the wave. Pre-seed the (per-wave) cache and assert it renders.
-  State.run = run_mod.new(State.meta, 8, "serpentine"); State.run.money = 9999
-  State.run.wave_index = 7; State.run.phase = "building"        -- next wave = 8
+  State.run = run_mod.new(State.meta, 8, "serpentine")
+  State.run.money = 9999
+  State.run.wave_index = 7
+  State.run.phase = "building" -- next wave = 8
   State.run.threat_cache = { wave = 8, tp = { boss = false, tag_list = {}, affix = "Overclock", route_event = false } }
   harness.reset_gfx()
   game_s.draw(1 / 60)
@@ -234,7 +292,9 @@ function M.run(check, near)
   check(announced, "the build-phase preview announces the next wave's affix name")
 
   -- cleanup for the suites that follow
-  State.run = nil; State.summary = nil; State.pending = nil
+  State.run = nil
+  State.summary = nil
+  State.pending = nil
   State.ui.speed = 1
   input._keys[input.KEY_SPACE] = false
   release()

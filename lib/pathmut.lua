@@ -5,11 +5,11 @@
 -- polyline. Variants are predefined complete polylines per map (data/paths.json),
 -- each sharing the spawn + core node with the base route.
 
-local C     = require("lib.const")
-local maps  = require("lib.maps")
-local path  = require("lib.path")
+local C = require("lib.const")
+local maps = require("lib.maps")
+local path = require("lib.path")
 local tower = require("lib.tower")
-local wave  = require("lib.wave")
+local wave = require("lib.wave")
 
 local M = {}
 
@@ -33,7 +33,9 @@ end
 function M.routes(run)
   local all = { maps.get(run.path_name).nodes }
   local vars = maps.variants(run.path_name)
-  for i = 1, #vars do all[#all + 1] = vars[i] end
+  for i = 1, #vars do
+    all[#all + 1] = vars[i]
+  end
   local out = {}
   for i = 1, #all do
     out[i] = {
@@ -70,8 +72,10 @@ function M.apply(run, nodes)
   -- enforce the field-clear precondition: swapping the polyline with live
   -- enemies on it would strand their scalar `d`. The scene flow only reaches
   -- here between waves, but assert so any future misuse fails loud, not silent.
-  assert(run.enemies.n == 0 and (not run.boss or run.boss.dead),
-    "pathmut.apply requires a clear field (route swaps happen between waves)")
+  assert(
+    run.enemies.n == 0 and (not run.boss or run.boss.dead),
+    "pathmut.apply requires a clear field (route swaps happen between waves)"
+  )
   run.path = path.build(nodes)
   local kept, refunded = {}, 0
   for i = 1, #run.towers do
@@ -84,7 +88,7 @@ function M.apply(run, nodes)
     end
   end
   run.towers = kept
-  run.resonance_dirty = true        -- towers were removed; recompute circuits (M4)
+  run.resonance_dirty = true -- towers were removed; recompute circuits (M4)
   return refunded
 end
 

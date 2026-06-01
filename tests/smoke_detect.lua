@@ -8,11 +8,11 @@
 -- but never overrides a Specter anchor's arena untargetability. Run by smoke.lua
 -- via M.run(check, near).
 
-local meta     = require("lib.meta")
-local run_mod  = require("lib.run")
-local enemy    = require("lib.enemy")
-local tower    = require("lib.tower")
-local target   = require("lib.target")
+local meta = require("lib.meta")
+local run_mod = require("lib.run")
+local enemy = require("lib.enemy")
+local tower = require("lib.tower")
+local target = require("lib.target")
 
 local M = {}
 
@@ -50,12 +50,13 @@ function M.run(check, near)
   -- A detect Pellet + a non-detect Splash both sit near a cloaked ground mote.
   -- Neither can target it while cloaked; after reveal, the Splash (which has no
   -- detection of its own) can fire on it -- proving reveal is field-wide.
-  local r = run_mod.new(m, 1, "serpentine"); r.money = 99999
+  local r = run_mod.new(m, 1, "serpentine")
+  r.money = 99999
   local pellet = place(r, 180, 150, "pellet")
   local splash = place(r, 212, 150, "splash")
   r.enemies.n = 0
-  local mote = at(r, "mote", 206, 150)        -- in range of both, near the splash
-  mote.aura_stealth = true                    -- M4 veil cloak
+  local mote = at(r, "mote", 206, 150) -- in range of both, near the splash
+  mote.aura_stealth = true -- M4 veil cloak
   check(not target.targetable(mote), "a cloaked enemy is untargetable before reveal")
 
   tower.reveal(r)
@@ -63,15 +64,18 @@ function M.run(check, near)
   check(target.targetable(mote), "a revealed enemy becomes targetable")
   check(pellet.revealing == true, "the detector reports it is actively revealing")
 
-  r.projectiles.n = 0; splash.cooldown = 0; pellet.cooldown = 0
+  r.projectiles.n = 0
+  splash.cooldown = 0
+  pellet.cooldown = 0
   tower.update(r, 1 / 60)
   check(fired_from(r, splash.id), "a NON-detect tower fires on an enemy a detector revealed")
 
   -- ------------------------------------ out of range stays cloaked
-  local r2 = run_mod.new(m, 1, "serpentine"); r2.money = 99999
+  local r2 = run_mod.new(m, 1, "serpentine")
+  r2.money = 99999
   local p2 = place(r2, 60, 60, "pellet")
   r2.enemies.n = 0
-  local far = at(r2, "mote", 300, 200)        -- well beyond the pellet's range
+  local far = at(r2, "mote", 300, 200) -- well beyond the pellet's range
   far.aura_stealth = true
   tower.reveal(r2)
   check(far.revealed == false, "a cloaked enemy outside every detector's range stays hidden")
@@ -79,55 +83,60 @@ function M.run(check, near)
   check(p2.revealing == false, "a detector with nothing in range is not 'revealing'")
 
   -- ------------------------------------ reveal is recomputed every frame
-  local r3 = run_mod.new(m, 1, "serpentine"); r3.money = 99999
+  local r3 = run_mod.new(m, 1, "serpentine")
+  r3.money = 99999
   place(r3, 180, 150, "pellet")
   r3.enemies.n = 0
   local rover = at(r3, "mote", 200, 150)
   rover.aura_stealth = true
   tower.reveal(r3)
   check(rover.revealed == true, "in range -> revealed")
-  rover.x, rover.y = 360, 240                 -- walk out of the detector's radius
+  rover.x, rover.y = 360, 240 -- walk out of the detector's radius
   tower.reveal(r3)
   check(rover.revealed == false, "leaving every detector's radius re-cloaks the enemy")
 
   -- ------------------------------------ M5 affix cloak is also revealed
-  local r4 = run_mod.new(m, 1, "serpentine"); r4.money = 99999
+  local r4 = run_mod.new(m, 1, "serpentine")
+  r4.money = 99999
   place(r4, 180, 150, "pellet")
   r4.enemies.n = 0
   local packmate = at(r4, "mote", 200, 150)
-  packmate.affix_stealth = true               -- Veiled Pack cloak
+  packmate.affix_stealth = true -- Veiled Pack cloak
   tower.reveal(r4)
-  check(packmate.revealed and target.targetable(packmate),
-    "detection reveals an affix (Veiled Pack) cloak, not just the aura veil")
+  check(
+    packmate.revealed and target.targetable(packmate),
+    "detection reveals an affix (Veiled Pack) cloak, not just the aura veil"
+  )
 
   -- --------------- a Specter anchor stays untargetable even if 'revealed'
   -- Arena untargetability (invulnerable phase anchors) outranks detection: a
   -- detector must never expose an anchor the boss design means to protect.
-  local r5 = run_mod.new(m, 1, "serpentine"); r5.money = 99999
+  local r5 = run_mod.new(m, 1, "serpentine")
+  r5.money = 99999
   place(r5, 180, 150, "pellet")
   r5.enemies.n = 0
   local anchor = at(r5, "mote", 200, 150)
   anchor.affix_stealth = true
   anchor.arena = { kind = "anchor", untargetable = true }
   tower.reveal(r5)
-  check(not target.targetable(anchor),
-    "an untargetable arena anchor is never exposed by detection")
+  check(not target.targetable(anchor), "an untargetable arena anchor is never exposed by detection")
 
   -- ------------------------------------ a non-detector cannot reveal
-  local r6 = run_mod.new(m, 1, "serpentine"); r6.money = 99999
-  place(r6, 180, 150, "splash")               -- Splash is not a detector
+  local r6 = run_mod.new(m, 1, "serpentine")
+  r6.money = 99999
+  place(r6, 180, 150, "splash") -- Splash is not a detector
   r6.enemies.n = 0
   local hidden = at(r6, "mote", 200, 150)
   hidden.aura_stealth = true
   tower.reveal(r6)
-  check(hidden.revealed == false and not target.targetable(hidden),
-    "a field with no detector reveals nothing")
+  check(hidden.revealed == false and not target.targetable(hidden), "a field with no detector reveals nothing")
 
   -- ------------------------------------ no-stealth field is unaffected
-  local r7 = run_mod.new(m, 1, "serpentine"); r7.money = 99999
+  local r7 = run_mod.new(m, 1, "serpentine")
+  r7.money = 99999
   place(r7, 180, 150, "pellet")
   r7.enemies.n = 0
-  local plain = at(r7, "mote", 200, 150)      -- not cloaked
+  local plain = at(r7, "mote", 200, 150) -- not cloaked
   tower.reveal(r7)
   check(target.targetable(plain), "a normal (un-cloaked) enemy stays targetable through a reveal pass")
 end

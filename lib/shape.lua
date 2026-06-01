@@ -32,10 +32,10 @@ M.poly_line = poly_line
 
 -- Regular-polygon shapes, defined once: sides, radius multiplier, rotation offset.
 local POLY = {
-  diamond = { sides = 4, rmult = 1.2,  roff = 0 },
-  tri     = { sides = 3, rmult = 1.25, roff = -math.pi / 2 },
-  hex     = { sides = 6, rmult = 1.0,  roff = 0 },
-  penta   = { sides = 5, rmult = 1.0,  roff = -math.pi / 2 },
+  diamond = { sides = 4, rmult = 1.2, roff = 0 },
+  tri = { sides = 3, rmult = 1.25, roff = -math.pi / 2 },
+  hex = { sides = 6, rmult = 1.0, roff = 0 },
+  penta = { sides = 5, rmult = 1.0, roff = -math.pi / 2 },
 }
 
 function M.fill(kind, x, y, r, color, rot)

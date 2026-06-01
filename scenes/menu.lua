@@ -5,18 +5,18 @@
 -- A panel's clickable rows are laid out by M.tab_rows so the update hit-test and
 -- the draw share one geometry (and tests can target a row precisely).
 
-local C       = require("lib.const")
-local pal     = require("lib.palette")
-local meta    = require("lib.meta")
-local fx      = require("lib.fx")
-local ui      = require("lib.ui")
-local audio   = require("lib.audio")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local meta = require("lib.meta")
+local fx = require("lib.fx")
+local ui = require("lib.ui")
+local audio = require("lib.audio")
 local mastery = require("lib.mastery")
 local mcontract = require("lib.metacontract")
-local daily   = require("lib.daily")
-local maps    = require("lib.maps")
-local modes   = require("lib.modes")
-local share   = require("lib.share")
+local daily = require("lib.daily")
+local maps = require("lib.maps")
+local modes = require("lib.modes")
+local share = require("lib.share")
 local settings = require("lib.settings")
 local select_s = require("scenes.select")
 
@@ -26,11 +26,11 @@ local start_btn = { x = 190, y = 46, w = 100, h = 18 }
 
 -- Tab bar + content panel geometry (static, so file-scope constants).
 local TABS = {
-  { id = "shop",      name = "SHOP" },
-  { id = "mastery",   name = "MASTERY" },
+  { id = "shop", name = "SHOP" },
+  { id = "mastery", name = "MASTERY" },
   { id = "contracts", name = "CONTRACTS" },
-  { id = "daily",     name = "DAILY" },
-  { id = "options",   name = "OPTIONS" },
+  { id = "daily", name = "DAILY" },
+  { id = "options", name = "OPTIONS" },
 }
 local TAB_Y, TAB_H, TAB_GAP = 70, 16, 6
 local PANEL = { x = 40, y = 94, w = 400, h = 150 }
@@ -57,14 +57,12 @@ function M.tab_rows(tab)
   if tab == "shop" then
     local rh = 30
     for i = 1, #meta.SHOP do
-      rows[i] = { x = PANEL.x, y = PANEL.y + 6 + (i - 1) * (rh + 2), w = PANEL.w, h = rh,
-                  id = meta.SHOP[i].id }
+      rows[i] = { x = PANEL.x, y = PANEL.y + 6 + (i - 1) * (rh + 2), w = PANEL.w, h = rh, id = meta.SHOP[i].id }
     end
   elseif tab == "mastery" then
-    local rh = 22                       -- single text line per node (6 fit the panel)
+    local rh = 22 -- single text line per node (6 fit the panel)
     for i = 1, #mastery.ORDER do
-      rows[i] = { x = PANEL.x, y = PANEL.y + (i - 1) * rh, w = PANEL.w, h = rh,
-                  id = mastery.ORDER[i] }
+      rows[i] = { x = PANEL.x, y = PANEL.y + (i - 1) * rh, w = PANEL.w, h = rh, id = mastery.ORDER[i] }
     end
   elseif tab == "daily" then
     rows[1] = { x = (C.GAME_W - 140) * 0.5, y = PANEL.y + PANEL.h - 28, w = 140, h = 20, id = "daily" }
@@ -98,8 +96,8 @@ end
 function M.init()
   audio.set("menu")
   State.ui.menu_tab = State.ui.menu_tab or "shop"
-  mcontract.refresh(State.meta)   -- ensure the contract board is populated for display
-  daily_cache, daily_code_cache = nil, nil   -- re-roll today's daily on (re)entering the menu
+  mcontract.refresh(State.meta) -- ensure the contract board is populated for display
+  daily_cache, daily_code_cache = nil, nil -- re-roll today's daily on (re)entering the menu
 end
 
 local function open_select()
@@ -146,7 +144,10 @@ function M.update(dt)
   end
   if not input.mouse_pressed(input.MOUSE_LEFT) then return end
   local mx, my = input.mouse()
-  if ui.in_rect(mx, my, start_btn) then open_select(); return end
+  if ui.in_rect(mx, my, start_btn) then
+    open_select()
+    return
+  end
   for i = 1, #TABS do
     if ui.in_rect(mx, my, tab_rect(i)) then
       State.ui.menu_tab = TABS[i].id
@@ -157,13 +158,19 @@ function M.update(dt)
   local tab = active_tab()
   local rows = M.tab_rows(tab)
   for i = 1, #rows do
-    if ui.in_rect(mx, my, rows[i]) then click_row(tab, rows[i].id); return end
+    if ui.in_rect(mx, my, rows[i]) then
+      click_row(tab, rows[i].id)
+      return
+    end
   end
 end
 
 -- ----------------------------------------------------------------- panel draws
 local text_h = nil
-local function th() text_h = text_h or ui.text_height(); return text_h end
+local function th()
+  text_h = text_h or ui.text_height()
+  return text_h
+end
 
 local function draw_shop(rows)
   local m = State.meta
@@ -208,10 +215,18 @@ local function draw_contracts()
   local m = State.meta
   local board = m.contract_board or {}
   local badges, done = 0, 0
-  for _ in pairs(m.badges or {}) do badges = badges + 1 end
-  for _ in pairs(m.completed_contracts or {}) do done = done + 1 end
-  gfx.text("badges " .. badges .. "    completed " .. done .. "/" .. #mcontract.ORDER,
-    PANEL.x + 8, PANEL.y, pal.TEXT_DIM)
+  for _ in pairs(m.badges or {}) do
+    badges = badges + 1
+  end
+  for _ in pairs(m.completed_contracts or {}) do
+    done = done + 1
+  end
+  gfx.text(
+    "badges " .. badges .. "    completed " .. done .. "/" .. #mcontract.ORDER,
+    PANEL.x + 8,
+    PANEL.y,
+    pal.TEXT_DIM
+  )
   local rh = 38
   for i = 1, #board do
     local d = mcontract.DEFS[board[i]]
@@ -252,8 +267,7 @@ local function draw_options(rows)
     local col = val and pal.GOOD or pal.TEXT_DIM
     gfx.text(label, r.x + r.w - usagi.measure_text(label) - 8, r.y + 5, col)
   end
-  ui.center_text("keys:  1-6 towers   S sell   O orbital   D discharge   SPACE wave",
-    PANEL.y + 134, pal.TEXT_DIM, 1)
+  ui.center_text("keys:  1-6 towers   S sell   O orbital   D discharge   SPACE wave", PANEL.y + 134, pal.TEXT_DIM, 1)
 end
 
 function M.draw(dt)
@@ -261,8 +275,12 @@ function M.draw(dt)
   ui.center_text("USAGI GEO TD", 12, gfx.COLOR_WHITE, 2)
 
   local m = State.meta
-  ui.center_text("best wave " .. m.best_wave .. "    bank " .. m.currency
-    .. "    shards " .. (m.bank_shards or 0), 32, pal.TEXT_DIM, 1)
+  ui.center_text(
+    "best wave " .. m.best_wave .. "    bank " .. m.currency .. "    shards " .. (m.bank_shards or 0),
+    32,
+    pal.TEXT_DIM,
+    1
+  )
 
   gfx.rect_fill(start_btn.x, start_btn.y, start_btn.w, start_btn.h, pal.GOOD)
   ui.center_text("SELECT MAP", start_btn.y + 5, gfx.COLOR_BLACK, 1)
@@ -273,16 +291,29 @@ function M.draw(dt)
     local r = tab_rect(i)
     local on = TABS[i].id == tab
     gfx.rect_fill(r.x, r.y, r.w, r.h, on and pal.HUD_SEL or pal.HUD_PANEL)
-    gfx.text_ex(TABS[i].name, r.x + (r.w - usagi.measure_text(TABS[i].name)) * 0.5, r.y + 4,
-      1, 0, on and gfx.COLOR_WHITE or pal.TEXT_DIM, 1)
+    gfx.text_ex(
+      TABS[i].name,
+      r.x + (r.w - usagi.measure_text(TABS[i].name)) * 0.5,
+      r.y + 4,
+      1,
+      0,
+      on and gfx.COLOR_WHITE or pal.TEXT_DIM,
+      1
+    )
   end
 
   local rows = M.tab_rows(tab)
-  if tab == "shop" then draw_shop(rows)
-  elseif tab == "mastery" then draw_mastery(rows)
-  elseif tab == "contracts" then draw_contracts()
-  elseif tab == "daily" then draw_daily(rows)
-  elseif tab == "options" then draw_options(rows) end
+  if tab == "shop" then
+    draw_shop(rows)
+  elseif tab == "mastery" then
+    draw_mastery(rows)
+  elseif tab == "contracts" then
+    draw_contracts()
+  elseif tab == "daily" then
+    draw_daily(rows)
+  elseif tab == "options" then
+    draw_options(rows)
+  end
 
   -- Label the BTN1 binding from its live mapping (Usagi's source-aware glyph:
   -- "Z" on keyboard by default, the gamepad face button otherwise), so the

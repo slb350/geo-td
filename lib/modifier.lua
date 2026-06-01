@@ -20,11 +20,11 @@ M.UPDEFS = UPDEFS
 -- One-per-tower geometry sockets. `value` meaning depends on `effect`; `shape`
 -- is the icon's primitive (a real shape.* name).
 M.MODULES = {
-  triangle = { name = "Triangle", effect = "crit",     value = 0.25, desc = "+25% crit",   shape = "tri" },
-  square   = { name = "Square",   effect = "pierce",   value = 1,    desc = "pierce +1",    shape = "square" },
-  circle   = { name = "Circle",   effect = "range",    value = 0.30, desc = "+30% range",   shape = "circ" },
-  hex      = { name = "Hex",      effect = "ricochet", value = 1,    desc = "ricochet +1",  shape = "hex" },
-  diamond  = { name = "Diamond",  effect = "splash",   value = 0.50, desc = "+50% splash",  shape = "diamond" },
+  triangle = { name = "Triangle", effect = "crit", value = 0.25, desc = "+25% crit", shape = "tri" },
+  square = { name = "Square", effect = "pierce", value = 1, desc = "pierce +1", shape = "square" },
+  circle = { name = "Circle", effect = "range", value = 0.30, desc = "+30% range", shape = "circ" },
+  hex = { name = "Hex", effect = "ricochet", value = 1, desc = "ricochet +1", shape = "hex" },
+  diamond = { name = "Diamond", effect = "splash", value = 0.50, desc = "+50% splash", shape = "diamond" },
 }
 M.MODULE_ORDER = { "triangle", "square", "circle", "hex", "diamond" }
 
@@ -74,21 +74,27 @@ function M.effective(run, t, out)
   out = out or {}
   ensure(t)
   local def, mods = t.def, run.mods
-  local range  = def.range * mods.range_mult * up_mult(t, "range_mult")
+  local range = def.range * mods.range_mult * up_mult(t, "range_mult")
   local splash = (def.splash_radius or 0) * mods.splash_mult * up_mult(t, "splash_mult")
-  out.damage     = def.damage * mods.dmg_mult * up_mult(t, "dmg_mult")
-  out.fire_rate  = def.fire_rate * mods.rate_mult * up_mult(t, "rate_mult")
+  out.damage = def.damage * mods.dmg_mult * up_mult(t, "dmg_mult")
+  out.fire_rate = def.fire_rate * mods.rate_mult * up_mult(t, "rate_mult")
   out.proj_speed = def.proj_speed * mods.proj_mult
   out.crit, out.pierce, out.ricochet = 0, 0, 0
-  out.ring_extra, out.mark = 0, 0          -- resonance named behaviours (M4)
+  out.ring_extra, out.mark = 0, 0 -- resonance named behaviours (M4)
   local mod = t.module and M.MODULES[t.module]
   if mod then
     local e, v = mod.effect, mod.value
-    if e == "crit" then out.crit = v
-    elseif e == "pierce" then out.pierce = v
-    elseif e == "ricochet" then out.ricochet = v
-    elseif e == "range" then range = range * (1 + v)
-    elseif e == "splash" then splash = splash * (1 + v) end
+    if e == "crit" then
+      out.crit = v
+    elseif e == "pierce" then
+      out.pierce = v
+    elseif e == "ricochet" then
+      out.ricochet = v
+    elseif e == "range" then
+      range = range * (1 + v)
+    elseif e == "splash" then
+      splash = splash * (1 + v)
+    end
   end
   -- resonance (M4): the LAST fold. crit/pierce/ricochet ADD; range/splash/dmg/rate
   -- MULTIPLY. Derived (resonance.update); nil for towers in no circuit.
@@ -119,8 +125,13 @@ function M.upgrade_options(run, t)
     local maxed = lvl >= def.max_level
     local cost = maxed and 0 or M.upgrade_cost(def, lvl)
     out[i] = {
-      id = def.id, name = def.name, level = lvl, max_level = def.max_level,
-      cost = cost, maxed = maxed, afford = (not maxed) and run.money >= cost,
+      id = def.id,
+      name = def.name,
+      level = lvl,
+      max_level = def.max_level,
+      cost = cost,
+      maxed = maxed,
+      afford = (not maxed) and run.money >= cost,
     }
   end
   return out
@@ -140,9 +151,9 @@ function M.buy_upgrade(run, t, id)
   local lvl = t.upgrades[id] or 0
   local cost = M.upgrade_cost(def, lvl)
   run.money = run.money - cost
-  run.money_spent = run.money_spent + cost   -- gross spend (M1 run-report stat)
+  run.money_spent = run.money_spent + cost -- gross spend (M1 run-report stat)
   t.upgrades[id] = lvl + 1
-  t.invested = (t.invested or 0) + cost       -- counts toward the M7 full auto-refund
+  t.invested = (t.invested or 0) + cost -- counts toward the M7 full auto-refund
   return true
 end
 
@@ -160,11 +171,11 @@ function M.socket_module(run, t, module_id)
   if not M.can_socket(run, t, module_id) then return false end
   local cost = M.module_cost(run)
   run.money = run.money - cost
-  run.money_spent = run.money_spent + cost            -- gross spend (M1 run-report stat)
-  run.module_discount = 0                             -- one-shot discount consumed
+  run.money_spent = run.money_spent + cost -- gross spend (M1 run-report stat)
+  run.module_discount = 0 -- one-shot discount consumed
   t.module = module_id
-  t.invested = (t.invested or 0) + cost               -- counts toward the M7 full auto-refund
-  run.resonance_dirty = true                          -- a new module can form circuits (M4)
+  t.invested = (t.invested or 0) + cost -- counts toward the M7 full auto-refund
+  run.resonance_dirty = true -- a new module can form circuits (M4)
   return true
 end
 

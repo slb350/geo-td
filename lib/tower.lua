@@ -2,11 +2,11 @@
 -- into the projectile pool, temporary disable (boss shockwave), aiming + muzzle
 -- flash, and geometric rendering (square = Pellet, diamond = Splash, hex = Frost).
 
-local C     = require("lib.const")
-local pal   = require("lib.palette")
-local path  = require("lib.path")
-local proj  = require("lib.projectile")
-local fx    = require("lib.fx")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local path = require("lib.path")
+local proj = require("lib.projectile")
+local fx = require("lib.fx")
 local shape = require("lib.shape")
 local modifier = require("lib.modifier")
 local target = require("lib.target")
@@ -38,7 +38,7 @@ end
 -- offering a focus that would silently do nothing.
 local function focus_usable(def, ov)
   local tg = def.targets or "ground"
-  if ov == "air"  then return tg == "all" or tg == "air" end
+  if ov == "air" then return tg == "all" or tg == "air" end
   if ov == "boss" then return tg == "all" or tg == "ground" end
   return true
 end
@@ -72,35 +72,25 @@ function M.cost(run, kind)
 end
 
 function M.available(meta, kind, mode)
-  if mode and mode.no_rail and kind == "rail" then return false end   -- "No Rail" mode
+  if mode and mode.no_rail and kind == "rail" then return false end -- "No Rail" mode
   local def = DEFS[kind]
-  if def.locked then
-    return meta.unlocks[def.unlock] == true
-  end
+  if def.locked then return meta.unlocks[def.unlock] == true end
   return true
 end
 
 function M.can_place(run, x, y, kind)
-  if x < 0 or x >= C.HUD_X or y < 0 or y >= C.GAME_H then
-    return false, "out of bounds"
-  end
-  if path.dist_to(run.path, x, y) < C.PLACE_MARGIN then
-    return false, "too close to path"
-  end
+  if x < 0 or x >= C.HUD_X or y < 0 or y >= C.GAME_H then return false, "out of bounds" end
+  if path.dist_to(run.path, x, y) < C.PLACE_MARGIN then return false, "too close to path" end
   local towers = run.towers
   local min_d = C.TOWER_R * 2
   for i = 1, #towers do
     local t = towers[i]
     local dx, dy = t.x - x, t.y - y
-    if dx * dx + dy * dy < min_d * min_d then
-      return false, "overlaps a tower"
-    end
+    if dx * dx + dy * dy < min_d * min_d then return false, "overlaps a tower" end
   end
-  if run.money < M.cost(run, kind) then
-    return false, "not enough money"
-  end
+  if run.money < M.cost(run, kind) then return false, "not enough money" end
   if DEFS[kind].role == "support" and not resource.near_node(run, x, y) then
-    return false, "must be near a prism"   -- the Drill extracts only beside a node
+    return false, "must be near a prism" -- the Drill extracts only beside a node
   end
   return true, nil
 end
@@ -109,24 +99,30 @@ function M.place(run, x, y, kind)
   local def = DEFS[kind]
   run.tower_seq = run.tower_seq + 1
   local t = {
-    kind = kind, def = def, x = x, y = y,
+    kind = kind,
+    def = def,
+    x = x,
+    y = y,
     id = run.tower_seq,
-    cooldown = 0, disabled_t = 0, aim = 0, flash = 0,
+    cooldown = 0,
+    disabled_t = 0,
+    aim = 0,
+    flash = 0,
     color = pal.resolve(def.color),
     shape = def.shape,
-    upgrades = {},   -- [upgrade id] = level  (per-tower in-run progression, M3)
-    module = nil,    -- one socketed geometry module id, or nil
-    eff = {},        -- reused effective-stats scratch (no per-frame allocation)
+    upgrades = {}, -- [upgrade id] = level  (per-tower in-run progression, M3)
+    module = nil, -- one socketed geometry module id, or nil
+    eff = {}, -- reused effective-stats scratch (no per-frame allocation)
   }
   run.towers[#run.towers + 1] = t
   local cost = M.cost(run, kind)
   run.money = run.money - cost
   run.money_spent = run.money_spent + cost
-  t.invested = cost   -- cumulative spend on this tower (grows with upgrades/modules);
-                      -- the M7 auto-refund returns it in full
+  t.invested = cost -- cumulative spend on this tower (grows with upgrades/modules);
+  -- the M7 auto-refund returns it in full
   -- per-tower damage stat lives on the run (keyed by id), so it survives a sell
   run.tower_stats[t.id] = { kind = kind, damage = 0 }
-  run.resonance_dirty = true        -- topology changed (M4)
+  run.resonance_dirty = true -- topology changed (M4)
   fx.place_sfx()
   return t
 end
@@ -134,13 +130,13 @@ end
 -- Sell a tower; returns true if it was sold, false if blocked or not found (so the
 -- caller can record a successful sell for the replay log).
 function M.sell(run, t)
-  if run.no_sell then return false end    -- "No Sell" contract gates selling this wave
+  if run.no_sell then return false end -- "No Sell" contract gates selling this wave
   local towers = run.towers
   for i = 1, #towers do
     if towers[i] == t then
       run.money = run.money + math.floor(M.cost(run, t.kind) * C.SELL_REFUND)
       table.remove(towers, i)
-      run.resonance_dirty = true     -- topology changed (M4)
+      run.resonance_dirty = true -- topology changed (M4)
       fx.sell_sfx()
       return true
     end
@@ -153,9 +149,7 @@ function M.at(run, x, y)
   for i = 1, #towers do
     local t = towers[i]
     local dx, dy = t.x - x, t.y - y
-    if dx * dx + dy * dy <= C.TOWER_R * C.TOWER_R then
-      return t
-    end
+    if dx * dx + dy * dy <= C.TOWER_R * C.TOWER_R then return t end
   end
   return nil
 end
@@ -167,16 +161,14 @@ local function target_tier(priority, is_boss, is_fly)
   if not priority then return 0 end
   for i = 1, #priority do
     local c = priority[i]
-    if (c == "boss" and is_boss) or (c == "air" and is_fly) then
-      return #priority - i + 1
-    end
+    if (c == "boss" and is_boss) or (c == "air" and is_fly) then return #priority - i + 1 end
   end
   return 0
 end
 
 -- Shared single-entry priority lists for the focus overrides (read-only in
 -- acquire), so effective_targeting allocates nothing on the per-frame firing path.
-local AIR_FOCUS  = { "air" }
+local AIR_FOCUS = { "air" }
 local BOSS_FOCUS = { "boss" }
 
 -- The effective (priority list, policy) for a tower, applying its optional M1
@@ -200,8 +192,11 @@ end
 -- wins: "closest" = nearest, "strongest" = most HP, default ("first") = furthest
 -- along the path (closest to the core).
 local function score(policy, dist2, hp, progress)
-  if policy == "closest" then return -dist2
-  elseif policy == "strongest" then return hp end
+  if policy == "closest" then
+    return -dist2
+  elseif policy == "strongest" then
+    return hp
+  end
   return progress
 end
 
@@ -238,9 +233,7 @@ local function acquire(run, t, range)
     if d2 <= r2 then
       local tier = target_tier(priority, true, b.fly)
       local sc = score(policy, d2, b.hp, run.path.total_len)
-      if better(tier, sc, best_tier, best_score) then
-        best, best_tier, best_score = b, tier, sc
-      end
+      if better(tier, sc, best_tier, best_score) then best = b end
     end
   end
   return best
@@ -256,9 +249,7 @@ local function apply_slow_aura(run, t, radius)
     local e = list[i]
     if not e.dead and not e.fly and not e.arena then
       local dx, dy = e.x - t.x, e.y - t.y
-      if dx * dx + dy * dy <= r2 then
-        enemy.slow(e, C.RESONANCE_SLOW_FACTOR, C.RESONANCE_SLOW_TIME)
-      end
+      if dx * dx + dy * dy <= r2 then enemy.slow(e, C.RESONANCE_SLOW_FACTOR, C.RESONANCE_SLOW_TIME) end
     end
   end
 end
@@ -275,7 +266,9 @@ end
 function M.reveal(run)
   local list = run.enemies
   local n = list.n
-  for i = 1, n do list[i].revealed = false end
+  for i = 1, n do
+    list[i].revealed = false
+  end
   local towers = run.towers
   for j = 1, #towers do
     local t = towers[j]
@@ -285,8 +278,7 @@ function M.reveal(run)
       local r2 = range * range
       for i = 1, n do
         local e = list[i]
-        if not e.dead and (e.aura_stealth or e.affix_stealth)
-           and not target.arena_untargetable(e) then
+        if not e.dead and (e.aura_stealth or e.affix_stealth) and not target.arena_untargetable(e) then
           local dx, dy = e.x - t.x, e.y - t.y
           if dx * dx + dy * dy <= r2 then
             e.revealed = true
@@ -295,12 +287,12 @@ function M.reveal(run)
         end
       end
     end
-    t.revealing = revealing   -- drives the build-phase-free detection ring in M.draw
+    t.revealing = revealing -- drives the build-phase-free detection ring in M.draw
   end
 end
 
 function M.update(run, dt)
-  resonance.update(run)            -- recompute only if the topology changed (M4)
+  resonance.update(run) -- recompute only if the topology changed (M4)
   local towers = run.towers
   local mods = run.mods
   for i = 1, #towers do
@@ -310,24 +302,20 @@ function M.update(run, dt)
       -- a blackout disable ticks down on EVERY tower (incl. support Drills, whose
       -- charge extraction in lib/resource is gated on the same disabled_t)
       t.disabled_t = t.disabled_t - dt
-    elseif t.def.role == "support" then
-      -- support towers (Drill) don't acquire or fire; lib/resource extracts charge
-    else
+    elseif t.def.role ~= "support" then
       local def = t.def
       local eff = modifier.effective(run, t, t.eff)
-      local target = acquire(run, t, eff.range)
-      if target then
+      local target_ent = acquire(run, t, eff.range)
+      if target_ent then
         -- two-arg atan gives the heading (Lua 5.3+/Usagi 5.5)
-        t.aim = math.atan(target.y - t.y, target.x - t.x)
+        t.aim = math.atan(target_ent.y - t.y, target_ent.x - t.x)
       end
       t.cooldown = t.cooldown - dt
-      if t.cooldown <= 0 and target then
+      if t.cooldown <= 0 and target_ent then
         local dmg = eff.damage
-        local crit = mods.crit_chance + eff.crit   -- global crit + module crit
-        if crit > 0 and run.rng:chance(crit) then
-          dmg = dmg * 2
-        end
-        proj.spawn(run, t.x, t.y, target, {
+        local crit = mods.crit_chance + eff.crit -- global crit + module crit
+        if crit > 0 and run.rng:chance(crit) then dmg = dmg * 2 end
+        proj.spawn(run, t.x, t.y, target_ent, {
           damage = dmg,
           speed = eff.proj_speed,
           radius = def.proj_r,
@@ -336,10 +324,10 @@ function M.update(run, dt)
           slow_factor = def.slow_factor,
           slow_time = def.slow_time,
           tower = t,
-          pierce = mods.pierce + eff.pierce,        -- global card + module socket
+          pierce = mods.pierce + eff.pierce, -- global card + module socket
           ricochet = mods.ricochet + eff.ricochet,
-          ring_extra = eff.ring_extra,              -- Diamond Wake (M4)
-          mark = eff.mark,                          -- Green Vector (M4)
+          ring_extra = eff.ring_extra, -- Diamond Wake (M4)
+          mark = eff.mark, -- Green Vector (M4)
         })
         t.cooldown = 1 / eff.fire_rate
         t.flash = 0.06
@@ -347,9 +335,7 @@ function M.update(run, dt)
       end
       -- Orbit Field passive slow aura (M4) -- applies every active tick, even when
       -- the tower has no firing target.
-      if t.resonance and t.resonance.slow_aura > 0 then
-        apply_slow_aura(run, t, t.resonance.slow_aura)
-      end
+      if t.resonance and t.resonance.slow_aura > 0 then apply_slow_aura(run, t, t.resonance.slow_aura) end
     end
   end
 end
@@ -376,14 +362,12 @@ function M.draw(run, t, show_range)
       gfx.line_ex(t.x, t.y, ex, ey, bw, gfx.COLOR_WHITE)
       if t.flash > 0 then gfx.circ_fill(ex, ey, bw + 1, gfx.COLOR_YELLOW) end
     elseif t.flash > 0 then
-      gfx.circ(t.x, t.y, r + 2, gfx.COLOR_YELLOW)   -- barrel-less field tower pulse
+      gfx.circ(t.x, t.y, r + 2, gfx.COLOR_YELLOW) -- barrel-less field tower pulse
     end
   end
   -- inner counter-rotating facet: a constructed-turret core
   shape.fill(t.shape, t.x, t.y, r * 0.4, gfx.COLOR_WHITE, -body_rot)
-  if disabled then
-    gfx.circ(t.x, t.y, r + 2, gfx.COLOR_RED)
-  end
+  if disabled then gfx.circ(t.x, t.y, r + 2, gfx.COLOR_RED) end
 end
 
 return M

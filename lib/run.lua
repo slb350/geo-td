@@ -2,15 +2,15 @@
 -- meta unlocks (start bonus) at creation. A "run" is the whole roguelike climb;
 -- it lives at State.run and is nil between runs.
 
-local C     = require("lib.const")
-local path  = require("lib.path")
-local rng   = require("lib.rng")
-local fx    = require("lib.fx")
-local maps  = require("lib.maps")
+local C = require("lib.const")
+local path = require("lib.path")
+local rng = require("lib.rng")
+local fx = require("lib.fx")
+local maps = require("lib.maps")
 local enemy = require("lib.enemy")
 local modes = require("lib.modes")
-local wave  = require("lib.wave")
-local boss  = require("lib.boss")
+local wave = require("lib.wave")
+local boss = require("lib.boss")
 local resource = require("lib.resource")
 local contracts = require("lib.contracts")
 local affix = require("lib.affix")
@@ -25,7 +25,7 @@ function M.new(meta, seed, path_name, mode_id)
     money = money + 50
     lives = lives + 5
   end
-  if mode.lives then lives = mode.lives end   -- a challenge mode may override (e.g. One Life)
+  if mode.lives then lives = mode.lives end -- a challenge mode may override (e.g. One Life)
   fx.clear()
   -- an explicit map (map-select / tests) if it names a real layout, else a
   -- seed-derived fallback so any run still gets a valid map.
@@ -37,37 +37,37 @@ function M.new(meta, seed, path_name, mode_id)
     path = path.build(layout.nodes),
     path_name = key,
     map_name = layout.name,
-    mode = mode,           -- challenge-mode config deltas (M6); standard = no-op
+    mode = mode, -- challenge-mode config deltas (M6); standard = no-op
     wave_index = 0,
-    phase = "building",  -- building | combat | upgrade
+    phase = "building", -- building | combat | upgrade
     money = money,
     lives = lives,
     score = 0,
     kills = 0,
-    leaked = 0,            -- enemies + bosses that reached the core (report stat)
-    money_spent = 0,       -- gross spend on towers + orbital strikes (report stat)
-    bursting = false,      -- re-entrancy guard for the flyer-death burst (M2)
+    leaked = 0, -- enemies + bosses that reached the core (report stat)
+    money_spent = 0, -- gross spend on towers + orbital strikes (report stat)
+    bursting = false, -- re-entrancy guard for the flyer-death burst (M2)
     hp_scale = 1,
     speed_scale = 1,
     towers = {},
-    tower_seq = 0,         -- monotonic id source for placed towers
-    tower_stats = {},      -- [id] = { kind, damage } -- applied damage per tower
+    tower_seq = 0, -- monotonic id source for placed towers
+    tower_stats = {}, -- [id] = { kind, damage } -- applied damage per tower
     enemies = { n = 0 },
     projectiles = { n = 0 },
-    rings = { n = 0 },     -- lingering splash damage zones (M2 "Aftershock" card)
+    rings = { n = 0 }, -- lingering splash damage zones (M2 "Aftershock" card)
     boss = nil,
     bosses_killed = 0,
-    arena_kills = 0,       -- boss-arena objects destroyed (M6 report stat)
-    final_boss_reached = false,  -- the wave-25 Lattice was reached (M6)
+    arena_kills = 0, -- boss-arena objects destroyed (M6 report stat)
+    final_boss_reached = false, -- the wave-25 Lattice was reached (M6)
     spawn_queue = { n = 0, i = 0 },
     spawn_timer = 0,
     spawn_interval = C.SPAWN_INTERVAL,
     powerups = {},
-    log = {},              -- V2-M9 replay: recorded player build actions (the sim plan)
+    log = {}, -- V2-M9 replay: recorded player build actions (the sim plan)
     -- One-shot route-draft risks (V2-M2), consumed by the next wave.start and
     -- then reset. next_shield is the Prism card's shield buff on the next wave.
     route_mods = { next_budget_mult = 1, next_flyer_bias = false, next_shield = 0 },
-    wave_shield = 0,       -- per-wave enemy shield bonus from a Prism route card (M2)
+    wave_shield = 0, -- per-wave enemy shield bonus from a Prism route card (M2)
     -- Resource + contract economy (V2-M3). charge is the second in-run currency
     -- (Drills fill it, Discharge spends it). resource_nodes are seeded below.
     -- active_contract is the signed wave contract (or nil); its risk hits the next
@@ -81,7 +81,7 @@ function M.new(meta, seed, path_name, mode_id)
     module_discount = 0,
     module_rerolls = 0,
     no_sell = false,
-    resonance_dirty = true,    -- recompute tower resonance on the next touch (M4)
+    resonance_dirty = true, -- recompute tower resonance on the next touch (M4)
     -- Enemy affixes (V2-M5). wave_affix is the current wave's resolved affix row
     -- (or nil); affix_history lists ids for the report; no_affixes lets the balance
     -- sim opt out; the null-field timer suppresses resonance for its duration.
@@ -91,14 +91,26 @@ function M.new(meta, seed, path_name, mode_id)
     affix_null_active = false,
     no_affixes = false,
     mods = {
-      dmg_mult = 1, rate_mult = 1, range_mult = 1, bounty_mult = 1, cost_mult = 1,
-      proj_mult = 1, splash_mult = 1, crit_chance = 0, interest = 0, life_per_wave = 0,
+      dmg_mult = 1,
+      rate_mult = 1,
+      range_mult = 1,
+      bounty_mult = 1,
+      cost_mult = 1,
+      proj_mult = 1,
+      splash_mult = 1,
+      crit_chance = 0,
+      interest = 0,
+      life_per_wave = 0,
       -- behavior draft cards (M2): pierce/ricochet are extra-hit counts; brittle,
       -- ring, flyer_burst are scaled fractions. 0 = card not taken.
-      pierce = 0, ricochet = 0, brittle = 0, ring = 0, flyer_burst = 0,
+      pierce = 0,
+      ricochet = 0,
+      brittle = 0,
+      ring = 0,
+      flyer_burst = 0,
     },
   }
-  mastery.apply(run, meta)   -- fold owned mastery buffs into start money/lives + mods (M7)
+  mastery.apply(run, meta) -- fold owned mastery buffs into start money/lives + mods (M7)
   resource.spawn_nodes(run)
   return run
 end
@@ -111,16 +123,12 @@ end
 function M.begin_wave(run)
   local n = run.wave_index + 1
   run.phase = "combat"
-  run.sim_acc = 0            -- fresh fixed-timestep accumulator for this wave (M1)
-  run.combat_frame = 0       -- replay timing: fixed steps completed in this wave (M9)
+  run.sim_acc = 0 -- fresh fixed-timestep accumulator for this wave (M1)
+  run.combat_frame = 0 -- replay timing: fixed steps completed in this wave (M9)
   local mods = run.mods
-  if mods.interest > 0 then
-    run.money = run.money + math.floor(run.money * mods.interest)
-  end
-  if mods.life_per_wave > 0 then
-    run.lives = run.lives + mods.life_per_wave
-  end
-  affix.choose(run, n)        -- pick/clear this wave's affix before wave.start can apply queue effects (M5)
+  if mods.interest > 0 then run.money = run.money + math.floor(run.money * mods.interest) end
+  if mods.life_per_wave > 0 then run.lives = run.lives + mods.life_per_wave end
+  affix.choose(run, n) -- pick/clear this wave's affix before wave.start can apply queue effects (M5)
   if wave.is_boss_for(run, n) then
     wave.boss_scale(run, n)
     local kind = run.mode.boss_rush and boss.cycle(n) or boss.for_wave(n)
@@ -128,7 +136,7 @@ function M.begin_wave(run)
   else
     run.boss = nil
     wave.start(run, n)
-    contracts.arm(run)        -- blackout / no-sell, once the wave + towers are set
+    contracts.arm(run) -- blackout / no-sell, once the wave + towers are set
   end
   return n
 end
@@ -191,12 +199,12 @@ end
 function M.can_call_early(run)
   if run.phase ~= "combat" then return false end
   local q = run.spawn_queue
-  if q.i < q.n then return false end                       -- still spawning this wave
+  if q.i < q.n then return false end -- still spawning this wave
   if run.enemies.n == 0 or run.enemies.n > C.EARLY_CALL_MAX then return false end
-  if run.boss and not run.boss.dead then return false end  -- finish the boss first
+  if run.boss and not run.boss.dead then return false end -- finish the boss first
   local nxt = run.wave_index + 1
   if nxt % C.ROUTE_EVENT_EVERY == 0 and not wave.is_boss_for(run, nxt) then
-    return false                                            -- a route event must intervene first
+    return false -- a route event must intervene first
   end
   return true
 end
@@ -215,7 +223,7 @@ end
 -- when there is actually something on the field to nuke (so the button greys
 -- out rather than burning $500 on an empty screen).
 function M.can_orbital(run)
-  if run.mode.no_orbital then return false end   -- "No Orbital" challenge mode
+  if run.mode.no_orbital then return false end -- "No Orbital" challenge mode
   return run.phase == "combat" and run.money >= C.ORBITAL_COST and run.enemies.n > 0
 end
 
@@ -237,7 +245,8 @@ end
 -- Discharge availability: mid-combat, with enough charge banked, and something on
 -- the field to hit. The charge economy's active sink (separate from money/orbital).
 function M.can_discharge(run)
-  return run.phase == "combat" and run.charge >= C.DISCHARGE_MIN
+  return run.phase == "combat"
+    and run.charge >= C.DISCHARGE_MIN
     and (run.enemies.n > 0 or (run.boss and not run.boss.dead))
 end
 
@@ -249,7 +258,7 @@ function M.discharge(run)
   local dmg = run.charge * C.DISCHARGE_FACTOR
   run.charge = 0
   local list = run.enemies
-  local n = list.n                       -- snapshot: a kill may split-spawn
+  local n = list.n -- snapshot: a kill may split-spawn
   for i = 1, n do
     if not list[i].dead then enemy.damage(run, list[i], dmg) end
   end

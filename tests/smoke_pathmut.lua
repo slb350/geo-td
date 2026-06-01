@@ -3,15 +3,15 @@
 -- invalidated towers), and the route-event scene. Run by smoke.lua. Drives the
 -- route scene via the global input stub installed by smoke.lua's scene section.
 
-local C       = require("lib.const")
-local meta    = require("lib.meta")
+local C = require("lib.const")
+local meta = require("lib.meta")
 local run_mod = require("lib.run")
-local maps    = require("lib.maps")
-local path    = require("lib.path")
-local tower   = require("lib.tower")
-local pathmut  = require("lib.pathmut")
+local maps = require("lib.maps")
+local path = require("lib.path")
+local tower = require("lib.tower")
+local pathmut = require("lib.pathmut")
 local modifier = require("lib.modifier")
-local helpers  = require("tests.helpers")
+local helpers = require("tests.helpers")
 
 local M = {}
 
@@ -34,11 +34,14 @@ function M.run(check, near)
       local vp = path.build(v)
       check(vp.total_len > 100, name .. " variant " .. vi .. " has a substantial route")
       local inb = true
-      for k = 1, #v do if not in_field(v[k][1], v[k][2]) then inb = false end end
+      for k = 1, #v do
+        if not in_field(v[k][1], v[k][2]) then inb = false end
+      end
       check(inb, name .. " variant " .. vi .. " stays in field bounds")
-      check(v[1][1] == base[1][1] and v[1][2] == base[1][2]
-        and v[#v][1] == base[#base][1] and v[#v][2] == base[#base][2],
-        name .. " variant " .. vi .. " shares the base spawn + core")
+      check(
+        v[1][1] == base[1][1] and v[1][2] == base[1][2] and v[#v][1] == base[#base][1] and v[#v][2] == base[#base][2],
+        name .. " variant " .. vi .. " shares the base spawn + core"
+      )
       -- buildable: at least one off-route spot exists (parity with base-layout validation)
       check(path.has_buildable_spot(vp), name .. " variant " .. vi .. " leaves room to build")
     end
@@ -47,16 +50,22 @@ function M.run(check, near)
   -- pending: event-cadence wave on a variant map, never a boss wave or off-map
   do
     local r = run_mod.new(m, 1, "zigzag")
-    r.wave_index = 3; check(pathmut.pending(r), "route event pending before wave 4 (zigzag)")
-    r.wave_index = 4; check(not pathmut.pending(r), "no route event before a boss wave (5)")
-    r.wave_index = 5; check(not pathmut.pending(r), "no route event before wave 6 (off cadence)")
+    r.wave_index = 3
+    check(pathmut.pending(r), "route event pending before wave 4 (zigzag)")
+    r.wave_index = 4
+    check(not pathmut.pending(r), "no route event before a boss wave (5)")
+    r.wave_index = 5
+    check(not pathmut.pending(r), "no route event before wave 6 (off cadence)")
     -- V2-M2: procedural transforms host route events on ANY map, so a map without
     -- predefined variants (serpentine) still gets one on the cadence
-    local rs = run_mod.new(m, 1, "serpentine"); rs.wave_index = 3
+    local rs = run_mod.new(m, 1, "serpentine")
+    rs.wave_index = 3
     check(pathmut.pending(rs), "route event pending on a no-variant map (procedural transforms)")
-    rs.wave_index = 4; check(not pathmut.pending(rs), "no route event before a boss wave on a no-variant map")
+    rs.wave_index = 4
+    check(not pathmut.pending(rs), "no route event before a boss wave on a no-variant map")
     -- Boss Rush makes every wave a boss, so a route event must never be offered
-    local rbr = run_mod.new(m, 1, "zigzag", "boss_rush"); rbr.wave_index = 3
+    local rbr = run_mod.new(m, 1, "zigzag", "boss_rush")
+    rbr.wave_index = 3
     check(not pathmut.pending(rbr), "no route event in Boss Rush (every wave is a boss)")
   end
 
@@ -79,10 +88,11 @@ function M.run(check, near)
 
   -- auto-refund: a tower the new route runs over is refunded at full value
   do
-    local r = run_mod.new(m, 1, "zigzag"); r.money = 99999
+    local r = run_mod.new(m, 1, "zigzag")
+    r.money = 99999
     local v1 = maps.variants("zigzag")[1]
-    tower.place(r, 186, 72, "pellet")             -- midpoint of v1's first segment
-    local off = tower.place(r, 300, 40, "pellet")  -- clear of every v1 segment
+    tower.place(r, 186, 72, "pellet") -- midpoint of v1's first segment
+    local off = tower.place(r, 300, 40, "pellet") -- clear of every v1 segment
     check(path.dist_to(r.path, 186, 72) >= C.PLACE_MARGIN, "the on-tower is OFF the base route (a valid placement)")
     local cost, before = tower.cost(r, "pellet"), r.money
     local refunded = pathmut.apply(r, v1)
@@ -93,14 +103,15 @@ function M.run(check, near)
 
   -- auto-refund returns the WHOLE investment: base cost + upgrades + module
   do
-    local r = run_mod.new(m, 1, "zigzag"); r.money = 99999
+    local r = run_mod.new(m, 1, "zigzag")
+    r.money = 99999
     local v1 = maps.variants("zigzag")[1]
-    local t = tower.place(r, 186, 72, "pellet")   -- on v1
+    local t = tower.place(r, 186, 72, "pellet") -- on v1
     local base = tower.cost(r, "pellet")
     local after_place = r.money
     modifier.buy_upgrade(r, t, "dmg")
     modifier.socket_module(r, t, "triangle")
-    local extra = after_place - r.money            -- upgrade + module spend
+    local extra = after_place - r.money -- upgrade + module spend
     check(t.invested == base + extra, "a tower tracks its full investment (base + upgrades + module)")
     local before = r.money
     pathmut.apply(r, v1)
@@ -109,9 +120,11 @@ function M.run(check, near)
 
   -- the refund honors cost_mult: it returns exactly what the tower cost to place
   do
-    local r = run_mod.new(m, 1, "zigzag"); r.money = 99999; r.mods.cost_mult = 0.5
+    local r = run_mod.new(m, 1, "zigzag")
+    r.money = 99999
+    r.mods.cost_mult = 0.5
     local v1 = maps.variants("zigzag")[1]
-    local paid = tower.cost(r, "pellet")           -- discounted cost
+    local paid = tower.cost(r, "pellet") -- discounted cost
     tower.place(r, 186, 72, "pellet")
     local before = r.money
     pathmut.apply(r, v1)
@@ -120,10 +133,11 @@ function M.run(check, near)
 
   -- refund_preview: a read-only dry run that matches apply's actual refund
   do
-    local r = run_mod.new(m, 1, "zigzag"); r.money = 99999
+    local r = run_mod.new(m, 1, "zigzag")
+    r.money = 99999
     local v1 = maps.variants("zigzag")[1]
-    tower.place(r, 186, 72, "pellet")              -- on v1
-    tower.place(r, 300, 40, "pellet")              -- clear of v1
+    tower.place(r, 186, 72, "pellet") -- on v1
+    tower.place(r, 300, 40, "pellet") -- clear of v1
     local pre_count, pre_cost = pathmut.refund_preview(r, v1)
     check(pre_count == 1, "refund_preview counts exactly the displaced tower")
     local before = r.money

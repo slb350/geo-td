@@ -4,12 +4,12 @@
 -- game scene owns the inspected-tower state (ui.inspect); modifier.lua owns the
 -- buy/socket rules. Compact UI: glyph-tuned offsets, not ui.text_height.
 
-local C        = require("lib.const")
-local pal      = require("lib.palette")
-local ui       = require("lib.ui")
-local shape    = require("lib.shape")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local ui = require("lib.ui")
+local shape = require("lib.shape")
 local modifier = require("lib.modifier")
-local tower    = require("lib.tower")
+local tower = require("lib.tower")
 
 local M = {}
 
@@ -17,14 +17,18 @@ local PAD = 6
 local BX = C.HUD_X + PAD
 local BW = C.HUD_W - PAD * 2
 
-local EFF_Y = 36                              -- effective-stat line (M1)
+local EFF_Y = 36 -- effective-stat line (M1)
 local UP_Y, UP_H, UP_GAP = 52, 16, 3
 local MOD_Y, MOD_H, MOD_GAP = 132, 15, 2
-local reroll_btn = { x = BX, y = 162, w = BW, h = 15 }              -- charge module reroll (V2-M3)
-local tgt_btn = { x = BX, y = C.GAME_H - 40, w = BW, h = 14 }   -- targeting override (M1)
+local reroll_btn = { x = BX, y = 162, w = BW, h = 15 } -- charge module reroll (V2-M3)
+local tgt_btn = { x = BX, y = C.GAME_H - 40, w = BW, h = 14 } -- targeting override (M1)
 
-local function up_rect(i)  return { x = BX, y = UP_Y + (i - 1) * (UP_H + UP_GAP), w = BW, h = UP_H } end
-local function mod_rect(i) return { x = BX, y = MOD_Y + (i - 1) * (MOD_H + MOD_GAP), w = BW, h = MOD_H } end
+local function up_rect(i)
+  return { x = BX, y = UP_Y + (i - 1) * (UP_H + UP_GAP), w = BW, h = UP_H }
+end
+local function mod_rect(i)
+  return { x = BX, y = MOD_Y + (i - 1) * (MOD_H + MOD_GAP), w = BW, h = MOD_H }
+end
 
 -- Returns the click action in the inspect panel, or nil:
 --   { type = "upgrade",   id = <upgrade id> }
@@ -38,9 +42,7 @@ function M.button_at(run, t, mx, my)
   end
   if not t.module then
     for i = 1, #modifier.MODULE_ORDER do
-      if ui.in_rect(mx, my, mod_rect(i)) then
-        return { type = "module", id = modifier.MODULE_ORDER[i] }
-      end
+      if ui.in_rect(mx, my, mod_rect(i)) then return { type = "module", id = modifier.MODULE_ORDER[i] } end
     end
   elseif ui.in_rect(mx, my, reroll_btn) then
     return { type = "reroll" }
@@ -57,9 +59,12 @@ function M.draw(run, t)
 
   -- effective stats: base folded through global mods, upgrades, and the module
   local eff = modifier.effective(run, t, t.eff)
-  gfx.text(("%d dmg  %.1f/s  %d rng"):format(
-    math.floor(eff.damage + 0.5), eff.fire_rate, math.floor(eff.range + 0.5)),
-    BX, EFF_Y, pal.TEXT_DIM)
+  gfx.text(
+    ("%d dmg  %.1f/s  %d rng"):format(math.floor(eff.damage + 0.5), eff.fire_rate, math.floor(eff.range + 0.5)),
+    BX,
+    EFF_Y,
+    pal.TEXT_DIM
+  )
 
   -- leveled upgrades
   local opts = modifier.upgrade_options(run, t)
@@ -81,8 +86,12 @@ function M.draw(run, t)
     gfx.text(mod.desc, BX + 3, MOD_Y + 16, pal.TEXT_DIM)
     local afford = modifier.can_reroll_module(run, t)
     gfx.rect_fill(reroll_btn.x, reroll_btn.y, reroll_btn.w, reroll_btn.h, pal.HUD_PANEL)
-    gfx.text("REROLL " .. C.MODULE_REROLL_COST .. "C", reroll_btn.x + 3, reroll_btn.y + 4,
-      afford and pal.MONEY or pal.TEXT_DIM)
+    gfx.text(
+      "REROLL " .. C.MODULE_REROLL_COST .. "C",
+      reroll_btn.x + 3,
+      reroll_btn.y + 4,
+      afford and pal.MONEY or pal.TEXT_DIM
+    )
   else
     local mcost = modifier.module_cost(run)
     gfx.text("MODULE $" .. mcost, BX, MOD_Y - 12, pal.TEXT_DIM)
@@ -105,8 +114,7 @@ function M.draw(run, t)
   -- targeting override (M1): cycle the tower's acquisition policy/focus
   gfx.rect_fill(tgt_btn.x, tgt_btn.y, tgt_btn.w, tgt_btn.h, pal.HUD_PANEL)
   local ov = t.targeting_override
-  gfx.text("TARGET: " .. tower.targeting_label(ov), tgt_btn.x + 3, tgt_btn.y + 3,
-    ov and pal.MONEY or pal.TEXT)
+  gfx.text("TARGET: " .. tower.targeting_label(ov), tgt_btn.x + 3, tgt_btn.y + 3, ov and pal.MONEY or pal.TEXT)
 
   gfx.text("RMB: close", BX, C.GAME_H - 12, pal.TEXT_DIM)
 end

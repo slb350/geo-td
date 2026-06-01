@@ -8,9 +8,9 @@
 -- yet never consumes the run's main rng -- the wave-generation sequence (and the
 -- balance baselines) are unaffected by adding resource nodes.
 
-local C    = require("lib.const")
+local C = require("lib.const")
 local path = require("lib.path")
-local rng  = require("lib.rng")
+local rng = require("lib.rng")
 
 local M = {}
 
@@ -21,9 +21,7 @@ function M.spawn_nodes(run)
   local cands = {}
   for gx = 30, C.FIELD_W - 30, 18 do
     for gy = 30, C.FIELD_H - 30, 18 do
-      if path.dist_to(run.path, gx, gy) > C.PLACE_MARGIN + 12 then
-        cands[#cands + 1] = { x = gx, y = gy }
-      end
+      if path.dist_to(run.path, gx, gy) > C.PLACE_MARGIN + 12 then cands[#cands + 1] = { x = gx, y = gy } end
     end
   end
   local nodes = {}
@@ -31,7 +29,7 @@ function M.spawn_nodes(run)
     if #cands == 0 then break end
     local pick = cands[r:int(1, #cands)]
     nodes[#nodes + 1] = { x = pick.x, y = pick.y }
-    local kept = {}                       -- drop nearby cells so prisms spread out
+    local kept = {} -- drop nearby cells so prisms spread out
     for i = 1, #cands do
       local c = cands[i]
       local dx, dy = c.x - pick.x, c.y - pick.y
@@ -55,7 +53,10 @@ function M.add_node(run)
         local ok = true
         for i = 1, #nodes do
           local dx, dy = nodes[i].x - gx, nodes[i].y - gy
-          if dx * dx + dy * dy < 60 * 60 then ok = false; break end
+          if dx * dx + dy * dy < 60 * 60 then
+            ok = false
+            break
+          end
         end
         if ok then cands[#cands + 1] = { x = gx, y = gy } end
       end
@@ -107,12 +108,15 @@ function M.draw(run)
       local tw = run.towers[j]
       if tw.def.role == "support" then
         local dx, dy = tw.x - n.x, tw.y - n.y
-        if dx * dx + dy * dy <= C.DRILL_RANGE * C.DRILL_RANGE then tapped = true; break end
+        if dx * dx + dy * dy <= C.DRILL_RANGE * C.DRILL_RANGE then
+          tapped = true
+          break
+        end
       end
     end
     local col = tapped and gfx.COLOR_YELLOW or gfx.COLOR_DARK_GREEN
     local pr = 4 + math.sin(t * 3 + i) * 1.2
-    gfx.circ(n.x, n.y, C.DRILL_RANGE, gfx.COLOR_DARK_PURPLE)   -- faint extract radius
+    gfx.circ(n.x, n.y, C.DRILL_RANGE, gfx.COLOR_DARK_PURPLE) -- faint extract radius
     gfx.circ_fill(n.x, n.y, 2, col)
     gfx.circ(n.x, n.y, pr, col)
   end

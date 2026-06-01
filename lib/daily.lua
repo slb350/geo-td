@@ -4,8 +4,8 @@
 -- a curated challenge mode, and the run seed. Same day -> same challenge anywhere;
 -- a different day -> a different one. Verifiable from seed/map/mode in the report.
 
-local rng   = require("lib.rng")
-local maps  = require("lib.maps")
+local rng = require("lib.rng")
+local maps = require("lib.maps")
 
 local M = {}
 
@@ -22,8 +22,8 @@ end
 
 -- The deterministic daily challenge for a given whole-day index.
 function M.for_day(day)
-  local r = rng.derive(day, 0xDA17)        -- warmed, day-keyed PRNG
-  local map  = maps.ORDER[r:int(1, #maps.ORDER)]
+  local r = rng.derive(day, 0xDA17) -- warmed, day-keyed PRNG
+  local map = maps.ORDER[r:int(1, #maps.ORDER)]
   local mode = M.MODES[r:int(1, #M.MODES)]
   local seed = day * 100003 + r:int(1, 1000000)
   return { day = day, map = map, mode = mode, seed = seed }

@@ -42,9 +42,7 @@ end
 function M.tick_regen(ent, dt)
   -- base regen + any formation regen-node aura (M4)
   local regen = (ent.regen or 0) + (ent.aura_regen or 0)
-  if regen > 0 and ent.hp < ent.maxhp then
-    ent.hp = math.min(ent.maxhp, ent.hp + regen * dt)
-  end
+  if regen > 0 and ent.hp < ent.maxhp then ent.hp = math.min(ent.maxhp, ent.hp + regen * dt) end
   if ent.shield_max and ent.shield_max > 0 then
     if ent.shield_hit_t and ent.shield_hit_t > 0 then
       ent.shield_hit_t = ent.shield_hit_t - dt

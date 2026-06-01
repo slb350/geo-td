@@ -15,9 +15,9 @@ local M = {}
 -- Tracks per scene-state, played in rotation. Boss is the cinematic / female
 -- synthwave set; combat cycles the darksynth variants.
 local POOL = {
-  menu   = { "menu" },
+  menu = { "menu" },
   combat = { "combat", "combat2", "combat3", "combat4", "combat5" },
-  boss   = { "boss", "boss2", "boss3" },
+  boss = { "boss", "boss2", "boss3" },
 }
 
 function M.set(state)
@@ -25,7 +25,7 @@ function M.set(state)
   State.music_state = state
   local pool = POOL[state] or { state }
   local idx = State.music_idx or {}
-  local n = (idx[state] or 0) % #pool + 1   -- advance, wrapping
+  local n = (idx[state] or 0) % #pool + 1 -- advance, wrapping
   idx[state] = n
   State.music_idx = idx
   music.stop()

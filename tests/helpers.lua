@@ -2,12 +2,12 @@
 -- engine-stub harness must already be installed (modules read JSON at require
 -- time), which smoke.lua guarantees by requiring tests.harness first.
 
-local C       = require("lib.const")
-local enemy   = require("lib.enemy")
-local proj    = require("lib.projectile")
-local tower   = require("lib.tower")
+local C = require("lib.const")
+local enemy = require("lib.enemy")
+local proj = require("lib.projectile")
+local tower = require("lib.tower")
 local run_mod = require("lib.run")
-local path    = require("lib.path")
+local path = require("lib.path")
 
 local M = {}
 
@@ -63,9 +63,9 @@ end
 -- difficulty empirically. opts: kind, step, wave, margin.
 function M.grid_cordon(path_obj, opts)
   opts = opts or {}
-  local kind   = opts.kind or "pellet"
-  local step   = opts.step or 26
-  local wv     = opts.wave or 1
+  local kind = opts.kind or "pellet"
+  local step = opts.step or 26
+  local wv = opts.wave or 1
   local margin = opts.margin or (C.PLACE_MARGIN + C.TOWER_R)
   local plan = {}
   for gx = 16, C.FIELD_W - 16, step do

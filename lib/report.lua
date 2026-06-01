@@ -50,27 +50,27 @@ end
 function M.build(run)
   local fav = favorite_powerup(run.powerups)
   return {
-    seed          = run.seed,        -- for replay/share metadata (M9)
-    map           = run.map_name,
-    wave          = run.final_wave or run.wave_index,
+    seed = run.seed, -- for replay/share metadata (M9)
+    map = run.map_name,
+    wave = run.final_wave or run.wave_index,
     bosses_killed = run.bosses_killed or 0,
-    kills         = run.kills or 0,
-    leaked        = run.leaked or 0,
-    money_spent   = run.money_spent or 0,
-    score         = run.score or 0,
-    top_tower     = top_tower(run.tower_stats),
-    favorite      = fav,
+    kills = run.kills or 0,
+    leaked = run.leaked or 0,
+    money_spent = run.money_spent or 0,
+    score = run.score or 0,
+    top_tower = top_tower(run.tower_stats),
+    favorite = fav,
     favorite_name = fav and powerup.DEFS[fav] and powerup.DEFS[fav].name or nil,
     -- challenge mode name, or nil for a standard run (so default runs show nothing)
-    mode          = (run.mode and run.mode.id ~= "standard") and run.mode.name or nil,
+    mode = (run.mode and run.mode.id ~= "standard") and run.mode.name or nil,
     -- M3 economy: contracts signed + bank shards earned (nil/0 when unused)
-    contracts     = run.contract_history and #run.contract_history or 0,
-    bank_shards   = run.bank_shards or 0,
+    contracts = run.contract_history and #run.contract_history or 0,
+    bank_shards = run.bank_shards or 0,
     -- M5: number of affix-bearing waves survived
-    affixes       = run.affix_history and #run.affix_history or 0,
+    affixes = run.affix_history and #run.affix_history or 0,
     -- M6: boss-arena objects destroyed + whether the final boss was reached
-    arena_kills   = run.arena_kills or 0,
-    final_boss    = run.final_boss_reached or false,
+    arena_kills = run.arena_kills or 0,
+    final_boss = run.final_boss_reached or false,
   }
 end
 

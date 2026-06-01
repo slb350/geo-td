@@ -3,14 +3,14 @@
 -- mini path preview, difficulty pips, and the best wave reached. Click an
 -- unlocked tile to start a run on it; right-click returns to the menu.
 
-local C     = require("lib.const")
-local pal   = require("lib.palette")
-local path  = require("lib.path")
-local run   = require("lib.run")
-local meta  = require("lib.meta")
-local maps  = require("lib.maps")
-local fx    = require("lib.fx")
-local ui    = require("lib.ui")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local path = require("lib.path")
+local run = require("lib.run")
+local meta = require("lib.meta")
+local maps = require("lib.maps")
+local fx = require("lib.fx")
+local ui = require("lib.ui")
 local audio = require("lib.audio")
 local modes = require("lib.modes")
 
@@ -28,8 +28,7 @@ do
   local n = #maps.ORDER
   local x0 = (C.GAME_W - (n * TILE_W + (n - 1) * GAP)) * 0.5
   for i = 1, n do
-    tiles[i] = { x = x0 + (i - 1) * (TILE_W + GAP), y = ROW_Y, w = TILE_W, h = TILE_H,
-                 name = maps.ORDER[i] }
+    tiles[i] = { x = x0 + (i - 1) * (TILE_W + GAP), y = ROW_Y, w = TILE_W, h = TILE_H, name = maps.ORDER[i] }
   end
 end
 
@@ -54,12 +53,14 @@ end
 
 function M.update(dt)
   if input.mouse_pressed(input.MOUSE_RIGHT) then
-    fx.click_sfx(); SwitchScene("menu"); return
+    fx.click_sfx()
+    SwitchScene("menu")
+    return
   end
   if input.mouse_pressed(input.MOUSE_LEFT) then
     local mx, my = input.mouse()
     if ui.in_rect(mx, my, mode_btn) then
-      State.ui.mode = modes.next(State.ui.mode or modes.DEFAULT)   -- cycle the challenge mode
+      State.ui.mode = modes.next(State.ui.mode or modes.DEFAULT) -- cycle the challenge mode
       fx.click_sfx()
       return
     end
@@ -107,15 +108,20 @@ function M.draw(dt)
     local hover = lit and ui.in_rect(mx, my, t)
 
     gfx.rect_fill(t.x, t.y, t.w, t.h, pal.HUD_PANEL)
-    gfx.rect(t.x, t.y, t.w, t.h,
-      hover and pal.HUD_SEL or (lit and pal.PATH_EDGE or gfx.COLOR_DARK_GRAY))
+    gfx.rect(t.x, t.y, t.w, t.h, hover and pal.HUD_SEL or (lit and pal.PATH_EDGE or gfx.COLOR_DARK_GRAY))
 
     -- preview panel
     gfx.rect_fill(t.x + PAD, t.y + PAD, t.w - PAD * 2, PREV_H, pal.FIELD_BG)
-    path.draw_preview(layout.nodes, t.x + PAD, t.y + PAD, t.w - PAD * 2, PREV_H,
+    path.draw_preview(
+      layout.nodes,
+      t.x + PAD,
+      t.y + PAD,
+      t.w - PAD * 2,
+      PREV_H,
       lit and pal.PATH_CORE or gfx.COLOR_DARK_GRAY,
       lit and pal.SPAWN or gfx.COLOR_DARK_GRAY,
-      lit and pal.CORE or gfx.COLOR_DARK_GRAY)
+      lit and pal.CORE or gfx.COLOR_DARK_GRAY
+    )
 
     tile_text(t, layout.name, t.y + 72, lit and pal.TEXT or pal.TEXT_DIM, 1)
     draw_pips(t, i, total, lit)
@@ -123,9 +129,13 @@ function M.draw(dt)
     -- status line: best wave / NEW / LOCKED
     local best = State.meta.map_best[t.name] or 0
     local status, scol
-    if not lit then status, scol = "LOCKED", pal.BAD
-    elseif best > 0 then status, scol = "best W" .. best, pal.GOOD
-    else status, scol = "NEW", pal.MONEY end
+    if not lit then
+      status, scol = "LOCKED", pal.BAD
+    elseif best > 0 then
+      status, scol = "best W" .. best, pal.GOOD
+    else
+      status, scol = "NEW", pal.MONEY
+    end
     tile_text(t, status, t.y + 102, scol, 1)
   end
 
@@ -135,14 +145,19 @@ function M.draw(dt)
   gfx.rect_fill(mode_btn.x, mode_btn.y, mode_btn.w, mode_btn.h, pal.HUD_PANEL)
   gfx.rect(mode_btn.x, mode_btn.y, mode_btn.w, mode_btn.h, mhover and pal.HUD_SEL or pal.PATH_EDGE)
   local mlabel = "MODE:  " .. cur.name .. "   (click to change)"
-  gfx.text_ex(mlabel, mode_btn.x + (mode_btn.w - usagi.measure_text(mlabel)) * 0.5, mode_btn.y + 6,
-    1, 0, cur.id == "standard" and pal.TEXT_DIM or pal.MONEY, 1)
+  gfx.text_ex(
+    mlabel,
+    mode_btn.x + (mode_btn.w - usagi.measure_text(mlabel)) * 0.5,
+    mode_btn.y + 6,
+    1,
+    0,
+    cur.id == "standard" and pal.TEXT_DIM or pal.MONEY,
+    1
+  )
   ui.center_text(cur.desc, mode_btn.y + mode_btn.h + 6, pal.TEXT_DIM, 1)
 
-  ui.center_text("reach wave " .. maps.UNLOCK_WAVE .. " on a map to unlock the next",
-    C.GAME_H - 28, pal.TEXT_DIM, 1)
-  ui.center_text("click a map to play    -    right-click: back",
-    C.GAME_H - 14, pal.TEXT_DIM, 1)
+  ui.center_text("reach wave " .. maps.UNLOCK_WAVE .. " on a map to unlock the next", C.GAME_H - 28, pal.TEXT_DIM, 1)
+  ui.center_text("click a map to play    -    right-click: back", C.GAME_H - 14, pal.TEXT_DIM, 1)
 end
 
 return M

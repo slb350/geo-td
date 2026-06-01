@@ -4,21 +4,23 @@
 -- resilience (the playtest crash), and inspect-panel hit-testing + layout fit.
 -- Run by smoke.lua via M.run(check, near).
 
-local C        = require("lib.const")
-local harness  = require("tests.harness")
-local meta     = require("lib.meta")
-local tower    = require("lib.tower")
-local proj     = require("lib.projectile")
+local C = require("lib.const")
+local harness = require("tests.harness")
+local meta = require("lib.meta")
+local tower = require("lib.tower")
+local proj = require("lib.projectile")
 local modifier = require("lib.modifier")
-local inspect  = require("lib.inspect")
-local helpers  = require("tests.helpers")
+local inspect = require("lib.inspect")
+local helpers = require("tests.helpers")
 
 local M = {}
 local dummy, settle = helpers.dummy, helpers.settle
 
 function M.run(check, near)
   local m = meta.default()
-  local function fresh(seed) return helpers.fresh(m, seed) end
+  local function fresh(seed)
+    return helpers.fresh(m, seed)
+  end
 
   -- effective base == def * global mods (the behavior-preserving substrate)
   do
@@ -37,47 +39,61 @@ function M.run(check, near)
     local r = fresh()
     local t = tower.place(r, 200, 150, "pellet")
     local def = tower.DEFS.pellet
-    modifier.buy_upgrade(r, t, "dmg")    -- level 1: +25%
+    modifier.buy_upgrade(r, t, "dmg") -- level 1: +25%
     check(near(modifier.effective(r, t, {}).damage, def.damage * 1.25), "one dmg upgrade -> +25%")
-    modifier.buy_upgrade(r, t, "dmg")    -- level 2: +50%
+    modifier.buy_upgrade(r, t, "dmg") -- level 2: +50%
     check(near(modifier.effective(r, t, {}).damage, def.damage * 1.5), "two dmg upgrades stack to +50%")
-    r.mods.dmg_mult = 2.0                 -- global mod multiplies on top
-    check(near(modifier.effective(r, t, {}).damage, def.damage * 2.0 * 1.5),
-      "global mod and per-tower upgrades multiply together")
+    r.mods.dmg_mult = 2.0 -- global mod multiplies on top
+    check(
+      near(modifier.effective(r, t, {}).damage, def.damage * 2.0 * 1.5),
+      "global mod and per-tower upgrades multiply together"
+    )
   end
 
   -- each geometry module folds its effect (base x global x module)
   do
     local r = fresh()
     local def, ds = tower.DEFS.pellet, tower.DEFS.splash
-    local tp = tower.place(r, 200, 150, "pellet"); modifier.socket_module(r, tp, "triangle")
+    local tp = tower.place(r, 200, 150, "pellet")
+    modifier.socket_module(r, tp, "triangle")
     check(near(modifier.effective(r, tp, {}).crit, 0.25), "triangle module grants +25% crit")
-    local tq = tower.place(r, 100, 95, "pellet"); modifier.socket_module(r, tq, "square")
+    local tq = tower.place(r, 100, 95, "pellet")
+    modifier.socket_module(r, tq, "square")
     check(modifier.effective(r, tq, {}).pierce == 1, "square module grants pierce +1")
-    local th = tower.place(r, 250, 200, "pellet"); modifier.socket_module(r, th, "hex")
+    local th = tower.place(r, 250, 200, "pellet")
+    modifier.socket_module(r, th, "hex")
     check(modifier.effective(r, th, {}).ricochet == 1, "hex module grants ricochet +1")
-    local tc = tower.place(r, 60, 40, "pellet"); modifier.socket_module(r, tc, "circle")
-    check(near(modifier.effective(r, tc, {}).range, def.range * r.mods.range_mult * 1.30),
-      "circle module adds +30% range")
-    local td = tower.place(r, 300, 60, "splash"); modifier.socket_module(r, td, "diamond")
-    check(near(modifier.effective(r, td, {}).splash_radius, ds.splash_radius * r.mods.splash_mult * 1.50),
-      "diamond module adds +50% splash")
+    local tc = tower.place(r, 60, 40, "pellet")
+    modifier.socket_module(r, tc, "circle")
+    check(
+      near(modifier.effective(r, tc, {}).range, def.range * r.mods.range_mult * 1.30),
+      "circle module adds +30% range"
+    )
+    local td = tower.place(r, 300, 60, "splash")
+    modifier.socket_module(r, td, "diamond")
+    check(
+      near(modifier.effective(r, td, {}).splash_radius, ds.splash_radius * r.mods.splash_mult * 1.50),
+      "diamond module adds +50% splash"
+    )
   end
 
   -- cost scaling + affordability gating + max-level cap
   do
-    local r = fresh(); r.money = 0
+    local r = fresh()
+    r.money = 0
     local t = tower.place(r, 200, 150, "pellet")
     check(not modifier.can_buy_upgrade(r, t, "dmg"), "cannot buy an upgrade while broke")
     check(not modifier.buy_upgrade(r, t, "dmg"), "buy no-ops when unaffordable")
     check((t.upgrades.dmg or 0) == 0, "unaffordable buy left the level unchanged")
     r.money = 1000
-    local def = modifier.UPDEFS.pellet[1]   -- the dmg line
+    local def = modifier.UPDEFS.pellet[1] -- the dmg line
     local c0 = modifier.upgrade_cost(def, 0)
     modifier.buy_upgrade(r, t, "dmg")
     check(t.upgrades.dmg == 1 and r.money == 1000 - c0, "buying spends the level-0 cost")
     check(modifier.upgrade_cost(def, 1) == def.base_cost * 2, "cost scales with level")
-    for _ = 1, 10 do modifier.buy_upgrade(r, t, "dmg") end
+    for _ = 1, 10 do
+      modifier.buy_upgrade(r, t, "dmg")
+    end
     check(t.upgrades.dmg == def.max_level, "upgrade level caps at max_level")
     check(not modifier.can_buy_upgrade(r, t, "dmg"), "a maxed upgrade cannot be bought")
   end
@@ -86,7 +102,7 @@ function M.run(check, near)
   do
     local r = fresh()
     local t = tower.place(r, 200, 150, "pellet")
-    r.money = C.MODULE_COST   -- exactly enough to socket one module (set after placing)
+    r.money = C.MODULE_COST -- exactly enough to socket one module (set after placing)
     check(modifier.can_socket(r, t, "triangle"), "can socket with funds + empty socket")
     check(modifier.socket_module(r, t, "triangle") and r.money == 0, "socketing spends MODULE_COST")
     check(t.module == "triangle", "module recorded on the tower")
@@ -100,21 +116,28 @@ function M.run(check, near)
   do
     local r = fresh()
     local t = tower.place(r, 200, 150, "pellet")
-    local after_place = r.money_spent                 -- the pellet's base cost
+    local after_place = r.money_spent -- the pellet's base cost
     local up_cost = modifier.upgrade_cost(modifier.UPDEFS.pellet[1], 0)
     modifier.buy_upgrade(r, t, "dmg")
     modifier.socket_module(r, t, "triangle")
-    check(r.money_spent == after_place + up_cost + C.MODULE_COST,
-      "buying an upgrade + module adds to gross money_spent")
+    check(
+      r.money_spent == after_place + up_cost + C.MODULE_COST,
+      "buying an upgrade + module adds to gross money_spent"
+    )
   end
 
   -- per-tower upgrade state persists across a wave of simulation
   do
     local r = fresh()
     local t = tower.place(r, 200, 150, "pellet")
-    modifier.buy_upgrade(r, t, "rate"); modifier.buy_upgrade(r, t, "dmg")
-    r.enemies.n = 0; dummy(r, 210, 150)
-    for _ = 1, 60 do tower.update(r, 1 / 60); proj.update(r, 1 / 60) end
+    modifier.buy_upgrade(r, t, "rate")
+    modifier.buy_upgrade(r, t, "dmg")
+    r.enemies.n = 0
+    dummy(r, 210, 150)
+    for _ = 1, 60 do
+      tower.update(r, 1 / 60)
+      proj.update(r, 1 / 60)
+    end
     check(t.upgrades.rate == 1 and t.upgrades.dmg == 1, "per-tower upgrades persist across a wave")
     check(r.towers[1] == t, "the upgraded tower persists in run.towers")
   end
@@ -124,11 +147,13 @@ function M.run(check, near)
   do
     local r = fresh()
     local t = tower.place(r, 200, 150, "pellet")
-    modifier.socket_module(r, t, "square")   -- pierce +1
+    modifier.socket_module(r, t, "square") -- pierce +1
     r.enemies.n = 0
     local a = dummy(r, 210, 150)
-    local b = dummy(r, 225, 150)             -- ahead, within chain range
-    t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
+    local b = dummy(r, 225, 150) -- ahead, within chain range
+    t.cooldown = 0
+    tower.update(r, 1 / 60)
+    settle(r)
     check(a.hp < a.maxhp and b.hp < b.maxhp, "a square-module tower pierces to a second enemy (no global card)")
   end
 
@@ -136,10 +161,13 @@ function M.run(check, near)
   do
     local r = fresh()
     local t = tower.place(r, 200, 150, "pellet")
-    modifier.socket_module(r, t, "triangle")   -- +25% crit
-    r.mods.crit_chance = 0.75                   -- +75% global -> total 1.0, always crits
-    r.enemies.n = 0; dummy(r, 205, 150)
-    t.cooldown = 0; tower.update(r, 1 / 60); settle(r)
+    modifier.socket_module(r, t, "triangle") -- +25% crit
+    r.mods.crit_chance = 0.75 -- +75% global -> total 1.0, always crits
+    r.enemies.n = 0
+    dummy(r, 205, 150)
+    t.cooldown = 0
+    tower.update(r, 1 / 60)
+    settle(r)
     check(near(r.tower_stats[t.id].damage, 18), "crit module + global crit doubles damage in the firing path (9 -> 18)")
   end
 
@@ -148,8 +176,10 @@ function M.run(check, near)
   -- not crash (the exact playtest error: modifier.lua index nil 'upgrades').
   do
     local r = fresh()
-    local legacy = { kind = "pellet", def = tower.DEFS.pellet }   -- no upgrades/module/eff
-    local ok = pcall(function() return modifier.effective(r, legacy, {}) end)
+    local legacy = { kind = "pellet", def = tower.DEFS.pellet } -- no upgrades/module/eff
+    local ok = pcall(function()
+      return modifier.effective(r, legacy, {})
+    end)
     check(ok, "effective() tolerates a tower with no upgrades field (live-reload)")
     check(legacy.upgrades ~= nil, "effective() backfills the missing upgrades field")
     check(legacy.eff ~= nil, "effective() backfills the missing eff scratch (avoids per-frame alloc)")
@@ -159,9 +189,9 @@ function M.run(check, near)
   do
     local r = fresh()
     local t = tower.place(r, 200, 150, "pellet")
-    local up = inspect.button_at(r, t, C.HUD_X + 11, 57)    -- inside upgrade row 1 (UP_Y = 52)
+    local up = inspect.button_at(r, t, C.HUD_X + 11, 57) -- inside upgrade row 1 (UP_Y = 52)
     check(up and up.type == "upgrade", "inspect click in the upgrade area returns a buy action")
-    local sock = inspect.button_at(r, t, C.HUD_X + 11, 137)  -- inside module row 1 (socket empty)
+    local sock = inspect.button_at(r, t, C.HUD_X + 11, 137) -- inside module row 1 (socket empty)
     check(sock and sock.type == "module", "inspect click in the module area returns a socket action")
 
     harness.reset_gfx()

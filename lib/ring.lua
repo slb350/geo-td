@@ -5,8 +5,8 @@
 -- Lifetime is tick-count based (not a wall clock), so every ring deals exactly
 -- C.RING_TICKS pulses regardless of frame timing.
 
-local C       = require("lib.const")
-local enemy   = require("lib.enemy")
+local C = require("lib.const")
+local enemy = require("lib.enemy")
 local run_lib = require("lib.run")
 
 local M = {}
@@ -16,13 +16,16 @@ function M.spawn(run, x, y, opts)
   local list = run.rings
   list.n = list.n + 1
   local r = list[list.n]
-  if not r then r = {}; list[list.n] = r end
+  if not r then
+    r = {}
+    list[list.n] = r
+  end
   r.x, r.y = x, y
   r.radius = opts.radius
   r.damage = opts.damage
   r.tower_id = opts.tower_id
-  r.ticks = opts.ticks or C.RING_TICKS    -- Diamond Wake resonance passes an extra tick
-  r.ticks0 = r.ticks                      -- starting count: normalizes the visual fade
+  r.ticks = opts.ticks or C.RING_TICKS -- Diamond Wake resonance passes an extra tick
+  r.ticks0 = r.ticks -- starting count: normalizes the visual fade
   r.timer = C.RING_INTERVAL
   return r
 end
@@ -30,7 +33,7 @@ end
 local function tick(run, r)
   local r2 = r.radius * r.radius
   local list = run.enemies
-  local n = list.n   -- a tick may split-spawn; only hit enemies present now
+  local n = list.n -- a tick may split-spawn; only hit enemies present now
   for i = 1, n do
     local e = list[i]
     if not e.dead then
@@ -55,7 +58,9 @@ function M.update(run, dt)
       r.timer = r.timer + C.RING_INTERVAL
     end
     if r.ticks <= 0 then
-      list[i] = list[list.n]; list[list.n] = r; list.n = list.n - 1
+      list[i] = list[list.n]
+      list[list.n] = r
+      list.n = list.n - 1
     else
       i = i + 1
     end

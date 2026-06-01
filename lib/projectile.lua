@@ -5,26 +5,29 @@
 -- Behavior cards (M2) let a shot "chain" to extra targets (pierce/ricochet),
 -- deal extra damage to slowed targets (brittle), and leave a splash ring.
 
-local enemy   = require("lib.enemy")
-local boss    = require("lib.boss")
-local fx      = require("lib.fx")
-local C       = require("lib.const")
+local enemy = require("lib.enemy")
+local boss = require("lib.boss")
+local fx = require("lib.fx")
+local C = require("lib.const")
 local run_lib = require("lib.run")
-local ring    = require("lib.ring")
-local target  = require("lib.target")
+local ring = require("lib.ring")
+local target = require("lib.target")
 
 local M = {}
 
 -- opts: damage, speed, radius, color, splash_radius?, slow_factor?, slow_time?,
 -- tower? (the firing tower, for damage attribution). Pooled tables MUST reset
 -- every field each spawn -- including the chain/hit-set state below.
-function M.spawn(run, x, y, target, opts)
+function M.spawn(run, x, y, target_ent, opts)
   local list = run.projectiles
   list.n = list.n + 1
   local p = list[list.n]
-  if not p then p = {}; list[list.n] = p end
+  if not p then
+    p = {}
+    list[list.n] = p
+  end
   p.x, p.y = x, y
-  p.target = target
+  p.target = target_ent
   p.damage = opts.damage
   p.speed = opts.speed
   p.radius = opts.radius or 2
@@ -34,8 +37,8 @@ function M.spawn(run, x, y, target, opts)
   p.slow_time = opts.slow_time
   p.tower = opts.tower
   p.tower_id = opts.tower and opts.tower.id or nil
-  p.ring_extra = opts.ring_extra or 0     -- Diamond Wake: extra ring ticks (M4)
-  p.mark = opts.mark or 0                 -- Green Vector: mark-on-hit amount (M4)
+  p.ring_extra = opts.ring_extra or 0 -- Diamond Wake: extra ring ticks (M4)
+  p.mark = opts.mark or 0 -- Green Vector: mark-on-hit amount (M4)
   -- chain: pierce hops to a target ahead of the shot, ricochet to any nearest.
   -- The firing tower passes the effective counts (global cards + its module
   -- socket); pierce wins if both are present. `hits` is a reused set so a
@@ -49,8 +52,14 @@ function M.spawn(run, x, y, target, opts)
   else
     p.chain, p.chain_ahead = 0, false
   end
-  if p.hits then for k in pairs(p.hits) do p.hits[k] = nil end else p.hits = {} end
-  p.hx, p.hy = 0, 0   -- last travel heading (for pierce "ahead" target selection)
+  if p.hits then
+    for k in pairs(p.hits) do
+      p.hits[k] = nil
+    end
+  else
+    p.hits = {}
+  end
+  p.hx, p.hy = 0, 0 -- last travel heading (for pierce "ahead" target selection)
   p.life = 2.0
   p.dead = false
   return p
@@ -67,12 +76,13 @@ local function next_chain_target(run, p)
   local best, best_d2
   for i = 1, list.n do
     local e = list[i]
-    if not e.dead and not p.hits[e] and target.targetable(e)
-      and (not def or target.can_hit(def, e)) then
+    if not e.dead and not p.hits[e] and target.targetable(e) and (not def or target.can_hit(def, e)) then
       local dx, dy = e.x - p.x, e.y - p.y
       local d2 = dx * dx + dy * dy
       if d2 <= r2 and ((not p.chain_ahead) or (dx * p.hx + dy * p.hy) > 0) then
-        if not best_d2 or d2 < best_d2 then best, best_d2 = e, d2 end
+        if not best_d2 or d2 < best_d2 then
+          best, best_d2 = e, d2
+        end
       end
     end
   end
@@ -90,7 +100,10 @@ local function resolve_hit(run, p)
     local _, applied = enemy.damage(run, t, p.damage)
     run_lib.credit_damage(run, p.tower_id, applied)
     if p.slow_factor then enemy.slow(t, p.slow_factor, p.slow_time) end
-    if p.mark > 0 then t.mark_t = C.MARK_TIME; t.mark_mult = 1 + p.mark end   -- Green Vector mark (M4)
+    if p.mark > 0 then
+      t.mark_t = C.MARK_TIME
+      t.mark_mult = 1 + p.mark
+    end -- Green Vector mark (M4)
     p.hits[t] = true
   end
   fx.hit_sfx()
@@ -151,7 +164,9 @@ function M.update(run, dt)
       local dist = math.sqrt(dx * dx + dy * dy)
       local step = p.speed * dt
       local reach = p.radius + (t.size or 0)
-      if dist > 0 then p.hx, p.hy = dx / dist, dy / dist end
+      if dist > 0 then
+        p.hx, p.hy = dx / dist, dy / dist
+      end
       if dist <= reach or dist <= step then
         p.dead = resolve_hit(run, p)
       else
@@ -160,7 +175,9 @@ function M.update(run, dt)
       end
     end
     if p.dead then
-      list[i] = list[list.n]; list[list.n] = p; list.n = list.n - 1
+      list[i] = list[list.n]
+      list[list.n] = p
+      list.n = list.n - 1
     else
       i = i + 1
     end

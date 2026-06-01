@@ -24,11 +24,17 @@ function M.reset(e)
 end
 
 local function apply(o, kind, value)
-  if kind == "speed" then o.aura_speed = math.max(o.aura_speed, value)
-  elseif kind == "armor" then o.aura_armor = o.aura_armor + value
-  elseif kind == "regen" then o.aura_regen = o.aura_regen + value
-  elseif kind == "shield" then o.aura_shield = math.max(o.aura_shield, value)
-  elseif kind == "stealth" then o.aura_stealth = true end
+  if kind == "speed" then
+    o.aura_speed = math.max(o.aura_speed, value)
+  elseif kind == "armor" then
+    o.aura_armor = o.aura_armor + value
+  elseif kind == "regen" then
+    o.aura_regen = o.aura_regen + value
+  elseif kind == "shield" then
+    o.aura_shield = math.max(o.aura_shield, value)
+  elseif kind == "stealth" then
+    o.aura_stealth = true
+  end
 end
 
 -- One O(n * emitters) pass: reset every enemy, then each living emitter buffs the
@@ -36,7 +42,9 @@ end
 function M.update(run)
   local list = run.enemies
   local n = list.n
-  for i = 1, n do M.reset(list[i]) end
+  for i = 1, n do
+    M.reset(list[i])
+  end
   for i = 1, n do
     local em = list[i]
     local a = em.def.aura

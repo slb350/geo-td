@@ -12,18 +12,22 @@ M.DEFS = DEFS
 
 -- index 1..3 = Common / Uncommon / Rare
 M.RARITY = {
-  { name = "Common",   mult = 1.0, weight = 62, color = "LIGHT_GRAY" },
+  { name = "Common", mult = 1.0, weight = 62, color = "LIGHT_GRAY" },
   { name = "Uncommon", mult = 1.7, weight = 30, color = "GREEN" },
-  { name = "Rare",     mult = 2.6, weight = 8,  color = "BLUE" },
+  { name = "Rare", mult = 2.6, weight = 8, color = "BLUE" },
 }
 
 M.KEYS = {}
-for k in pairs(DEFS) do M.KEYS[#M.KEYS + 1] = k end
+for k in pairs(DEFS) do
+  M.KEYS[#M.KEYS + 1] = k
+end
 table.sort(M.KEYS)
 
 local function roll_rarity(rng)
   local total = 0
-  for i = 1, #M.RARITY do total = total + M.RARITY[i].weight end
+  for i = 1, #M.RARITY do
+    total = total + M.RARITY[i].weight
+  end
   local x = rng:range(0, total)
   local acc = 0
   for i = 1, #M.RARITY do
@@ -45,9 +49,7 @@ function M.draft(rng, n, chaos)
     local pool = {}
     for i = 1, #M.KEYS do
       local k = M.KEYS[i]
-      if (DEFS[k].min_rarity or 1) <= ri and not used[k] then
-        pool[#pool + 1] = k
-      end
+      if (DEFS[k].min_rarity or 1) <= ri and not used[k] then pool[#pool + 1] = k end
     end
     if #pool > 0 then
       local key = pool[rng:int(1, #pool)]

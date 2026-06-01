@@ -17,8 +17,8 @@
 -- Objects are seeded at boss spawn or on the phase-2 transition (spawn_at) and
 -- vaporized when the boss dies (M.clear), so they never block the wave clear.
 
-local C     = require("lib.const")
-local path  = require("lib.path")
+local C = require("lib.const")
+local path = require("lib.path")
 local enemy = require("lib.enemy")
 
 local M = {}

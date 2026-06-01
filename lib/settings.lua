@@ -13,19 +13,23 @@ local M = {}
 -- built-in pause-menu control (Usagi scales every sfx/music call by it), so the
 -- game keeps no volume of its own -- a second multiplier would just compound it.
 M.DEFS = {
-  { id = "crt",            name = "CRT Filter",     default = true },
-  { id = "shake",          name = "Screen Shake",   default = true },
-  { id = "high_contrast",  name = "High Contrast",  default = false },
+  { id = "crt", name = "CRT Filter", default = true },
+  { id = "shake", name = "Screen Shake", default = true },
+  { id = "high_contrast", name = "High Contrast", default = false },
   { id = "damage_numbers", name = "Damage Numbers", default = true },
 }
 
 local DEFAULTS = {}
-for i = 1, #M.DEFS do DEFAULTS[M.DEFS[i].id] = M.DEFS[i].default end
+for i = 1, #M.DEFS do
+  DEFAULTS[M.DEFS[i].id] = M.DEFS[i].default
+end
 
 -- A fresh settings table at the defaults.
 function M.defaults()
   local t = {}
-  for k, v in pairs(DEFAULTS) do t[k] = v end
+  for k, v in pairs(DEFAULTS) do
+    t[k] = v
+  end
   return t
 end
 

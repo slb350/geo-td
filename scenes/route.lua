@@ -7,15 +7,15 @@
 -- the run (computed once in init), so the per-frame redraw allocates nothing and
 -- it survives a live reload.
 
-local C         = require("lib.const")
-local pal       = require("lib.palette")
-local path      = require("lib.path")
-local fx        = require("lib.fx")
-local ui        = require("lib.ui")
-local shape     = require("lib.shape")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local path = require("lib.path")
+local fx = require("lib.fx")
+local ui = require("lib.ui")
+local shape = require("lib.shape")
 local routedraft = require("lib.routedraft")
 local contracts = require("lib.contracts")
-local run_lib   = require("lib.run")
+local run_lib = require("lib.run")
 
 local M = {}
 
@@ -42,7 +42,7 @@ local function reward_risk_text(card)
       parts[#parts + 1] = ("+%d%% wave"):format(math.floor((k.budget_mult - 1) * 100 + 0.5))
     end
     if k.flyer_bias then parts[#parts + 1] = "+flyers" end
-    if k.shield then parts[#parts + 1] = "+shield" end       -- Prism (M2)
+    if k.shield then parts[#parts + 1] = "+shield" end -- Prism (M2)
   end
   return table.concat(parts, "  ")
 end
@@ -54,11 +54,17 @@ local function refund_text(card)
 end
 
 function M.init()
-  if not State.run then SwitchScene("menu"); return end
+  if not State.run then
+    SwitchScene("menu")
+    return
+  end
   local cards = routedraft.draft(State.run)
   -- a draft with only the Hold card is a non-event (no real choice); skip it so
   -- the player isn't shown a one-option screen (robust for future sparse maps)
-  if #cards <= 1 then SwitchScene("game"); return end
+  if #cards <= 1 then
+    SwitchScene("game")
+    return
+  end
   -- bake the modal's static geometry + per-card text once (it redraws every frame
   -- while it waits for a choice)
   State.run.route_tiles = tiles(#cards)
@@ -67,23 +73,26 @@ function M.init()
     cards[i].refund_label = refund_text(cards[i])
   end
   State.run.route_draft = cards
-  State.run.route_ready = false                  -- require a fresh click first
+  State.run.route_ready = false -- require a fresh click first
 end
 
 local function choose(run, i)
   local card = run.route_draft and run.route_draft[i]
   if card then
-    routedraft.apply(run, card)                  -- swap + refund + reward + risk
-    run_lib.record(run, { route = { id = card.id } })   -- replay log (M9)
+    routedraft.apply(run, card) -- swap + refund + reward + risk
+    run_lib.record(run, { route = { id = card.id } }) -- replay log (M9)
     fx.click_sfx()
   end
   run.route_draft = nil
-  SwitchScene(contracts.pending(run) and "contract" or "game")   -- contract may follow (M3)
+  SwitchScene(contracts.pending(run) and "contract" or "game") -- contract may follow (M3)
 end
 
 function M.update(dt)
   local run = State.run
-  if not run or not run.route_draft then SwitchScene("game"); return end
+  if not run or not run.route_draft then
+    SwitchScene("game")
+    return
+  end
   if not run.route_ready then
     if not input.mouse_held(input.MOUSE_LEFT) then run.route_ready = true end
     return
@@ -118,8 +127,7 @@ function M.draw(dt)
 
     -- mini route preview
     gfx.rect_fill(t.x + PAD, t.y + 22, t.w - PAD * 2, PREV_H, pal.FIELD_BG)
-    path.draw_preview(card.nodes, t.x + PAD, t.y + 22, t.w - PAD * 2, PREV_H,
-      pal.PATH_CORE, pal.SPAWN, pal.CORE)
+    path.draw_preview(card.nodes, t.x + PAD, t.y + 22, t.w - PAD * 2, PREV_H, pal.PATH_CORE, pal.SPAWN, pal.CORE)
 
     gfx.text(card.desc, t.x + PAD, t.y + 86, pal.TEXT_DIM)
     if card.rr_text ~= "" then gfx.text(card.rr_text, t.x + PAD, t.y + 108, pal.GOOD) end

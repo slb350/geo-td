@@ -5,13 +5,13 @@
 -- static layout/text are baked once in init so the per-frame redraw allocates
 -- nothing and it survives a live reload.
 
-local C         = require("lib.const")
-local pal       = require("lib.palette")
-local fx        = require("lib.fx")
-local ui        = require("lib.ui")
-local shape     = require("lib.shape")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local fx = require("lib.fx")
+local ui = require("lib.ui")
+local shape = require("lib.shape")
 local contracts = require("lib.contracts")
-local run_lib   = require("lib.run")
+local run_lib = require("lib.run")
 
 local M = {}
 
@@ -47,16 +47,22 @@ local function reward_text(card)
 end
 
 function M.init()
-  if not State.run then SwitchScene("menu"); return end
+  if not State.run then
+    SwitchScene("menu")
+    return
+  end
   local cards = contracts.draft(State.run)
-  if #cards == 0 then SwitchScene("game"); return end
+  if #cards == 0 then
+    SwitchScene("game")
+    return
+  end
   State.run.contract_tiles = tiles(#cards)
   for i = 1, #cards do
     cards[i].risk_label = risk_text(cards[i])
     cards[i].reward_label = reward_text(cards[i])
   end
   State.run.contract_draft = cards
-  State.run.contract_ready = false              -- require a fresh click first
+  State.run.contract_ready = false -- require a fresh click first
 end
 
 local function finish(run)
@@ -67,7 +73,10 @@ end
 
 function M.update(dt)
   local run = State.run
-  if not run or not run.contract_draft then SwitchScene("game"); return end
+  if not run or not run.contract_draft then
+    SwitchScene("game")
+    return
+  end
   if not run.contract_ready then
     if not input.mouse_held(input.MOUSE_LEFT) then run.contract_ready = true end
     return
@@ -78,13 +87,13 @@ function M.update(dt)
     for i = 1, #ts do
       if ui.in_rect(mx, my, ts[i]) then
         contracts.sign(run, run.contract_draft[i])
-        run_lib.record(run, { contract = { id = run.contract_draft[i].id } })   -- replay log (M9)
+        run_lib.record(run, { contract = { id = run.contract_draft[i].id } }) -- replay log (M9)
         return finish(run)
       end
     end
     if ui.in_rect(mx, my, decline_btn) then
       contracts.decline(run)
-      run_lib.record(run, { contract = { decline = true } })                    -- replay log (M9)
+      run_lib.record(run, { contract = { decline = true } }) -- replay log (M9)
       return finish(run)
     end
   end

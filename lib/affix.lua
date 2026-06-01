@@ -13,8 +13,8 @@
 -- directly (it IS the resolved DEFS row) or call the small lifecycle hooks here;
 -- keep those hooks leaf-like so enemy/wave integration stays cycle-free.
 
-local C     = require("lib.const")
-local rng   = require("lib.rng")
+local C = require("lib.const")
+local rng = require("lib.rng")
 local shape = require("lib.shape")
 
 local DEFS = usagi.read_json("affixes.json")
@@ -36,7 +36,7 @@ function M.for_wave(run, n)
   end
   if #pool == 0 then return nil end
   local r = rng.derive(run.seed, n * 53 + 17)
-  if r:next() >= C.AFFIX_CHANCE then return nil end   -- this wave draws no affix
+  if r:next() >= C.AFFIX_CHANCE then return nil end -- this wave draws no affix
   return pool[r:int(1, #pool)]
 end
 
@@ -60,7 +60,7 @@ function M.choose(run, n)
   if d.disable_resonance then
     run.affix_timer = d.duration
     run.affix_null_active = true
-    run.resonance_dirty = true        -- suppress circuits now; restore when it ends
+    run.resonance_dirty = true -- suppress circuits now; restore when it ends
   else
     run.affix_timer = 0
     run.affix_null_active = false
@@ -86,7 +86,7 @@ function M.apply_spawn(run, e, idx, total)
   if a.mirror_pairs then e.affix_mirrored = true end
 end
 
-local veil_sources = {}   -- reused scratch; only indices 1..sn are ever read
+local veil_sources = {} -- reused scratch; only indices 1..sn are ever read
 
 local function update_veil(run)
   local list = run.enemies
@@ -147,12 +147,8 @@ function M.draw(run)
       elseif e.affix_stealth then
         gfx.circ(e.x, e.y, e.size + 5, gfx.COLOR_PINK)
       end
-      if e.affix_speed_mult then
-        shape.line("tri", e.x, e.y, e.size + 4, gfx.COLOR_ORANGE, usagi.elapsed)
-      end
-      if e.affix_mirrored then
-        shape.line("hex", e.x, e.y, e.size + 3, gfx.COLOR_BLUE, usagi.elapsed)
-      end
+      if e.affix_speed_mult then shape.line("tri", e.x, e.y, e.size + 4, gfx.COLOR_ORANGE, usagi.elapsed) end
+      if e.affix_mirrored then shape.line("hex", e.x, e.y, e.size + 3, gfx.COLOR_BLUE, usagi.elapsed) end
     end
   end
 end

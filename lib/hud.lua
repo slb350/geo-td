@@ -2,13 +2,13 @@
 -- buttons, and a contextual hint line. Owns its own button rects and exposes
 -- button_at() for click hit-testing; the game scene owns selection state (ui).
 
-local C       = require("lib.const")
-local pal     = require("lib.palette")
-local tower   = require("lib.tower")
-local shape   = require("lib.shape")
-local ui      = require("lib.ui")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local tower = require("lib.tower")
+local shape = require("lib.shape")
+local ui = require("lib.ui")
 local run_lib = require("lib.run")
-local speed   = require("lib.speed")
+local speed = require("lib.speed")
 
 local M = {}
 
@@ -31,7 +31,7 @@ do
 end
 -- The action button doubles as START WAVE (building) and ORBITAL STRIKE (combat).
 local action_btn = { x = BX, y = C.GAME_H - 46, w = BW, h = 18 }
-local sell_btn   = { x = BX, y = C.GAME_H - 24, w = BW, h = 18 }
+local sell_btn = { x = BX, y = C.GAME_H - 24, w = BW, h = 18 }
 -- Tooltip is capped to the lines that fit between the palette and the buttons.
 local MAX_HINT_LINES = 2
 -- Orbital action-button label (cost is constant, so build it once).
@@ -70,13 +70,9 @@ end
 function M.button_at(run, mx, my)
   if ui.in_rect(mx, my, speed_btn) then return { type = "speed" } end
   for i = 1, #btns do
-    if ui.in_rect(mx, my, btns[i]) then
-      return { type = "select", kind = btns[i].kind }
-    end
+    if ui.in_rect(mx, my, btns[i]) then return { type = "select", kind = btns[i].kind } end
   end
-  if ui.in_rect(mx, my, action_btn) then
-    return { type = run.phase == "building" and "start" or "orbital" }
-  end
+  if ui.in_rect(mx, my, action_btn) then return { type = run.phase == "building" and "start" or "orbital" } end
   if ui.in_rect(mx, my, sell_btn) then return { type = "sell" } end
   return nil
 end
@@ -86,7 +82,7 @@ local function icon(kind, cx, cy, color)
   shape.fill(tower.DEFS[kind].shape, cx, cy, 5, color)
 end
 
-function M.draw(run, meta, ui)
+function M.draw(run, meta, hud_ui)
   -- panel
   gfx.rect_fill(C.HUD_X, 0, C.HUD_W, C.GAME_H, pal.HUD_BG)
   gfx.line(C.HUD_X, 0, C.HUD_X, C.GAME_H, pal.PATH_EDGE)
@@ -101,7 +97,7 @@ function M.draw(run, meta, ui)
   gfx.text(chg, BX + BW - usagi.measure_text(chg), 42, gfx.COLOR_PEACH)
 
   -- speed toggle: lit when faster than 1x
-  local spd = speed.clamp(ui.speed or 1)
+  local spd = speed.clamp(hud_ui.speed or 1)
   gfx.rect_fill(speed_btn.x, speed_btn.y, speed_btn.w, speed_btn.h, pal.HUD_PANEL)
   gfx.text(speed.label(spd), speed_btn.x + 4, speed_btn.y + 3, spd > 1 and pal.MONEY or pal.TEXT_DIM)
 
@@ -113,12 +109,10 @@ function M.draw(run, meta, ui)
     local avail = tower.available(meta, kind, run.mode)
     local cost = tower.cost(run, kind)
     local afford = run.money >= cost
-    local selected = (ui.selected == kind)
+    local selected = (hud_ui.selected == kind)
 
     gfx.rect_fill(b.x, b.y, b.w, b.h, pal.HUD_PANEL)
-    if selected then
-      gfx.rect_ex(b.x, b.y, b.w, b.h, 1, pal.HUD_SEL)
-    end
+    if selected then gfx.rect_ex(b.x, b.y, b.w, b.h, 1, pal.HUD_SEL) end
     local body = avail and (afford and pal.resolve(def.color) or gfx.COLOR_DARK_GRAY) or gfx.COLOR_DARK_GRAY
     icon(kind, b.x + 12, b.y + b.h * 0.5, body)
     -- one centered line: name on the left, cost (or LOCKED) right-aligned
@@ -131,10 +125,10 @@ function M.draw(run, meta, ui)
 
   -- hint / tooltip (wrapped to the sidebar width)
   local hint
-  if ui.sell_mode then
+  if hud_ui.sell_mode then
     hint = "Sell: click a tower"
-  elseif ui.selected then
-    hint = tower.DEFS[ui.selected].desc
+  elseif hud_ui.selected then
+    hint = tower.DEFS[hud_ui.selected].desc
   else
     hint = "Pick a tower to build"
   end
@@ -154,12 +148,11 @@ function M.draw(run, meta, ui)
     local armed = run_lib.can_orbital(run)
     local bg = armed and gfx.COLOR_ORANGE or pal.HUD_PANEL
     gfx.rect_fill(action_btn.x, action_btn.y, action_btn.w, action_btn.h, bg)
-    gfx.text(ORBITAL_LABEL, action_btn.x + 4, action_btn.y + 5,
-      armed and gfx.COLOR_BLACK or pal.TEXT_DIM)
+    gfx.text(ORBITAL_LABEL, action_btn.x + 4, action_btn.y + 5, armed and gfx.COLOR_BLACK or pal.TEXT_DIM)
   end
 
   -- sell toggle
-  local sell_bg = ui.sell_mode and pal.BAD or pal.HUD_PANEL
+  local sell_bg = hud_ui.sell_mode and pal.BAD or pal.HUD_PANEL
   gfx.rect_fill(sell_btn.x, sell_btn.y, sell_btn.w, sell_btn.h, sell_bg)
   gfx.text("SELL MODE", sell_btn.x + 4, sell_btn.y + 5, pal.TEXT)
 end

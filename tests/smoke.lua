@@ -11,7 +11,7 @@
 -- installs the scene globals (State / SwitchScene / input) the later suites reuse.
 
 package.path = "./?.lua;" .. package.path
-require("tests.harness")  -- installs the fake engine globals (before any lib loads)
+require("tests.harness") -- installs the fake engine globals (before any lib loads)
 
 local checks, fails = 0, 0
 local function check(cond, msg)

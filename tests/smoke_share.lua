@@ -4,8 +4,8 @@
 -- graceful failure on a bad marker/schema/seed/map/mode. Run by smoke.lua via
 -- M.run(check, near); pure (no scene globals needed).
 
-local C     = require("lib.const")
-local maps  = require("lib.maps")
+local C = require("lib.const")
+local maps = require("lib.maps")
 local share = require("lib.share")
 local modes = require("lib.modes")
 local daily = require("lib.daily")
@@ -21,8 +21,7 @@ function M.run(check, near)
     check(#rows >= 1 and rows[1].label == name, name .. " validation reports the base row")
     for r = 1, #rows do
       local mt = rows[r].metrics
-      check(mt.segs >= 1 and mt.length > C.MAP_MIN_LEN and mt.buildable > 0,
-        rows[r].label .. " reports sane metrics")
+      check(mt.segs >= 1 and mt.length > C.MAP_MIN_LEN and mt.buildable > 0, rows[r].label .. " reports sane metrics")
     end
   end
 
@@ -79,8 +78,10 @@ function M.run(check, near)
     local dly = daily.for_day(20235)
     local code = share.encode({ seed = dly.seed, map = dly.map, mode = dly.mode, tag = "D" .. dly.day })
     local back = share.decode(code)
-    check(back ~= nil and back.seed == dly.seed and back.map == dly.map and back.mode == dly.mode,
-      "a daily's share code recreates its seed/map/mode")
+    check(
+      back ~= nil and back.seed == dly.seed and back.map == dly.map and back.mode == dly.mode,
+      "a daily's share code recreates its seed/map/mode"
+    )
     check(back.tag == "D20235", "the daily share code carries the day tag")
   end
 end

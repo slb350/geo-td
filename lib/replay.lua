@@ -14,21 +14,31 @@
 -- there (the recorded contract_ids / affix_ids still document what happened).
 
 local share = require("lib.share")
-local sim   = require("lib.sim")
+local sim = require("lib.sim")
 local report = require("lib.report")
 
 local M = {}
 M.VERSION = 1
 
 local SUMMARY_KEYS = {
-  "wave", "bosses_killed", "kills", "leaked", "money_spent", "score",
-  "contracts", "affixes", "arena_kills", "final_boss",
+  "wave",
+  "bosses_killed",
+  "kills",
+  "leaked",
+  "money_spent",
+  "score",
+  "contracts",
+  "affixes",
+  "arena_kills",
+  "final_boss",
 }
 
 local function copy(v)
   if type(v) ~= "table" then return v end
   local out = {}
-  for k, x in pairs(v) do out[k] = copy(x) end
+  for k, x in pairs(v) do
+    out[k] = copy(x)
+  end
   return out
 end
 
@@ -43,29 +53,29 @@ end
 
 -- Build the snapshot from a run + its report (lib/report.build). Reads ids from the
 -- run (path_name/mode.id/seed) for the share code and display stats from the report.
-function M.snapshot(run, report)
-  local sum = summary(report)
+function M.snapshot(run, run_report)
+  local sum = summary(run_report)
   return {
-    version    = M.VERSION,
-    seed       = run.seed,
-    map        = run.path_name,        -- map id (drives the share code)
-    map_name   = report.map,           -- display name
-    mode       = run.mode.id,          -- mode id
-    mode_name  = report.mode,          -- display name, or nil for standard
-    share      = share.encode({ seed = run.seed, map = run.path_name, mode = run.mode.id }),
-    wave       = report.wave,
-    bosses     = report.bosses_killed,
-    final_boss = report.final_boss,
-    kills      = report.kills,
-    score      = report.score,
-    contracts  = report.contracts,
-    affixes    = report.affixes,
-    arena_kills = report.arena_kills,
-    summary      = sum,
+    version = M.VERSION,
+    seed = run.seed,
+    map = run.path_name, -- map id (drives the share code)
+    map_name = run_report.map, -- display name
+    mode = run.mode.id, -- mode id
+    mode_name = run_report.mode, -- display name, or nil for standard
+    share = share.encode({ seed = run.seed, map = run.path_name, mode = run.mode.id }),
+    wave = run_report.wave,
+    bosses = run_report.bosses_killed,
+    final_boss = run_report.final_boss,
+    kills = run_report.kills,
+    score = run_report.score,
+    contracts = run_report.contracts,
+    affixes = run_report.affixes,
+    arena_kills = run_report.arena_kills,
+    summary = sum,
     -- the replayable build plan + the decision ids (what happened, not just counts)
-    plan        = copy(run.log or {}),
+    plan = copy(run.log or {}),
     contract_ids = copy(run.contract_history or {}),
-    affix_ids    = copy(run.affix_history or {}),
+    affix_ids = copy(run.affix_history or {}),
   }
 end
 
@@ -90,23 +100,26 @@ end
 -- reproduces the recorded run summary. Deterministic (same snapshot -> same result).
 function M.verify(snap)
   local res = sim.run({
-    seed = snap.seed, map = snap.map, mode = snap.mode,
-    waves = snap.wave, plan = snap.plan,
+    seed = snap.seed,
+    map = snap.map,
+    mode = snap.mode,
+    waves = snap.wave,
+    plan = snap.plan,
   })
   local actual = summary(report.build(res.run))
   local exp = expected_summary(snap)
   local summary_ok, mismatches = compare_summary(exp, actual)
   local no_errors = #res.errors == 0
   return {
-    reproduced    = summary_ok and no_errors,
+    reproduced = summary_ok and no_errors,
     summary_matches = summary_ok,
     expected_wave = snap.wave,
-    actual_wave   = res.final_wave,
-    survived      = res.survived,
-    expected      = exp,
-    actual        = actual,
-    mismatches    = mismatches,
-    errors        = res.errors,
+    actual_wave = res.final_wave,
+    survived = res.survived,
+    expected = exp,
+    actual = actual,
+    mismatches = mismatches,
+    errors = res.errors,
   }
 end
 
@@ -116,8 +129,7 @@ function M.format(snap)
     "share " .. snap.share,
     "seed " .. snap.seed .. "   map " .. snap.map .. "   mode " .. snap.mode,
     "wave " .. snap.wave .. "   bosses " .. snap.bosses .. "   score " .. snap.score,
-    "contracts " .. snap.contracts .. "   affixes " .. snap.affixes
-      .. "   arena " .. snap.arena_kills,
+    "contracts " .. snap.contracts .. "   affixes " .. snap.affixes .. "   arena " .. snap.arena_kills,
   }
   return table.concat(lines, "\n")
 end

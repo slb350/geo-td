@@ -11,13 +11,13 @@ M.DEFAULT = "standard"
 
 -- Each mode is a flat table of deltas/flags read by the systems above.
 M.LIST = {
-  { id = "standard",    name = "Standard",    desc = "The classic climb." },
-  { id = "one_life",    name = "One Life",    desc = "Start with a single life.",         lives = 1 },
-  { id = "no_orbital",  name = "No Orbital",  desc = "No panic button -- towers only.",   no_orbital = true },
-  { id = "no_rail",     name = "No Rail",     desc = "The Rail sniper is disabled.",       no_rail = true },
-  { id = "boss_rush",   name = "Boss Rush",   desc = "Every wave is a boss.",              boss_rush = true },
-  { id = "flyer_swarm", name = "Flyer Swarm", desc = "The skies are thick with flyers.",   flyer_bias = true },
-  { id = "hardcore",    name = "Hardcore",    desc = "Difficulty tiers spike harder.",     hardcore = true },
+  { id = "standard", name = "Standard", desc = "The classic climb." },
+  { id = "one_life", name = "One Life", desc = "Start with a single life.", lives = 1 },
+  { id = "no_orbital", name = "No Orbital", desc = "No panic button -- towers only.", no_orbital = true },
+  { id = "no_rail", name = "No Rail", desc = "The Rail sniper is disabled.", no_rail = true },
+  { id = "boss_rush", name = "Boss Rush", desc = "Every wave is a boss.", boss_rush = true },
+  { id = "flyer_swarm", name = "Flyer Swarm", desc = "The skies are thick with flyers.", flyer_bias = true },
+  { id = "hardcore", name = "Hardcore", desc = "Difficulty tiers spike harder.", hardcore = true },
   { id = "draft_chaos", name = "Draft Chaos", desc = "Upgrade drafts skew to high rarity.", draft_chaos = true },
 }
 

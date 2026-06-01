@@ -4,9 +4,9 @@
 -- any balance investigation can trust its numbers. Run by smoke.lua via
 -- M.run(check, near).
 
-local sim     = require("lib.sim")
+local sim = require("lib.sim")
 local helpers = require("tests.helpers")
-local meta    = require("lib.meta")
+local meta = require("lib.meta")
 
 local M = {}
 
@@ -17,28 +17,37 @@ function M.run(check, near)
   local plan = helpers.map_cordon(m, "serpentine", { step = 34 })
   local function cordon(extra)
     local o = {
-      seed = 4242, map = "serpentine", mode = "standard",
-      waves = 6, money = 99999, meta = m, plan = plan,
+      seed = 4242,
+      map = "serpentine",
+      mode = "standard",
+      waves = 6,
+      money = 99999,
+      meta = m,
+      plan = plan,
     }
-    if extra then for k, v in pairs(extra) do o[k] = v end end
+    if extra then
+      for k, v in pairs(extra) do
+        o[k] = v
+      end
+    end
     return o
   end
 
   -- determinism: identical (seed, map, mode, plan) -> identical metrics
   local a = sim.run(cordon())
   local b = sim.run(cordon())
-  check(a.survived == b.survived and a.final_wave == b.final_wave,
-    "sim is deterministic (survival + final wave)")
-  check(a.leaks == b.leaks and a.kills == b.kills and a.score == b.score,
-    "sim is deterministic (leaks/kills/score)")
-  check(a.total_frames == b.total_frames and a.peak_enemies == b.peak_enemies
-    and a.peak_proj == b.peak_proj, "sim is deterministic (frames + peaks)")
-  check(near(a.tower_damage.total, b.tower_damage.total),
-    "sim is deterministic (tower damage total)")
+  check(a.survived == b.survived and a.final_wave == b.final_wave, "sim is deterministic (survival + final wave)")
+  check(a.leaks == b.leaks and a.kills == b.kills and a.score == b.score, "sim is deterministic (leaks/kills/score)")
+  check(
+    a.total_frames == b.total_frames and a.peak_enemies == b.peak_enemies and a.peak_proj == b.peak_proj,
+    "sim is deterministic (frames + peaks)"
+  )
+  check(near(a.tower_damage.total, b.tower_damage.total), "sim is deterministic (tower damage total)")
   local same_records = (#a.records == #b.records)
   for i = 1, #a.records do
-    if a.records[i].frames ~= b.records[i].frames
-      or a.records[i].money_after ~= b.records[i].money_after then same_records = false end
+    if a.records[i].frames ~= b.records[i].frames or a.records[i].money_after ~= b.records[i].money_after then
+      same_records = false
+    end
   end
   check(same_records, "sim is deterministic (per-wave frames + money)")
 
@@ -61,17 +70,24 @@ function M.run(check, near)
 
   -- rejected plan actions are recorded, never silently dropped
   local err = sim.run({
-    seed = 1, map = "serpentine", waves = 1, money = 99999,
+    seed = 1,
+    map = "serpentine",
+    waves = 1,
+    money = 99999,
     plan = {
-      { wave = 1, place = { kind = "pellet", x = 150, y = 56 } },   -- on the path
-      { wave = 1, upgrade = { tower = 9, id = "dmg" } },            -- no such tower
+      { wave = 1, place = { kind = "pellet", x = 150, y = 56 } }, -- on the path
+      { wave = 1, upgrade = { tower = 9, id = "dmg" } }, -- no such tower
     },
   })
   check(#err.errors >= 2, "sim records rejected plan actions (on-path place + bad upgrade)")
 
   -- the run mode is honored: Boss Rush makes every wave (incl. wave 1) a boss
   local br = sim.run({
-    seed = 7, map = "serpentine", mode = "boss_rush", waves = 1, money = 99999,
+    seed = 7,
+    map = "serpentine",
+    mode = "boss_rush",
+    waves = 1,
+    money = 99999,
     plan = helpers.map_cordon(m, "serpentine", { step = 30 }),
   })
   check(br.boss_seconds[1] ~= nil, "boss_rush mode makes wave 1 a boss wave")
@@ -82,12 +98,15 @@ function M.run(check, near)
   -- plan tower references are by STABLE id, so a sell that compacts run.towers
   -- can't silently shift a later upgrade onto the wrong tower (regression guard).
   local id_run = sim.run({
-    seed = 1, map = "serpentine", waves = 2, money = 99999,
+    seed = 1,
+    map = "serpentine",
+    waves = 2,
+    money = 99999,
     plan = {
-      { wave = 1, place = { kind = "pellet", x = 200, y = 150 } },  -- id 1
-      { wave = 1, place = { kind = "pellet", x = 110, y = 95 } },   -- id 2
-      { wave = 1, place = { kind = "pellet", x = 300, y = 40 } },   -- id 3
-      { wave = 2, sell = { tower = 1 } },              -- selling id 1 compacts the array
+      { wave = 1, place = { kind = "pellet", x = 200, y = 150 } }, -- id 1
+      { wave = 1, place = { kind = "pellet", x = 110, y = 95 } }, -- id 2
+      { wave = 1, place = { kind = "pellet", x = 300, y = 40 } }, -- id 3
+      { wave = 2, sell = { tower = 1 } }, -- selling id 1 compacts the array
       { wave = 2, upgrade = { tower = 2, id = "dmg" } }, -- must hit id 2, not the shifted id 3
     },
   })

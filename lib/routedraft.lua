@@ -13,10 +13,10 @@
 -- lengths, 65%-160% of the base length, and still buildable), so a drafted route
 -- is interchangeable with the base and a route swap is always field-clear-safe.
 
-local C        = require("lib.const")
-local path     = require("lib.path")
-local pathmut  = require("lib.pathmut")
-local rng      = require("lib.rng")
+local C = require("lib.const")
+local path = require("lib.path")
+local pathmut = require("lib.pathmut")
+local rng = require("lib.rng")
 local resource = require("lib.resource")
 
 local DEFS = usagi.read_json("route_events.json")
@@ -28,8 +28,8 @@ M.DEFS = DEFS
 M.TYPE_ORDER = { "loop", "shortcut", "braid", "split", "convergence" }
 
 local FIELD_W, FIELD_H = C.FIELD_W, C.FIELD_H
-local LEN_LO, LEN_HI = 0.65, 1.60   -- total length band vs the base route
-local poly_len = path.poly_len      -- shared geometry primitives (lib/path)
+local LEN_LO, LEN_HI = 0.65, 1.60 -- total length band vs the base route
+local poly_len = path.poly_len -- shared geometry primitives (lib/path)
 local min_edge = path.min_edge
 
 local function in_bounds(x, y)
@@ -39,7 +39,9 @@ end
 
 local function copy_nodes(nodes)
   local out = {}
-  for i = 1, #nodes do out[i] = { nodes[i][1], nodes[i][2] } end
+  for i = 1, #nodes do
+    out[i] = { nodes[i][1], nodes[i][2] }
+  end
   return out
 end
 
@@ -49,7 +51,9 @@ local function longest_seg(nodes)
     local a, b = nodes[i], nodes[i + 1]
     local dx, dy = b[1] - a[1], b[2] - a[2]
     local d = dx * dx + dy * dy
-    if d > llen then li, llen = i, d end
+    if d > llen then
+      li, llen = i, d
+    end
   end
   return li
 end
@@ -82,13 +86,13 @@ local function bump(a, b, t, dist, toward_center)
   local dx, dy = b[1] - a[1], b[2] - a[2]
   local len = math.sqrt(dx * dx + dy * dy)
   if len < 1 then return nil end
-  local px, py = -dy / len, dx / len           -- perpendicular unit
+  local px, py = -dy / len, dx / len -- perpendicular unit
   local cx, cy = FIELD_W * 0.5, FIELD_H * 0.5
   local side = (((cx - mx) * px + (cy - my) * py) >= 0) and 1 or -1
   if not toward_center then side = -side end
   local nx, ny = mx + px * dist * side, my + py * dist * side
   if in_bounds(nx, ny) then return nx, ny end
-  nx, ny = mx - px * dist * side, my - py * dist * side   -- try the other side
+  nx, ny = mx - px * dist * side, my - py * dist * side -- try the other side
   if in_bounds(nx, ny) then return nx, ny end
   return nil
 end
@@ -144,7 +148,9 @@ function transforms.shortcut(base)
     local cand = copy_nodes(base)
     table.remove(cand, i)
     local len = poly_len(cand)
-    if len >= base_len * LEN_LO and (not best_len or len < best_len) then best, best_len = cand, len end
+    if len >= base_len * LEN_LO and (not best_len or len < best_len) then
+      best, best_len = cand, len
+    end
   end
   return best
 end
@@ -162,17 +168,26 @@ function transforms.convergence(base)
   return out
 end
 
-M.transforms = transforms   -- exposed so the suite can validate each in isolation
+M.transforms = transforms -- exposed so the suite can validate each in isolation
 
 -- ------------------------------------------------------------------- draft
 local function make_card(run, id, nodes, current)
   local def = DEFS[id]
   local refund, refund_cost = 0, 0
-  if not current then refund, refund_cost = pathmut.refund_preview(run, nodes) end
+  if not current then
+    refund, refund_cost = pathmut.refund_preview(run, nodes)
+  end
   return {
-    id = id, name = def.name, shape = def.shape, desc = def.desc,
-    nodes = nodes, reward = def.reward, risk = def.risk,
-    current = current or false, refund = refund, refund_cost = refund_cost,
+    id = id,
+    name = def.name,
+    shape = def.shape,
+    desc = def.desc,
+    nodes = nodes,
+    reward = def.reward,
+    risk = def.risk,
+    current = current or false,
+    refund = refund,
+    refund_cost = refund_cost,
   }
 end
 
@@ -183,11 +198,9 @@ function M.draft(run)
   local base = run.path.nodes
   local pool = {}
   for i = 1, #M.TYPE_ORDER do
-    local id = M.TYPE_ORDER[i]            -- the transform name == the card id
+    local id = M.TYPE_ORDER[i] -- the transform name == the card id
     local nodes = transforms[id](base)
-    if nodes and M.valid(base, nodes) then
-      pool[#pool + 1] = make_card(run, id, nodes, false)
-    end
+    if nodes and M.valid(base, nodes) then pool[#pool + 1] = make_card(run, id, nodes, false) end
   end
   -- Prism keeps the current route (no geometry change) but seeds a resource prism
   -- and shields the next wave -- a resource/risk proposition rather than a transform.
@@ -197,8 +210,10 @@ function M.draft(run)
   -- generation, and shuffles fairly even on a freshly seeded run (see rng.derive).
   rng.derive(run.seed, run.wave_index):shuffle(pool)
   local cards = {}
-  for i = 1, math.min(2, #pool) do cards[#cards + 1] = pool[i] end
-  cards[#cards + 1] = make_card(run, "null", base, true)   -- Hold (keep current)
+  for i = 1, math.min(2, #pool) do
+    cards[#cards + 1] = pool[i]
+  end
+  cards[#cards + 1] = make_card(run, "null", base, true) -- Hold (keep current)
   return cards
 end
 
@@ -208,13 +223,11 @@ end
 function M.apply(run, card)
   local refunded = 0
   if card.id == "prism" then
-    resource.add_node(run)        -- seed a prism (no route swap); shield risk below
+    resource.add_node(run) -- seed a prism (no route swap); shield risk below
   elseif not card.current then
     refunded = pathmut.apply(run, card.nodes)
   end
-  if card.reward and card.reward.money and card.reward.money > 0 then
-    run.money = run.money + card.reward.money
-  end
+  if card.reward and card.reward.money and card.reward.money > 0 then run.money = run.money + card.reward.money end
   local rm, risk = run.route_mods, card.risk
   if rm and risk then
     if risk.budget_mult then rm.next_budget_mult = risk.budget_mult end

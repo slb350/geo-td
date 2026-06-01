@@ -7,9 +7,9 @@
 -- and update an anchor ONLY when a balance change is intended. Run by smoke.lua
 -- via M.run(check, near).
 
-local sim     = require("lib.sim")
+local sim = require("lib.sim")
 local helpers = require("tests.helpers")
-local meta    = require("lib.meta")
+local meta = require("lib.meta")
 
 local M = {}
 
@@ -20,10 +20,21 @@ function M.run(check, near)
   local plans = {}
   local function cordon_run(map, mode, waves)
     local plan = plans[map]
-    if not plan then plan = helpers.map_cordon(m, map, { step = 30 }); plans[map] = plan end
+    if not plan then
+      plan = helpers.map_cordon(m, map, { step = 30 })
+      plans[map] = plan
+    end
     -- affixes off: the anchors are a stable, affix-free balance baseline (V2-M5)
-    return sim.run({ seed = 1234, map = map, mode = mode or "standard",
-      waves = waves or 30, money = 99999, meta = m, plan = plan, affixes = false })
+    return sim.run({
+      seed = 1234,
+      map = map,
+      mode = mode or "standard",
+      waves = waves or 30,
+      money = 99999,
+      meta = m,
+      plan = plan,
+      affixes = false,
+    })
   end
 
   -- Regression anchors. A uniform pellet cordon (non-rail) on each map reaches an
@@ -63,8 +74,10 @@ function M.run(check, near)
   check(w.peak_proj <= 150, "balance: peak projectiles within perf budget (switchback)")
 
   -- Distribution: a pellet-only cordon's damage is dominated by pellets.
-  check(s.tower_damage.list[1] and s.tower_damage.list[1].kind == "pellet",
-    "balance: a pellet cordon's top damage source is the pellet")
+  check(
+    s.tower_damage.list[1] and s.tower_damage.list[1].kind == "pellet",
+    "balance: a pellet cordon's top damage source is the pellet"
+  )
 
   -- Opt-in modes must never make the run easier than standard. Hardcore spikes
   -- difficulty a tier early, so it dies no later than standard (which is `s`, the

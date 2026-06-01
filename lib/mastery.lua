@@ -16,9 +16,12 @@ M.DEFS = DEFS
 
 -- Stable display/iteration order, grouped by track (Builder / Arsenal / Survival).
 M.ORDER = {
-  "builder_economy", "builder_interest",
-  "arsenal_caliber", "arsenal_precision",
-  "survival_bulwark", "survival_salvage",
+  "builder_economy",
+  "builder_interest",
+  "arsenal_caliber",
+  "arsenal_precision",
+  "survival_bulwark",
+  "survival_salvage",
 }
 
 function M.owned(meta, id)
@@ -58,13 +61,18 @@ function M.apply(run, meta)
     if d then
       local e = d.effect
       local k = e.kind
-      if k == "money" then run.money = run.money + e.value
+      if k == "money" then
+        run.money = run.money + e.value
       elseif k == "lives" then
         if not run.mode.lives then run.lives = run.lives + e.value end
-      elseif k == "interest" then run.mods.interest = run.mods.interest + e.value
-      elseif k == "dmg" then run.mods.dmg_mult = run.mods.dmg_mult + e.value
-      elseif k == "crit" then run.mods.crit_chance = run.mods.crit_chance + e.value
-      elseif k == "bounty" then run.mods.bounty_mult = run.mods.bounty_mult + e.value
+      elseif k == "interest" then
+        run.mods.interest = run.mods.interest + e.value
+      elseif k == "dmg" then
+        run.mods.dmg_mult = run.mods.dmg_mult + e.value
+      elseif k == "crit" then
+        run.mods.crit_chance = run.mods.crit_chance + e.value
+      elseif k == "bounty" then
+        run.mods.bounty_mult = run.mods.bounty_mult + e.value
       end
     end
   end

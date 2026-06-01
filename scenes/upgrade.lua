@@ -4,11 +4,11 @@
 -- since entering -- otherwise a build-click made as the wave ended would carry
 -- over and instantly auto-pick a card.
 
-local C       = require("lib.const")
-local pal     = require("lib.palette")
+local C = require("lib.const")
+local pal = require("lib.palette")
 local powerup = require("lib.powerup")
-local fx      = require("lib.fx")
-local ui      = require("lib.ui")
+local fx = require("lib.fx")
+local ui = require("lib.ui")
 local pathmut = require("lib.pathmut")
 local contracts = require("lib.contracts")
 local run_lib = require("lib.run")
@@ -27,8 +27,11 @@ end
 
 function M.init()
   local run = State.run
-  if not run then SwitchScene("menu"); return end
-  run.draft = powerup.draft(run.rng, 3, run.mode.draft_chaos)   -- Draft Chaos skews rare
+  if not run then
+    SwitchScene("menu")
+    return
+  end
+  run.draft = powerup.draft(run.rng, 3, run.mode.draft_chaos) -- Draft Chaos skews rare
   run.upgrade_ready = false -- require a fresh click before accepting a choice
 end
 
@@ -37,19 +40,21 @@ local function choose(i)
   local card = run.draft and run.draft[i]
   if card then
     powerup.apply(run, card)
-    run_lib.record(run, { powerup = { key = card.key, rarity = card.rarity } })   -- replay log (M9)
+    run_lib.record(run, { powerup = { key = card.key, rarity = card.rarity } }) -- replay log (M9)
   end
   run.draft = nil
   fx.upgrade_sfx()
   -- between-wave chain (M7 route, M3 contract): route event first, then a contract
   -- offer, then back to building the next wave.
-  SwitchScene(pathmut.pending(run) and "route"
-    or (contracts.pending(run) and "contract" or "game"))
+  SwitchScene(pathmut.pending(run) and "route" or (contracts.pending(run) and "contract" or "game"))
 end
 
 function M.update(dt)
   local run = State.run
-  if not run or not run.draft then SwitchScene("game"); return end
+  if not run or not run.draft then
+    SwitchScene("game")
+    return
+  end
   -- lockout: wait for the mouse to be up before accepting input
   if not run.upgrade_ready then
     if not input.mouse_held(input.MOUSE_LEFT) then run.upgrade_ready = true end
@@ -61,9 +66,7 @@ function M.update(dt)
   if input.mouse_pressed(input.MOUSE_LEFT) then
     local mx, my = input.mouse()
     for i = 1, #cards do
-      if run.draft[i] and ui.in_rect(mx, my, cards[i]) then
-        return choose(i)
-      end
+      if run.draft[i] and ui.in_rect(mx, my, cards[i]) then return choose(i) end
     end
   end
 end

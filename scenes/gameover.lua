@@ -2,15 +2,15 @@
 -- lib/meta, then show a run-report stat sheet (lib/report aggregates the run's
 -- instrumented counters). Returns to the menu on click/key.
 
-local C      = require("lib.const")
-local pal    = require("lib.palette")
-local meta   = require("lib.meta")
-local maps   = require("lib.maps")
-local fx     = require("lib.fx")
-local ui     = require("lib.ui")
-local audio  = require("lib.audio")
+local C = require("lib.const")
+local pal = require("lib.palette")
+local meta = require("lib.meta")
+local maps = require("lib.maps")
+local fx = require("lib.fx")
+local ui = require("lib.ui")
+local audio = require("lib.audio")
 local report = require("lib.report")
-local tower  = require("lib.tower")
+local tower = require("lib.tower")
 local metacontract = require("lib.metacontract")
 local replay = require("lib.replay")
 
@@ -22,10 +22,12 @@ local LX, VX = 150, 250
 function M.init()
   audio.set("menu")
   local run = State.run
-  if not run then SwitchScene("menu"); return end
+  if not run then
+    SwitchScene("menu")
+    return
+  end
   local stats = report.build(run)
-  local award, unlocked = meta.finish_run(State.meta, stats.wave, stats.bosses_killed,
-    run.path_name, stats.bank_shards)
+  local award, unlocked = meta.finish_run(State.meta, stats.wave, stats.bosses_killed, run.path_name, stats.bank_shards)
   -- M7: score the run against the meta-contract board (reads the report stats),
   -- paying shards + badges and refilling the board. Persist the result.
   local done = metacontract.evaluate(State.meta, stats)
@@ -34,10 +36,12 @@ function M.init()
   stats.bank = State.meta.currency
   stats.shards_total = State.meta.bank_shards
   stats.contracts_done = {}
-  for i = 1, #done do stats.contracts_done[i] = metacontract.DEFS[done[i]].name end
+  for i = 1, #done do
+    stats.contracts_done[i] = metacontract.DEFS[done[i]].name
+  end
   stats.unlocked = unlocked and maps.get(unlocked).name or nil
-  stats.replay = replay.snapshot(run, stats)         -- full replay/verifier snapshot (M9)
-  stats.share = stats.replay.share                   -- shareable run code (M9)
+  stats.replay = replay.snapshot(run, stats) -- full replay/verifier snapshot (M9)
+  stats.share = stats.replay.share -- shareable run code (M9)
   State.summary = stats
   effect.stop()
   fx.clear()
@@ -47,9 +51,7 @@ end
 function M.update(dt)
   -- Click / Space / BTN1 returns to the menu. Enter is NOT read: the engine
   -- reserves Esc / P / Enter / Start for its built-in pause menu.
-  if input.mouse_pressed(input.MOUSE_LEFT)
-    or input.key_pressed(input.KEY_SPACE)
-    or input.pressed(input.BTN1) then
+  if input.mouse_pressed(input.MOUSE_LEFT) or input.key_pressed(input.KEY_SPACE) or input.pressed(input.BTN1) then
     State.run = nil
     SwitchScene("menu")
   end
@@ -71,15 +73,20 @@ function M.draw(dt)
   ui.center_text("RUN OVER", 24, gfx.COLOR_RED, 2)
   local sub = "wave " .. s.wave
   if s.map then sub = sub .. "  on  " .. s.map end
-  if s.mode then sub = sub .. "  -  " .. s.mode end   -- challenge mode (M6), if any
+  if s.mode then sub = sub .. "  -  " .. s.mode end -- challenge mode (M6), if any
   ui.center_text(sub, 52, pal.TEXT, 1)
 
   local y = 74
-  row(y, "bosses", tostring(s.bosses_killed)); y = y + 15
-  row(y, "kills", tostring(s.kills)); y = y + 15
-  row(y, "leaked", tostring(s.leaked), gfx.COLOR_RED); y = y + 15
-  row(y, "spent", "$" .. s.money_spent, gfx.COLOR_YELLOW); y = y + 15
-  row(y, "score", tostring(s.score)); y = y + 15
+  row(y, "bosses", tostring(s.bosses_killed))
+  y = y + 15
+  row(y, "kills", tostring(s.kills))
+  y = y + 15
+  row(y, "leaked", tostring(s.leaked), gfx.COLOR_RED)
+  y = y + 15
+  row(y, "spent", "$" .. s.money_spent, gfx.COLOR_YELLOW)
+  y = y + 15
+  row(y, "score", tostring(s.score))
+  y = y + 15
 
   -- top tower: color swatch + name + applied damage (or "none")
   gfx.text("top tower", LX, y, pal.TEXT_DIM)
@@ -91,21 +98,24 @@ function M.draw(dt)
     gfx.text("none", VX, y, pal.TEXT_DIM)
   end
   y = y + 15
-  row(y, "favorite", s.favorite_name or "none"); y = y + 15
+  row(y, "favorite", s.favorite_name or "none")
+  y = y + 15
   if s.contracts and s.contracts > 0 then
-    row(y, "contracts", s.contracts .. "  (" .. s.bank_shards .. " shards)", gfx.COLOR_ORANGE); y = y + 15
+    row(y, "contracts", s.contracts .. "  (" .. s.bank_shards .. " shards)", gfx.COLOR_ORANGE)
+    y = y + 15
   end
 
   ui.center_text("+" .. s.award .. " bank   (total " .. s.bank .. ")", y + 6, gfx.COLOR_YELLOW, 1)
   local ny = y + 18
   if s.unlocked then
-    ui.center_text("NEW MAP UNLOCKED  -  " .. s.unlocked, ny, gfx.COLOR_GREEN, 1); ny = ny + 14
+    ui.center_text("NEW MAP UNLOCKED  -  " .. s.unlocked, ny, gfx.COLOR_GREEN, 1)
+    ny = ny + 14
   end
   -- M7: meta-contracts completed by this run (shards + badges earned)
   if s.contracts_done and #s.contracts_done > 0 then
     ui.center_text("CONTRACT  -  " .. table.concat(s.contracts_done, ", "), ny, gfx.COLOR_PINK, 1)
   end
-  if s.share then ui.center_text(s.share, C.GAME_H - 26, pal.TEXT_DIM, 1) end   -- shareable run code (M9)
+  if s.share then ui.center_text(s.share, C.GAME_H - 26, pal.TEXT_DIM, 1) end -- shareable run code (M9)
   ui.center_text("click to return to menu", C.GAME_H - 14, pal.TEXT_DIM, 1)
 end
 

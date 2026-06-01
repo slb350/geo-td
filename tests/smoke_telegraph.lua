@@ -2,38 +2,43 @@
 -- effect (which still fires on the boss's existing cadence), and a phase change
 -- fires a one-shot audio stinger. Run by smoke.lua via M.run(check, near).
 
-local C       = require("lib.const")
-local meta    = require("lib.meta")
-local wave    = require("lib.wave")
-local boss    = require("lib.boss")
-local tower   = require("lib.tower")
+local C = require("lib.const")
+local meta = require("lib.meta")
+local wave = require("lib.wave")
+local boss = require("lib.boss")
+local tower = require("lib.tower")
 local helpers = require("tests.helpers")
 
 local M = {}
 
 function M.run(check, near)
   local m = meta.default()
-  local function fresh(seed) return helpers.fresh(m, seed) end
+  local function fresh(seed)
+    return helpers.fresh(m, seed)
+  end
   -- a fresh run with one freshly-spawned boss of `kind`
   local function spawn_boss(kind)
-    local r = fresh(); r.enemies.n = 0
+    local r = fresh()
+    r.enemies.n = 0
     wave.boss_scale(r, 5)
     return r, boss.spawn(r, kind, r.hp_scale)
   end
-  local IN_WINDOW = C.BOSS_TELEGRAPH * 0.5      -- a countdown inside the warning window
-  local OUTSIDE = C.BOSS_TELEGRAPH + 1.0        -- well before the warning window
+  local IN_WINDOW = C.BOSS_TELEGRAPH * 0.5 -- a countdown inside the warning window
+  local OUTSIDE = C.BOSS_TELEGRAPH + 1.0 -- well before the warning window
   -- count the boss's OWN adds, ignoring the stationary arena objects a boss now
   -- spawns on the route (M6 -- the hydra also seeds 3 arena heads at spawn)
   local function adds(r)
     local n = 0
-    for i = 1, r.enemies.n do if not r.enemies[i].arena then n = n + 1 end end
+    for i = 1, r.enemies.n do
+      if not r.enemies[i].arena then n = n + 1 end
+    end
     return n
   end
 
   -- shockwave: telegraph shows only in the warning window, fires only after it
   do
-    local r, b = spawn_boss("prism")   -- prism has the shockwave
-    local tw = tower.place(r, b.x, b.y, "pellet")  -- inside the shockwave radius
+    local r, b = spawn_boss("prism") -- prism has the shockwave
+    local tw = tower.place(r, b.x, b.y, "pellet") -- inside the shockwave radius
     b.shock_t = OUTSIDE
     boss.update(r, 1 / 60)
     check(not b.shock_warn, "no shockwave telegraph outside the warning window")
@@ -45,7 +50,10 @@ function M.run(check, near)
     local fired = false
     for _ = 1, 120 do
       boss.update(r, 1 / 60)
-      if tw.disabled_t > 0 then fired = true; break end
+      if tw.disabled_t > 0 then
+        fired = true
+        break
+      end
     end
     check(fired, "shockwave fires after the telegraph window")
     check(not b.shock_warn, "telegraph clears once the shockwave fires")
@@ -53,7 +61,7 @@ function M.run(check, near)
 
   -- invulnerability: telegraph before the boss phases out
   do
-    local r, b = spawn_boss("specter")   -- specter has invuln windows
+    local r, b = spawn_boss("specter") -- specter has invuln windows
     b.invuln_cd = IN_WINDOW
     boss.update(r, 1 / 60)
     check(b.invuln_warn, "invuln telegraph shows before the boss phases out")
@@ -61,7 +69,10 @@ function M.run(check, near)
     local went = false
     for _ = 1, 120 do
       boss.update(r, 1 / 60)
-      if b.invuln_t > 0 then went = true; break end
+      if b.invuln_t > 0 then
+        went = true
+        break
+      end
     end
     check(went, "boss becomes invulnerable after the telegraph window")
     check(not b.invuln_warn, "invuln telegraph clears once invuln starts")
@@ -69,7 +80,7 @@ function M.run(check, near)
 
   -- add spawn: portal telegraph before an add appears
   do
-    local r, b = spawn_boss("hydra")   -- hydra spawns adds "always"
+    local r, b = spawn_boss("hydra") -- hydra spawns adds "always"
     b.spawn_t = IN_WINDOW
     boss.update(r, 1 / 60)
     check(b.spawn_warn, "add-spawn portal telegraph shows in the warning window")
@@ -77,7 +88,10 @@ function M.run(check, near)
     local spawned = false
     for _ = 1, 120 do
       boss.update(r, 1 / 60)
-      if adds(r) > 0 then spawned = true; break end
+      if adds(r) > 0 then
+        spawned = true
+        break
+      end
     end
     check(spawned, "an add spawns after the telegraph window")
     check(not b.spawn_warn, "portal telegraph clears once the add spawns")
@@ -87,15 +101,19 @@ function M.run(check, near)
   do
     local r, b = spawn_boss("prism")
     local stung = nil
-    local real_play = sfx.play_ex             -- the stinger routes through play_ex (SFX-volume aware)
-    sfx.play_ex = function(name) stung = name end
-    b.hp = b.maxhp * b.def.phase2_at      -- right at the phase-2 threshold
-    boss.hurt(r, 1)                        -- a hit that crosses into phase 2
+    local real_play = sfx.play_ex -- the stinger routes through play_ex (SFX-volume aware)
+    sfx.play_ex = function(name)
+      stung = name
+    end
+    b.hp = b.maxhp * b.def.phase2_at -- right at the phase-2 threshold
+    boss.hurt(r, 1) -- a hit that crosses into phase 2
     check(b.phase == 2, "boss enters phase 2 at the threshold")
     check(stung == "boss_phase", "the phase change fires audio.stinger")
     -- and it fires exactly once: a second hit while already in phase 2 is silent
     local stung2 = nil
-    sfx.play_ex = function(name) stung2 = name end
+    sfx.play_ex = function(name)
+      stung2 = name
+    end
     boss.hurt(r, 1)
     sfx.play_ex = real_play
     check(stung2 == nil, "the stinger does not re-fire on subsequent phase-2 damage")
@@ -103,8 +121,10 @@ function M.run(check, near)
 
   -- a boss with no shockwave/invuln/adds never raises any telegraph flag
   do
-    local r, b = spawn_boss("bulwark")   -- bulwark has none of the three
-    for _ = 1, 300 do boss.update(r, 1 / 60) end
+    local r, b = spawn_boss("bulwark") -- bulwark has none of the three
+    for _ = 1, 300 do
+      boss.update(r, 1 / 60)
+    end
     check(not b.shock_warn, "bulwark (no shockwave) never sets shock_warn")
     check(not b.invuln_warn, "bulwark (no invuln) never sets invuln_warn")
     check(not b.spawn_warn, "bulwark (no adds) never sets spawn_warn")
