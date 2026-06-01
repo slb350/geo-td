@@ -25,7 +25,10 @@ SEAM="$ROOT/tools/check_loop_seam.py"
 
 # The runtime stems lib/audio.lua rotates (POOL). theme is legacy/unused at
 # runtime, so it is NOT converted -- its master just lives in music_src/.
+# Pass stem name(s) as args to convert only those (e.g. after re-looping one
+# track); with no args, all runtime stems are (re)encoded.
 STEMS=(menu combat combat2 combat3 combat4 combat5 boss boss2 boss3)
+[[ "$#" -gt 0 ]] && STEMS=("$@")
 
 QUALITY="${OGG_QUALITY:-7}"   # oggenc -q (0..10, override via env); 7 ~ transparent for short loops
 
