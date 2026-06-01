@@ -45,39 +45,66 @@ fi
 echo "  staged: ${RUNTIME[*]}"
 
 OUTROOT="$ROOT/export"        # gitignored build-output dir; artifacts persist here
+NAME="usagi-geo-td"           # explicit output name (the staging dir is a temp path)
 mkdir -p "$OUTROOT"
 echo "exporting (--target $TARGET) -> $OUTROOT"
-if [[ "$TARGET" == "bundle" ]]; then
-  ARTIFACT="$OUTROOT/usagi-geo-td.usagi"
-  "$USAGI" export "$STAGE" --target bundle -o "$ARTIFACT"
-else
-  "$USAGI" export "$STAGE" --target "$TARGET" -o "$OUTROOT"
-  # Scan the portable .usagi if one was produced (e.g. by `all`); a single
-  # platform zip has no loose .usagi -- the primary gate above already covers it.
-  ARTIFACT="$(find "$OUTROOT" -name '*.usagi' -type f | head -1)"
-fi
-
-if [[ -z "${ARTIFACT:-}" ]]; then
-  echo "OK (primary gate): staging tree is clean; no .usagi artifact to scan for target '$TARGET'."
-  echo "artifacts in: $OUTROOT"
-  exit 0
-fi
+# `-o` semantics differ by target: a directory for `all`, a file path otherwise
+# (`usagi export` errors on a directory for single-platform/bundle targets).
+# Always pass an explicit path so the artifact name comes from $NAME, not the
+# temp staging dir basename.
+case "$TARGET" in
+  bundle)
+    ARTIFACT="$OUTROOT/$NAME.usagi"
+    "$USAGI" export "$STAGE" --target bundle -o "$ARTIFACT"
+    ;;
+  all)
+    "$USAGI" export "$STAGE" --target all -o "$OUTROOT"
+    ARTIFACT="$OUTROOT/$NAME.usagi"   # the portable bundle that `all` also emits
+    ;;
+  web)
+    # The web export hosts the canvas in an HTML shell. We ship a custom
+    # shell.html (the engine default + a right-click contextmenu suppressor so
+    # in-game RMB works on the web build). The engine's default `<project>/
+    # shell.html` lookup would resolve against $STAGE (which has no shell.html,
+    # and we keep it out of the runtime set), so pass it explicitly from $ROOT.
+    ARTIFACT="$OUTROOT/$NAME-$TARGET.zip"
+    SHELL_HTML="$ROOT/shell.html"
+    if [[ ! -f "$SHELL_HTML" ]]; then echo "  ERROR: missing $SHELL_HTML for web shell" >&2; exit 1; fi
+    "$USAGI" export "$STAGE" --target "$TARGET" --web-shell "$SHELL_HTML" -o "$ARTIFACT"
+    ;;
+  linux | macos | windows)
+    ARTIFACT="$OUTROOT/$NAME-$TARGET.zip"
+    "$USAGI" export "$STAGE" --target "$TARGET" -o "$ARTIFACT"
+    ;;
+  *)
+    echo "  ERROR: unknown target '$TARGET' (use bundle|all|web|linux|macos|windows)" >&2
+    exit 1
+    ;;
+esac
 
 # Secondary gate (defense in depth, on the actual artifact): scan for SHIPPED
-# test/tool file paths. Matches precise `.lua/.py/.sh` filenames so it is not
-# fooled by legit runtime comments that mention "tests" / "tools/map_lab".
+# test/tool file paths. The primary gate (clean staging tree) is authoritative;
+# this re-checks the produced artifact's bytes. Matches precise `.lua/.py/.sh`
+# filenames so it is not fooled by legit runtime comments ("tests" / "tools/map_lab").
+scan_forbidden() {  # read a byte stream on stdin, print any forbidden path hits
+  grep -nE \
+    -e 'tests/[A-Za-z0-9_]+\.lua' \
+    -e 'tools/[A-Za-z0-9_]+\.(lua|py|sh)' \
+    -e '(^|/)smoke[A-Za-z0-9_]*\.lua' \
+    -e '(^|/)(baseline|harness)\.lua' || true
+}
 echo "scanning $ARTIFACT for forbidden file paths ..."
-hits="$(strings "$ARTIFACT" | grep -nE \
-  -e 'tests/[A-Za-z0-9_]+\.lua' \
-  -e 'tools/[A-Za-z0-9_]+\.(lua|py|sh)' \
-  -e '(^|/)smoke[A-Za-z0-9_]*\.lua' \
-  -e '(^|/)(baseline|harness)\.lua' || true)"
+case "$ARTIFACT" in
+  *.usagi)   hits="$(strings "$ARTIFACT" | scan_forbidden)" ;;
+  *-web.zip) hits="$( (unzip -p "$ARTIFACT" '*.usagi' 2>/dev/null || true) | strings | scan_forbidden)" ;;  # scan the embedded bundle
+  *.zip)     hits="$(strings "$ARTIFACT" | scan_forbidden)" ;;  # fused exe zip (best effort; primary gate authoritative)
+esac
 if [[ -n "$hits" ]]; then
-  echo "  FAIL: bundle contains test/tool source:" >&2
+  echo "  FAIL: artifact contains test/tool source:" >&2
   echo "$hits" | sed 's/^/    /' >&2
   exit 1
 fi
 
 size="$(du -h "$ARTIFACT" | cut -f1)"
-echo "OK: no test/tool source in the bundle."
+echo "OK: no test/tool source in the artifact."
 echo "artifact: $ARTIFACT  ($size)  (persisted in ./export/)"
