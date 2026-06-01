@@ -20,6 +20,7 @@ local BW = C.HUD_W - PAD * 2
 local EFF_Y = 36                              -- effective-stat line (M1)
 local UP_Y, UP_H, UP_GAP = 52, 16, 3
 local MOD_Y, MOD_H, MOD_GAP = 132, 15, 2
+local reroll_btn = { x = BX, y = 162, w = BW, h = 15 }              -- charge module reroll (V2-M3)
 local tgt_btn = { x = BX, y = C.GAME_H - 40, w = BW, h = 14 }   -- targeting override (M1)
 
 local function up_rect(i)  return { x = BX, y = UP_Y + (i - 1) * (UP_H + UP_GAP), w = BW, h = UP_H } end
@@ -28,6 +29,7 @@ local function mod_rect(i) return { x = BX, y = MOD_Y + (i - 1) * (MOD_H + MOD_G
 -- Returns the click action in the inspect panel, or nil:
 --   { type = "upgrade",   id = <upgrade id> }
 --   { type = "module",    id = <module id> }   (only while the socket is empty)
+--   { type = "reroll" }                         (only while a module is socketed)
 --   { type = "targeting" }                      (cycle the tower's targeting override)
 function M.button_at(run, t, mx, my)
   local opts = modifier.upgrade_options(run, t)
@@ -40,6 +42,8 @@ function M.button_at(run, t, mx, my)
         return { type = "module", id = modifier.MODULE_ORDER[i] }
       end
     end
+  elseif ui.in_rect(mx, my, reroll_btn) then
+    return { type = "reroll" }
   end
   if ui.in_rect(mx, my, tgt_btn) then return { type = "targeting" } end
   return nil
@@ -75,6 +79,10 @@ function M.draw(run, t)
     shape.fill(mod.shape, BX + 6, MOD_Y + 6, 5, t.color)
     gfx.text(mod.name, BX + 16, MOD_Y, pal.TEXT)
     gfx.text(mod.desc, BX + 3, MOD_Y + 16, pal.TEXT_DIM)
+    local afford = modifier.can_reroll_module(run, t)
+    gfx.rect_fill(reroll_btn.x, reroll_btn.y, reroll_btn.w, reroll_btn.h, pal.HUD_PANEL)
+    gfx.text("REROLL " .. C.MODULE_REROLL_COST .. "C", reroll_btn.x + 3, reroll_btn.y + 4,
+      afford and pal.MONEY or pal.TEXT_DIM)
   else
     local mcost = modifier.module_cost(run)
     gfx.text("MODULE $" .. mcost, BX, MOD_Y - 12, pal.TEXT_DIM)

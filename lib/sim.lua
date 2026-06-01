@@ -19,6 +19,9 @@ local modifier = require("lib.modifier")
 local powerup  = require("lib.powerup")
 local loop     = require("lib.loop")
 local metrics  = require("lib.metrics")
+local routedraft = require("lib.routedraft")
+local contracts  = require("lib.contracts")
+local affix      = require("lib.affix")
 
 local M = {}
 
@@ -63,6 +66,36 @@ local function apply_action(run, a)
     if not modifier.socket_module(run, t, a.module.id) then
       return ("module %s on id %s: rejected"):format(tostring(a.module.id), tostring(a.module.tower))
     end
+  elseif a.reroll then
+    local t = tower_by_id(run, a.reroll.tower)
+    if not t then return "reroll: no tower id " .. tostring(a.reroll.tower) end
+    if not modifier.reroll_module(run, t, a.reroll.id) then
+      return ("reroll on id %s: rejected"):format(tostring(a.reroll.tower))
+    end
+  elseif a.targeting then
+    local t = tower_by_id(run, a.targeting.tower)
+    if not t then return "targeting: no tower id " .. tostring(a.targeting.tower) end
+    t.targeting_override = a.targeting.value or false
+  elseif a.route then
+    local cards = routedraft.draft(run)
+    local card
+    for i = 1, #cards do
+      if cards[i].id == a.route.id then card = cards[i]; break end
+    end
+    if not card then return "route " .. tostring(a.route.id) .. ": not offered" end
+    routedraft.apply(run, card)
+  elseif a.contract then
+    if a.contract.decline then
+      contracts.decline(run)
+    else
+      local cards = contracts.draft(run)
+      local card
+      for i = 1, #cards do
+        if cards[i].id == a.contract.id then card = cards[i]; break end
+      end
+      if not card then return "contract " .. tostring(a.contract.id) .. ": not offered" end
+      contracts.sign(run, card)
+    end
   elseif a.sell then
     local t = tower_by_id(run, a.sell.tower)
     if not t then return "sell: no tower id " .. tostring(a.sell.tower) end
@@ -92,19 +125,36 @@ function M.run(opts)
   local waves = opts.waves or 20
 
   -- bucket plan actions by the wave whose build phase they belong to
-  local plan_by_wave = {}
+  local plan_by_wave, combat_by_wave = {}, {}
   local plan = opts.plan or {}
   for i = 1, #plan do
     local w = plan[i].wave or 1
-    local bucket = plan_by_wave[w]
-    if not bucket then bucket = {}; plan_by_wave[w] = bucket end
+    local timed = run_mod.is_combat_timed(plan[i])
+    local buckets = timed and combat_by_wave or plan_by_wave
+    local bucket = buckets[w]
+    if not bucket then bucket = {}; buckets[w] = bucket end
     bucket[#bucket + 1] = plan[i]
   end
 
   local records, errors = {}, {}
   local survived, final_wave = true, 0
+  local max_step_time = 0
 
-  for n = 1, waves do
+  local function apply_combat_action(a)
+    if a.orbital then
+      if not run_mod.orbital_strike(run) then return "orbital: rejected" end
+    elseif a.discharge then
+      if not run_mod.discharge(run) then return "discharge: rejected" end
+    elseif a.call_early then
+      if not run_mod.call_early(run) then return "call_early: rejected" end
+    else
+      return "unknown combat action"
+    end
+    return nil
+  end
+
+  local n = 1
+  while n <= waves do
     -- BUILD phase: apply this wave's scripted actions
     run.phase = "building"
     local actions = plan_by_wave[n]
@@ -116,16 +166,29 @@ function M.run(opts)
     end
 
     -- start the wave through the shared, presentation-free path
-    local boss_wave = wave.is_boss_for(run, n)
     local leaks_before = run.leaked
     run_mod.begin_wave(run)
-    final_wave = n
 
     -- COMBAT phase: step until the field clears or the run dies
     local frames, peak_e, peak_p = 0, 0, 0
     while true do
-      frames = frames + 1
+      local combat_actions = combat_by_wave[run.wave_index]
+      if combat_actions then
+        local frame = run.combat_frame or 0
+        for i = 1, #combat_actions do
+          local a = combat_actions[i]
+          if (a.frame or 0) == frame then
+            local err = apply_combat_action(a)
+            if err then errors[#errors + 1] = { wave = run.wave_index, err = err } end
+          end
+        end
+      end
+      local t0 = os.clock()
       local spawns_done = loop.step(run, DT)   -- canonical combat step (shared with the game)
+      local step_time = os.clock() - t0
+      if step_time > max_step_time then max_step_time = step_time end
+      frames = frames + 1
+      run.combat_frame = (run.combat_frame or 0) + 1
       if run.enemies.n > peak_e then peak_e = run.enemies.n end
       if run.projectiles.n > peak_p then peak_p = run.projectiles.n end
       -- Death is decisive even on a frame the wave also clears: a fatal leak
@@ -142,11 +205,17 @@ function M.run(opts)
       end
     end
 
+    final_wave = run.wave_index   -- captures any mid-combat call_early advance
     records[#records + 1] = {
-      wave = n, frames = frames, peak_enemies = peak_e, peak_proj = peak_p,
-      leaks = run.leaked - leaks_before, money_after = run.money, boss = boss_wave,
+      wave = run.wave_index, frames = frames, peak_enemies = peak_e, peak_proj = peak_p,
+      leaks = run.leaked - leaks_before, money_after = run.money, boss = wave.is_boss_for(run, run.wave_index),
     }
     if not survived then break end
+    run.phase = "building"
+    contracts.grant_reward(run)
+    contracts.expire(run)
+    affix.expire(run)
+    n = run.wave_index + 1
   end
 
   local roll = metrics.rollup(records)
@@ -163,6 +232,7 @@ function M.run(opts)
     peak_enemies = roll.peak_enemies,
     peak_proj = roll.peak_proj,
     total_frames = roll.total_frames,
+    max_step_time = max_step_time,
     money_curve = roll.money_curve,
     boss_seconds = roll.boss_seconds,
     tower_damage = metrics.tower_damage(run),

@@ -10,6 +10,7 @@ local fx     = require("lib.fx")
 local shape  = require("lib.shape")
 local combat = require("lib.combat")
 local aura   = require("lib.aura")
+local affix  = require("lib.affix")
 
 local DEFS = usagi.read_json("enemies.json")
 
@@ -86,6 +87,7 @@ end
 function M.kill(run, e)
   if e.dead then return end
   e.dead = true
+  affix.overclock_source_killed(run, e)
   local reward = math.floor(e.bounty * (run.mods.bounty_mult or 1))
   run.money = run.money + reward
   run.score = run.score + e.bounty
@@ -164,7 +166,9 @@ function M.update(run, dt)
     if not e.dead and e.arena then
       -- arena objects (M6) are fixed route hazards: they never move or leak
     elseif not e.dead then
-      e.d = e.d + e.base_speed * e.slow_factor * e.aura_speed * dt
+      local affix_speed = e.affix_speed_mult or 1
+      if e.affix_overclock and not run.affix_overclock_active then affix_speed = 1 end
+      e.d = e.d + e.base_speed * affix_speed * e.slow_factor * e.aura_speed * dt
       if e.fly then
         if e.d >= e.fly_total then e.leaked = true end
         e.x, e.y = e.sx + e.fly_ux * e.d, e.sy + e.fly_uy * e.d

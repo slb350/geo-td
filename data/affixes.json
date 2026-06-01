@@ -1,7 +1,8 @@
 {
+  "mirrored":      { "name": "Mirrored",      "shape": "hex",     "min_wave": 8,  "mirror_pairs": true,                       "desc": "Ground and flyer pairs arrive together." },
   "armored_front": { "name": "Armored Front", "shape": "square",  "min_wave": 8,  "fraction": 0.25, "armor_add": 2,            "desc": "The vanguard is armored." },
-  "veiled_pack":   { "name": "Veiled Pack",   "shape": "diamond", "min_wave": 9,  "fraction": 0.3,  "stealth": true,           "desc": "The vanguard is cloaked." },
-  "overclock":     { "name": "Overclock",     "shape": "tri",     "min_wave": 8,  "speed_mult": 1.3,                           "desc": "The whole wave runs fast." },
+  "veiled_pack":   { "name": "Veiled Pack",   "shape": "diamond", "min_wave": 9,  "fraction": 0.3,  "veil_source": true, "stealth_radius": 42, "desc": "A veil source hides nearby packmates." },
+  "overclock":     { "name": "Overclock",     "shape": "tri",     "min_wave": 8,  "speed_mult": 1.3, "overclock_until_aura": true, "desc": "Enemies run fast until an aura source dies." },
   "fracture":      { "name": "Fracture",      "shape": "penta",   "min_wave": 10, "fracture": true, "child_hp_mult": 1.6,      "desc": "Splitters spawn fewer, tougher children." },
   "null_field":    { "name": "Null Field",    "shape": "hex",     "min_wave": 14, "disable_resonance": true, "duration": 10,   "desc": "Module circuits go dark for 10s." }
 }

@@ -2,6 +2,7 @@
   "loop":        { "name": "Loop",        "shape": "circ",    "reward": { "money": 0 },  "desc": "Longer route -- more tower coverage." },
   "shortcut":    { "name": "Shortcut",    "shape": "tri",     "reward": { "money": 55 }, "risk": { "budget_mult": 1.18 }, "desc": "Cash now, a heavier next wave." },
   "braid":       { "name": "Braid",       "shape": "hex",     "reward": { "money": 25 }, "risk": { "flyer_bias": true },  "desc": "A winding route, but flyers swarm next." },
+  "split":       { "name": "Split",       "shape": "square",  "reward": { "money": 15 }, "risk": { "budget_mult": 1.12, "flyer_bias": true }, "desc": "Two lanes cross back into one -- mixed pressure." },
   "convergence": { "name": "Convergence", "shape": "diamond", "reward": { "money": 0 },  "risk": { "budget_mult": 1.25 }, "desc": "Funnels enemies through a choke -- but more of them." },
   "prism":       { "name": "Prism",       "shape": "diamond", "reward": { "money": 0 },  "risk": { "shield": 6 },        "desc": "Seeds a resource prism, but shields the next wave." },
   "null":        { "name": "Hold",        "shape": "square",  "reward": { "money": 30 }, "desc": "Keep the current route, take a small stipend." }

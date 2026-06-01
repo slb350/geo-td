@@ -79,6 +79,7 @@ function M.new(meta, seed, path_name, mode_id)
     contract_history = {},
     bank_shards = 0,
     module_discount = 0,
+    module_rerolls = 0,
     no_sell = false,
     resonance_dirty = true,    -- recompute tower resonance on the next touch (M4)
     -- Enemy affixes (V2-M5). wave_affix is the current wave's resolved affix row
@@ -111,6 +112,7 @@ function M.begin_wave(run)
   local n = run.wave_index + 1
   run.phase = "combat"
   run.sim_acc = 0            -- fresh fixed-timestep accumulator for this wave (M1)
+  run.combat_frame = 0       -- replay timing: fixed steps completed in this wave (M9)
   local mods = run.mods
   if mods.interest > 0 then
     run.money = run.money + math.floor(run.money * mods.interest)
@@ -118,6 +120,7 @@ function M.begin_wave(run)
   if mods.life_per_wave > 0 then
     run.lives = run.lives + mods.life_per_wave
   end
+  affix.choose(run, n)        -- pick/clear this wave's affix before wave.start can apply queue effects (M5)
   if wave.is_boss_for(run, n) then
     wave.boss_scale(run, n)
     local kind = run.mode.boss_rush and boss.cycle(n) or boss.for_wave(n)
@@ -127,7 +130,6 @@ function M.begin_wave(run)
     wave.start(run, n)
     contracts.arm(run)        -- blackout / no-sell, once the wave + towers are set
   end
-  affix.choose(run, n)        -- pick/clear this wave's affix (nil on boss waves) (M5)
   return n
 end
 
@@ -137,8 +139,24 @@ end
 -- (a tower placed during a wave only contributes from the next build, which is when
 -- the headless driver applies it). Only the interactive scenes call this; the sim
 -- drives the core functions directly, so a replay/verify re-run never re-logs.
+-- A replay action whose effect is timed to a specific combat frame (orbital /
+-- discharge / call-early), as opposed to a build-phase action stamped to a wave.
+-- The single source of truth: lib/sim's plan bucketing reads this too, so the two
+-- sites can't enumerate a different set as combat abilities are added.
+function M.is_combat_timed(action)
+  return action.orbital ~= nil or action.discharge ~= nil or action.call_early ~= nil
+end
+
 function M.record(run, action)
-  action.wave = run.wave_index + (run.phase == "combat" and 2 or 1)
+  local combat_timed = M.is_combat_timed(action)
+  if not action.wave then
+    if combat_timed then
+      action.wave = run.wave_index
+    else
+      action.wave = run.wave_index + (run.phase == "combat" and 2 or 1)
+    end
+  end
+  if combat_timed and action.frame == nil then action.frame = run.combat_frame or 0 end
   run.log[#run.log + 1] = action
   return action
 end

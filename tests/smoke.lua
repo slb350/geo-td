@@ -50,6 +50,7 @@ require("tests.smoke_settings").run(check, near)
 require("tests.smoke_replay").run(check, near)
 require("tests.smoke_sim").run(check, near)
 require("tests.smoke_balance").run(check, near)
+require("tests.smoke_perf").run(check, near)
 
 print(("smoke: %d checks, %d failures"):format(checks, fails))
 os.exit(fails == 0 and 0 or 1)

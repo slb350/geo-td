@@ -60,6 +60,7 @@ C.FLYER_BURST_R  = 42      -- radius (px) of a flyer's on-death burst
 -- Per-tower modifiers (M3). Upgrades are leveled numeric lines (data in
 -- data/upgrades.json); a geometry module is a one-per-tower qualitative socket.
 C.MODULE_COST    = 60      -- in-run cost to socket a geometry module on a tower
+C.MODULE_REROLL_COST = 30  -- charge cost to reroll an already socketed module
 
 -- Tower resonance named behaviours (M4): the qualitative proofs grant a behaviour,
 -- not just scalars. Orbit Field = a Frost slow aura (chills ground enemies near the
@@ -124,6 +125,11 @@ C.DISCHARGE_FACTOR = 0.9   -- damage dealt to every enemy/boss = charge spent * 
 -- sim disables affixes for stable baselines). Affixes apply DERIVED enemy fields
 -- or wave-level flags, never base-def mutation.
 C.AFFIX_CHANCE = 0.7    -- chance a qualifying wave actually gets an affix
+
+-- Production perf gates (V2-M9). These are intentionally generous ceilings for
+-- the headless harness/benchmark, not micro-optimization targets.
+C.PERF_MAX_DRAW_CALLS = 3000
+C.PERF_MAX_SIM_STEP   = 0.05
 
 -- Wave contracts (V2-M3). An optional risk/reward signed before some waves (never
 -- a boss wave). The risk applies to that one wave; the reward is granted only on

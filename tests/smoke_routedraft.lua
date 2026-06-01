@@ -55,10 +55,12 @@ function M.run(check, near)
     end
   end
 
-  -- all four transforms are available + valid on a rich base, and the shuffle is
+  -- all roadmap transforms are available + valid on a rich base, and the shuffle is
   -- fair across seeds (loop is no longer starved by the PRNG small-seed warmup)
   do
     local base = maps.get("zigzag").nodes
+    check(routedraft.DEFS.split ~= nil and routedraft.transforms.split ~= nil,
+      "Route Draft includes the roadmap's Split proposition")
     for _, id in ipairs(routedraft.TYPE_ORDER) do
       local nodes = routedraft.transforms[id](base)
       check(nodes and routedraft.valid(base, nodes), "zigzag transform '" .. id .. "' is available + valid")
@@ -67,8 +69,8 @@ function M.run(check, near)
     for s = 1, 20 do
       for _, c in ipairs(routedraft.draft(run_mod.new(m, s, "zigzag"))) do seen[c.id] = true end
     end
-    check(seen.loop and seen.shortcut and seen.braid and seen.convergence,
-      "all four transform cards can be drafted (fair shuffle)")
+    check(seen.loop and seen.shortcut and seen.braid and seen.split and seen.convergence,
+      "all five transform cards can be drafted (fair shuffle)")
   end
 
   -- valid() rejects malformed routes
@@ -100,7 +102,7 @@ function M.run(check, near)
   do
     local r = run_mod.new(m, 7, "zigzag"); r.money = 1000
     local cards = routedraft.draft(r)
-    -- find a non-current TRANSFORM card (loop/shortcut/braid/convergence -- skip
+    -- find a non-current TRANSFORM card (loop/shortcut/braid/split/convergence -- skip
     -- Prism, which keeps the route rather than swapping it)
     local card
     for i = 1, #cards do

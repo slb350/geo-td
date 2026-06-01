@@ -1,6 +1,6 @@
 -- Enemy affix cases (V2-M5): deterministic per-wave selection (gated by min_wave,
 -- boss waves, and no_affixes), spawn-time DERIVED fields (no base-def mutation),
--- the Veiled Pack stealth / Overclock speed / Armored Front fraction / Fracture
+-- the Veiled Pack source / Overclock derived speed / Armored Front fraction / Fracture
 -- split / Null Field resonance suppression, and the threat-preview + report
 -- integration. Run by smoke.lua via M.run(check, near).
 
@@ -15,6 +15,8 @@ local resonance = require("lib.resonance")
 local affix     = require("lib.affix")
 local threat    = require("lib.threat")
 local report    = require("lib.report")
+local target    = require("lib.target")
+local harness   = require("tests.harness")
 
 local M = {}
 
@@ -57,29 +59,64 @@ function M.run(check, near)
   check(armored == 3, "Armored Front armors exactly the vanguard fraction (ceil(10*0.25)=3)")
   check(enemy.DEFS.mote.armor == 0, "apply_spawn never mutates the base enemy def")
 
+  -- ----------------------------------------------------------- Mirrored pairs
+  check(affix.DEFS.mirrored ~= nil, "Mirrored affix is data-driven content")
+  local rmir = run_mod.new(m, 9, "serpentine")
+  rmir.wave_affix = affix.DEFS.mirrored
+  wave.start(rmir, 8)
+  local mirrored = true
+  for i = 1, rmir.spawn_queue.n - 1, 2 do
+    local a, b = enemy.DEFS[rmir.spawn_queue[i]], enemy.DEFS[rmir.spawn_queue[i + 1]]
+    if not (a and b and a.fly ~= b.fly) then mirrored = false; break end
+  end
+  check(mirrored and rmir.spawn_queue.n >= 2, "Mirrored builds paired ground/flyer spawn sets")
+
   -- ------------------------------------------------------ Overclock (speed)
   local ro = run_mod.new(m, 1, "serpentine"); ro.wave_affix = affix.DEFS.overclock
+  ro.affix_overclock_active = true
   ro.enemies.n = 0
   local oe = enemy.spawn(ro, "mote", 1, 1, 0)
   local base_speed = oe.base_speed
   affix.apply_spawn(ro, oe, 5, 10)                       -- not vanguard, but speed hits all
-  check(near(oe.base_speed, base_speed * 1.3), "Overclock speeds up every enemy")
+  check(near(oe.base_speed, base_speed), "Overclock does not mutate the enemy base speed")
+  check(oe.affix_speed_mult ~= nil and near(oe.affix_speed_mult, 1.3),
+    "Overclock applies a derived speed multiplier")
+  local src = enemy.spawn(ro, "accelerant", 1, 1, 0)
+  affix.apply_spawn(ro, src, 6, 10)
+  enemy.kill(ro, src)
+  check(ro.affix_overclock_active == false, "Overclock ends when the first aura emitter dies")
 
-  -- ------------------------------------------- Veiled Pack (stealth puzzle)
+  -- ------------------------------------------- Veiled Pack (stealth source)
   local rv = run_mod.new(m, 1, "serpentine"); rv.money = 99999
   rv.wave_affix = affix.DEFS.veiled_pack
   tower.place(rv, 200, 150, "pellet")
   rv.enemies.n = 0
-  local cloaked = enemy.spawn(rv, "mote", 1, 1, 0); cloaked.x, cloaked.y = 205, 150
-  affix.apply_spawn(rv, cloaked, 1, 10)                  -- vanguard -> stealthed
-  check(cloaked.affix_stealth == true, "Veiled Pack cloaks the vanguard")
+  local source = enemy.spawn(rv, "veil", 1, 1, 0); source.x, source.y = 205, 150
+  affix.apply_spawn(rv, source, 1, 10)                   -- vanguard -> veil source
+  local cloaked = enemy.spawn(rv, "mote", 1, 1, 0); cloaked.x, cloaked.y = 210, 150
+  affix.apply_spawn(rv, cloaked, 2, 10)
+  affix.update(rv, 0)
+  check(source.affix_veil_source == true and target.targetable(source),
+    "Veiled Pack creates a targetable veil source")
+  check(cloaked.affix_stealth == true and not target.targetable(cloaked),
+    "the veil source protects nearby pack enemies")
   rv.projectiles.n = 0; rv.towers[1].cooldown = 0
   tower.update(rv, 1 / 60)
-  check(rv.projectiles.n == 0, "a tower skips an affix-stealthed enemy")
-  cloaked.affix_stealth = false
+  check(rv.projectiles.n >= 1, "a tower can shoot the veil source")
+  source.dead = true
+  affix.update(rv, 0)
+  check(cloaked.affix_stealth == false, "Veiled Pack stealth drops when the source dies")
   rv.projectiles.n = 0; rv.towers[1].cooldown = 0
   tower.update(rv, 1 / 60)
   check(rv.projectiles.n >= 1, "the same enemy is targetable once un-cloaked")
+  check(type(affix.draw) == "function", "affixes expose visible geometry overlays")
+  if type(affix.draw) == "function" then
+    source.dead = false
+    affix.update(rv, 0)
+    harness.reset_gfx()
+    affix.draw(rv)
+    check(#harness.gfx_calls() > 0, "affix.draw emits ring/icon geometry for affected enemies")
+  end
 
   -- ----------------------------------------------------- Fracture (splits)
   local rf = run_mod.new(m, 1, "serpentine"); rf.wave_affix = affix.DEFS.fracture

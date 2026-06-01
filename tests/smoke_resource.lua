@@ -11,6 +11,8 @@ local tower    = require("lib.tower")
 local enemy    = require("lib.enemy")
 local wave     = require("lib.wave")
 local resource = require("lib.resource")
+local modifier = require("lib.modifier")
+local inspect  = require("lib.inspect")
 local helpers  = require("tests.helpers")
 
 local M = {}
@@ -114,6 +116,32 @@ function M.run(check, near)
   rdis.charge = 50; rdis.phase = "building"
   check(not run_mod.can_discharge(rdis), "discharge unavailable outside combat")
   check(not run_mod.discharge(rdis), "discharge no-ops when unavailable")
+
+  -- --------------------------------------------------------- Module rerolls
+  local rr = run_mod.new(m, 1, "serpentine"); rr.money = 99999
+  local rt = tower.place(rr, 160, 70, "pellet")
+  modifier.socket_module(rr, rt, "triangle")
+  local reroll_cost = C.MODULE_REROLL_COST or 0
+  rr.charge = reroll_cost
+  check(reroll_cost > 0,
+    "module reroll has a charge cost")
+  check(type(modifier.can_reroll_module) == "function"
+    and modifier.can_reroll_module(rr, rt), "a socketed tower with enough charge can reroll its module")
+  local money_before, charge_before = rr.money, rr.charge
+  local ok = type(modifier.reroll_module) == "function" and modifier.reroll_module(rr, rt, "square")
+  check(ok and rt.module == "square", "module reroll replaces the socket with the requested module")
+  check(rr.money == money_before, "module reroll spends charge, not money")
+  check(rr.charge == charge_before - reroll_cost, "module reroll charges the configured cost")
+  check(rr.resonance_dirty == true, "module reroll marks resonance dirty")
+  rr.charge = reroll_cost - 1
+  check(type(modifier.can_reroll_module) == "function"
+    and not modifier.can_reroll_module(rr, rt), "module reroll rejects insufficient charge")
+  local no_mod = tower.place(rr, 210, 70, "pellet")
+  rr.charge = reroll_cost
+  check(type(modifier.can_reroll_module) == "function"
+    and not modifier.can_reroll_module(rr, no_mod), "module reroll requires an existing module")
+  local act = inspect.button_at(rr, rt, C.HUD_X + 10, 168)
+  check(act and act.type == "reroll", "inspect panel exposes a module-reroll button")
 end
 
 return M

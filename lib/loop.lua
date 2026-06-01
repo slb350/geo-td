@@ -27,12 +27,12 @@ function M.step(run, dt)
   local boss_wave = wave.is_boss_for(run, run.wave_index)
   local spawns_done = boss_wave or wave.update(run, dt)
   enemy.update(run, dt)
+  affix.update(run, dt)            -- source-based veil stealth must refresh before tower acquisition (M5)
   if boss_wave then boss.update(run, dt); arena.update(run, dt) end   -- arena hooks (M6)
   tower.update(run, dt)
   proj.update(run, dt)
   ring.update(run, dt)
   resource.update(run, dt)
-  affix.update(run, dt)            -- tick the Null-Field timer (M5)
   return spawns_done
 end
 

@@ -1,8 +1,9 @@
 -- Route Draft 2.0 (V2-M2): turns the between-wave route event into a 3-card draft
 -- of geometric route propositions, while preserving the single-polyline scalar-
 -- distance model. Each non-Hold card is a PROCEDURAL transform of the current
--- route (loop = longer/more coverage, shortcut = shorter/cash now, braid = winding
--- + flyer risk, convergence = central choke + count risk); the Hold card keeps the
+-- route (loop = longer/more coverage, shortcut = shorter/cash now, braid = winding,
+-- split = paired lanes that cross back into one, convergence = central choke);
+-- the Hold card keeps the
 -- current route for a small stipend. Card metadata (names/shapes/reward/risk/desc)
 -- is data (data/route_events.json); the geometry transforms + validity rules live
 -- here. Low-level swap + auto-refund stays in lib/pathmut.
@@ -24,7 +25,7 @@ local M = {}
 M.DEFS = DEFS
 
 -- Non-Hold cards, in a stable order; the Hold card is always appended last.
-M.TYPE_ORDER = { "loop", "shortcut", "braid", "convergence" }
+M.TYPE_ORDER = { "loop", "shortcut", "braid", "split", "convergence" }
 
 local FIELD_W, FIELD_H = C.FIELD_W, C.FIELD_H
 local LEN_LO, LEN_HI = 0.65, 1.60   -- total length band vs the base route
@@ -112,6 +113,24 @@ function transforms.braid(base)
   local out = copy_nodes(base)
   table.insert(out, li + 1, { x1, y1 })
   table.insert(out, li + 2, { x2, y2 })
+  return out
+end
+
+-- Split: make a fork-like diamond on the longest segment, but still as one
+-- scalar polyline: the route peels to one side, crosses to the other lane, then
+-- rejoins. This gives the "split pressure" proposition without introducing
+-- branch pathfinding or enemy remapping.
+function transforms.split(base)
+  local li = longest_seg(base)
+  local a, b = base[li], base[li + 1]
+  local x1, y1 = bump(a, b, 0.25, 28, true)
+  local x2, y2 = bump(a, b, 0.50, 46, false)
+  local x3, y3 = bump(a, b, 0.75, 28, true)
+  if not (x1 and x2 and x3) then return nil end
+  local out = copy_nodes(base)
+  table.insert(out, li + 1, { x1, y1 })
+  table.insert(out, li + 2, { x2, y2 })
+  table.insert(out, li + 3, { x3, y3 })
   return out
 end
 

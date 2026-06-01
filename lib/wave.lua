@@ -6,6 +6,7 @@
 local C     = require("lib.const")
 local enemy = require("lib.enemy")
 local affix = require("lib.affix")
+local rng   = require("lib.rng")
 
 local M = {}
 
@@ -76,6 +77,21 @@ local function set_scaling(run, n)
   run.spawn_interval = math.max(C.SPAWN_MIN, C.SPAWN_INTERVAL * (0.985 ^ (n - 1)))
 end
 
+local function mirrored_queue(run, n, pool)
+  local flyer, ground = {}, {}
+  for i = 1, #pool do
+    if enemy.DEFS[pool[i].kind].fly then flyer[#flyer + 1] = pool[i].kind
+    else ground[#ground + 1] = pool[i].kind end
+  end
+  if #flyer == 0 or #ground == 0 then return end
+  local r = rng.derive(run.seed, n * 71 + 23)
+  local q = run.spawn_queue
+  for i = 1, q.n - 1, 2 do
+    q[i] = ground[r:int(1, #ground)]
+    q[i + 1] = flyer[r:int(1, #flyer)]
+  end
+end
+
 -- Boss wave: scale difficulty and clear the spawn queue (the boss is spawned
 -- by the game scene; phase-2 adds come from lib/boss).
 function M.boss_scale(run, n)
@@ -111,6 +127,7 @@ function M.start(run, n)
     q[q.n] = pick.kind
     budget = budget - pick.cost
   end
+  if run.wave_affix and run.wave_affix.mirror_pairs then mirrored_queue(run, n, pool) end
   run.wave_shield = (rm and rm.next_shield) or 0                     -- Prism shield buff (M2)
   if rm then rm.next_budget_mult, rm.next_flyer_bias, rm.next_shield = 1, false, 0 end   -- consume once
   return q.n

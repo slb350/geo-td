@@ -11,6 +11,7 @@ local fx        = require("lib.fx")
 local ui        = require("lib.ui")
 local shape     = require("lib.shape")
 local contracts = require("lib.contracts")
+local run_lib   = require("lib.run")
 
 local M = {}
 
@@ -77,11 +78,13 @@ function M.update(dt)
     for i = 1, #ts do
       if ui.in_rect(mx, my, ts[i]) then
         contracts.sign(run, run.contract_draft[i])
+        run_lib.record(run, { contract = { id = run.contract_draft[i].id } })   -- replay log (M9)
         return finish(run)
       end
     end
     if ui.in_rect(mx, my, decline_btn) then
       contracts.decline(run)
+      run_lib.record(run, { contract = { decline = true } })                    -- replay log (M9)
       return finish(run)
     end
   end

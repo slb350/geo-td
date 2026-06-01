@@ -36,7 +36,8 @@ function M.init()
   stats.contracts_done = {}
   for i = 1, #done do stats.contracts_done[i] = metacontract.DEFS[done[i]].name end
   stats.unlocked = unlocked and maps.get(unlocked).name or nil
-  stats.share = replay.snapshot(run, stats).share   -- shareable run code (M9)
+  stats.replay = replay.snapshot(run, stats)         -- full replay/verifier snapshot (M9)
+  stats.share = stats.replay.share                   -- shareable run code (M9)
   State.summary = stats
   effect.stop()
   fx.clear()

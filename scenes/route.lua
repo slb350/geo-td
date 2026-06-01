@@ -15,6 +15,7 @@ local ui        = require("lib.ui")
 local shape     = require("lib.shape")
 local routedraft = require("lib.routedraft")
 local contracts = require("lib.contracts")
+local run_lib   = require("lib.run")
 
 local M = {}
 
@@ -73,6 +74,7 @@ local function choose(run, i)
   local card = run.route_draft and run.route_draft[i]
   if card then
     routedraft.apply(run, card)                  -- swap + refund + reward + risk
+    run_lib.record(run, { route = { id = card.id } })   -- replay log (M9)
     fx.click_sfx()
   end
   run.route_draft = nil

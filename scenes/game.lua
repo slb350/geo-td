@@ -82,9 +82,19 @@ local function handle_hud_click(run, ui, meta, mx, my)
         fx.place_sfx()
         run_lib.record(run, { module = { tower = ui.inspect.id, id = act.id } })    -- replay log (M9)
       end
+    elseif act and act.type == "reroll" then
+      local ok, module_id = modifier.reroll_module(run, ui.inspect)
+      if ok then
+        fx.place_sfx()
+        run_lib.record(run, { reroll = { tower = ui.inspect.id, id = module_id } }) -- replay log (M9)
+      end
     elseif act and act.type == "targeting" then
       ui.inspect.targeting_override = tower.cycle_targeting(ui.inspect.def, ui.inspect.targeting_override)
       fx.click_sfx()
+      run_lib.record(run, { targeting = {
+        tower = ui.inspect.id,
+        value = ui.inspect.targeting_override or false,
+      } })                                                                          -- replay log (M9)
     end
     return
   end
@@ -101,7 +111,10 @@ local function handle_hud_click(run, ui, meta, mx, my)
   elseif act.type == "start" then
     if run.phase == "building" then start_wave(run) end
   elseif act.type == "orbital" then
-    if run_lib.orbital_strike(run) then fx.orbital() end
+    if run_lib.orbital_strike(run) then
+      fx.orbital()
+      run_lib.record(run, { orbital = true })
+    end
   elseif act.type == "sell" then
     ui.sell_mode = not ui.sell_mode
     ui.selected = nil
@@ -135,10 +148,16 @@ function M.update(dt)
     ui.selected = "drill"; ui.sell_mode = false; ui.inspect = nil
   end
   if input.key_pressed(input.KEY_O) then
-    if run_lib.orbital_strike(run) then fx.orbital() end
+    if run_lib.orbital_strike(run) then
+      fx.orbital()
+      run_lib.record(run, { orbital = true })
+    end
   end
   if input.KEY_D and input.key_pressed(input.KEY_D) then   -- D: Discharge (spend charge)
-    if run_lib.discharge(run) then fx.orbital() end
+    if run_lib.discharge(run) then
+      fx.orbital()
+      run_lib.record(run, { discharge = true })
+    end
   end
   if input.key_pressed(input.KEY_S) then ui.sell_mode = not ui.sell_mode; ui.selected = nil; ui.inspect = nil end
   if input.KEY_F and input.key_pressed(input.KEY_F) then   -- F: cycle combat speed
@@ -149,8 +168,12 @@ function M.update(dt)
   if input.key_pressed(input.KEY_SPACE) or input.key_pressed(input.KEY_ENTER) then
     if run.phase == "building" then
       start_wave(run)
-    elseif run.phase == "combat" and run_lib.call_early(run) then
-      fx.wave_sfx()
+    elseif run.phase == "combat" then
+      local wave0, frame0 = run.wave_index, run.combat_frame or 0
+      if run_lib.call_early(run) then
+        run_lib.record(run, { call_early = true, wave = wave0, frame = frame0 })
+        fx.wave_sfx()
+      end
     end
   end
 
@@ -176,6 +199,7 @@ function M.update(dt)
       run.sim_acc = run.sim_acc - C.SIM_DT
       steps = steps + 1
       local spawns_done = loop.step(run, C.SIM_DT)   -- canonical combat step (shared with the sim)
+      run.combat_frame = (run.combat_frame or 0) + 1
       -- Death is decisive even on a frame the wave also clears: a fatal leak means
       -- the wave was NOT held, so no contract reward -- we fall through to gameover
       -- (the run.lives<=0 check below). Matches lib/sim's clear-vs-death ordering.
@@ -301,6 +325,7 @@ function M.draw(dt)
   if hovered then tower.draw(run, hovered, true) end
 
   aura.draw(run)   -- faint formation-aura buff-zone rings, under the enemies
+  affix.draw(run)  -- affix rings/icons on affected enemies (M5)
   if run.boss then arena.draw(run) end   -- arena link lines, under the enemies (M6)
   enemy.draw(run)
   if run.boss then boss.draw(run) end

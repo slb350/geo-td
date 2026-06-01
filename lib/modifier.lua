@@ -168,4 +168,37 @@ function M.socket_module(run, t, module_id)
   return true
 end
 
+local function module_index(id)
+  for i = 1, #M.MODULE_ORDER do
+    if M.MODULE_ORDER[i] == id then return i end
+  end
+  return nil
+end
+
+local function reroll_pick(run, t)
+  local cur = module_index(t.module) or 1
+  local n = #M.MODULE_ORDER
+  local salt = (run.seed or 1) + (t.id or 0) * 17 + ((run.module_rerolls or 0) + 1) * 31
+  local step = (salt % (n - 1)) + 1
+  return M.MODULE_ORDER[((cur - 1 + step) % n) + 1]
+end
+
+-- Charge sink (V2-M3 completion): reroll an already-filled geometry socket.
+-- This spends charge only; it does not add refundable tower investment or gross
+-- money spent. A forced id lets replay/sim reproduce the exact rolled module.
+function M.can_reroll_module(run, t)
+  return t and t.module ~= nil and (run.charge or 0) >= C.MODULE_REROLL_COST
+end
+
+function M.reroll_module(run, t, forced_id)
+  if not M.can_reroll_module(run, t) then return false end
+  local next_id = forced_id or reroll_pick(run, t)
+  if not M.MODULES[next_id] or next_id == t.module then return false end
+  run.charge = run.charge - C.MODULE_REROLL_COST
+  run.module_rerolls = (run.module_rerolls or 0) + 1
+  t.module = next_id
+  run.resonance_dirty = true
+  return true, next_id
+end
+
 return M
