@@ -9,8 +9,7 @@ lines, and glow-friendly palette colors under a CRT/neon post-process.
 Defend a fixed path through escalating roguelike waves, draft upgrades, reshape
 the route between waves, mine charge from resource prisms, sign optional wave
 contracts, build module resonance circuits, and carry meta-progression between
-runs. The full design is in `docs/DESIGN.md`; the original roadmap and V2 arc are
-shipped in `docs/ROADMAP.md` and `docs/roadmap_v2.md`.
+runs.
 
 ## Play
 
@@ -73,8 +72,8 @@ Run from the repo root:
 - Settings/accessibility: CRT toggle, screen-shake toggle, damage-number toggle,
   high-contrast palette, pause-menu quick toggles. (Music/SFX volume is Usagi's
   built-in pause-menu control.)
-- MiniMax-generated multi-track soundtrack, procedural SFX, desktop/web CRT
-  shaders, and a documented export checklist.
+- MiniMax-generated multi-track soundtrack (OGG), procedural SFX, desktop/web CRT
+  shaders, and a staged runtime-only export (`tools/stage_export.sh`).
 
 ## Verification
 
@@ -120,9 +119,8 @@ smoke suite. Set `USAGI_PRECOMMIT_SMOKE=0` to skip only the smoke suite.
 - `data/`: JSON content for enemies, towers, bosses, powerups, maps, affixes,
   contracts, resonance, mastery, and arenas
 - `sfx/`, `music/`, `shaders/`: generated audio and CRT shader variants
-- `tools/`: map lab and audio generation
+- `tools/`: map lab, audio generation + OGG conversion, staged export, pre-commit gate
 - `tests/`: headless Usagi harness and per-system smoke suites
-- `docs/`: design, roadmaps, export/release checklist, current state
 
 ## Development Notes
 
