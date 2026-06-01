@@ -123,7 +123,7 @@ local function click_row(tab, id)
     for i = 1, #settings.DEFS do
       local def = settings.DEFS[i]
       if def.id == id then
-        settings.apply(State.settings, def)
+        settings.toggle(State.settings, def.id)
         if id == "crt" then
           State.crt = State.settings.crt
           gfx.shader_set(State.crt and "crt" or nil)
@@ -248,12 +248,8 @@ local function draw_options(rows)
     local val = s[def.id]
     gfx.rect_fill(r.x, r.y, r.w, r.h - 2, pal.HUD_PANEL)
     gfx.text(def.name, r.x + 8, r.y + 5, pal.TEXT)
-    local label, col
-    if def.kind == "volume" then
-      label, col = math.floor((val or 0) * 100 + 0.5) .. "%", pal.MONEY
-    else
-      label, col = (val and "ON" or "OFF"), (val and pal.GOOD or pal.TEXT_DIM)
-    end
+    local label = val and "ON" or "OFF"
+    local col = val and pal.GOOD or pal.TEXT_DIM
     gfx.text(label, r.x + r.w - usagi.measure_text(label) - 8, r.y + 5, col)
   end
   ui.center_text("keys:  1-6 towers   S sell   O orbital   D discharge   SPACE wave",

@@ -6,13 +6,11 @@
 -- per-state rotation index live on the global State so a live reload never
 -- restarts the song. All calls no-op safely if music/<track>.* is absent.
 
-local settings = require("lib.settings")
-
 local M = {}
 
--- The out-of-the-box music level is the music_vol setting's default (0.48). The
--- live value is read at each track change so a volume change takes effect on the
--- next track; a missing State.settings falls back to that default.
+-- Volume is the engine's job: Usagi scales every music/sfx call by the player's
+-- built-in pause-menu volume, so these calls pass identity (1) and let that be
+-- the single player-facing control.
 
 -- Tracks per scene-state, played in rotation. Boss is the cinematic / female
 -- synthwave set; combat cycles the darksynth variants.
@@ -31,8 +29,8 @@ function M.set(state)
   idx[state] = n
   State.music_idx = idx
   music.stop()
-  -- music.play_ex(name, vol, pitch, pan, loop)
-  music.play_ex(pool[n], settings.value("music_vol"), 1, 0, true)
+  -- music.play_ex(name, vol, pitch, pan, loop) -- vol 1 = the engine volume itself
+  music.play_ex(pool[n], 1, 1, 0, true)
 end
 
 -- A one-shot sting layered over the running music (does NOT touch the music
@@ -40,7 +38,7 @@ end
 -- sfx.play no-ops on an absent clip, so this is safe before music/sfx assets
 -- exist; add a `boss_phase` (or similarly named) clip to give it sound.
 function M.stinger(name)
-  sfx.play_ex(name, settings.value("sfx_vol"), 1, 0)
+  sfx.play_ex(name, 1, 1, 0)
 end
 
 function M.stop()

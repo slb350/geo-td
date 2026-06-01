@@ -13,11 +13,11 @@ local nums  = { n = 0 }   -- {x,y,vy,life,maxlife,text,color}
 local MAX_PARTS = 220
 local shoot_cd = 0        -- throttle for the rapid-fire shoot sfx
 
--- Settings-aware audio + comfort gates (V2-M9). All sfx route through play/play_ex
--- so the SFX-volume setting scales everything; screen_shake/damage numbers are
--- gated by their toggles. Defaults (vol 1, both toggles on) reproduce prior juice.
-local function play(name) sfx.play_ex(name, settings.value("sfx_vol"), 1, 0) end
-local function play_ex(name, vol, pitch) sfx.play_ex(name, (vol or 1) * settings.value("sfx_vol"), pitch or 1, 0) end
+-- SFX + comfort gates (V2-M9). Volume is the engine's pause-menu control (it
+-- scales every sfx call), so these pass vol straight through; screen_shake and
+-- damage numbers are gated by their toggles via settings.value below.
+local function play(name) sfx.play_ex(name, 1, 1, 0) end
+local function play_ex(name, vol, pitch) sfx.play_ex(name, vol or 1, pitch or 1, 0) end
 
 -- Screen shake, gated by the Screen Shake setting (the other effect.* juice --
 -- flash/hitstop -- is unaffected). Shared so boss.lua shakes through the gate too.

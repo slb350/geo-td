@@ -1,5 +1,5 @@
 -- Settings cases (V2-M9): the model (defaults / fill-migration / live value with
--- safe fallback / toggle / volume cycle), the meta save integration (settings in
+-- safe fallback / toggle), the meta save integration (settings in
 -- default + backfilled onto an old save), the high-contrast palette (resolves every
 -- semantic color, restores), the fx comfort gates (screen shake + damage numbers),
 -- and the menu Options tab (layout fit + toggle-on-click persists). Run by smoke.lua
@@ -17,34 +17,30 @@ local M = {}
 function M.run(check, near)
   -- ------------------------------------------------------------------- model
   local d = settings.defaults()
-  check(near(d.music_vol, 0.48) and near(d.sfx_vol, 1.0) and d.crt == true
-    and d.shake == true and d.high_contrast == false and d.damage_numbers == true,
+  check(d.crt == true and d.shake == true and d.high_contrast == false
+    and d.damage_numbers == true,
     "defaults carry every setting at its documented value")
 
   -- fill is the migration: add only the missing keys, keep existing values
-  local partial = settings.fill({ music_vol = 0.2 })
-  check(near(partial.music_vol, 0.2), "fill keeps an existing value")
+  local partial = settings.fill({ shake = false })
+  check(partial.shake == false, "fill keeps an existing value")
   check(partial.crt == true and partial.damage_numbers == true, "fill backfills missing keys")
   local n = 0; for _ in pairs(settings.fill({})) do n = n + 1 end
   check(n == #settings.DEFS, "fill produces every setting")
 
   -- value: live State.settings wins; absent falls back to the default
   local saved = State.settings
-  State.settings = { music_vol = 0.75 }
-  check(near(settings.value("music_vol"), 0.75), "value reads the live setting")
+  State.settings = { shake = false }
+  check(settings.value("shake") == false, "value reads the live setting")
   check(settings.value("crt") == true, "value falls back to default for a missing key")
   State.settings = nil
-  check(near(settings.value("music_vol"), 0.48) and settings.value("shake") == true,
+  check(settings.value("crt") == true and settings.value("shake") == true,
     "value is safe with no State.settings (returns defaults)")
   State.settings = saved
 
-  -- toggle + volume cycle
+  -- toggle
   local s = settings.defaults()
   check(settings.toggle(s, "crt") == false and s.crt == false, "toggle flips a bool")
-  s.music_vol = 0.5
-  check(near(settings.cycle_volume(s, "music_vol"), 0.75), "cycle_volume steps up")
-  s.music_vol = 1.0
-  check(near(settings.cycle_volume(s, "music_vol"), 0), "cycle_volume wraps to the bottom")
 
   -- ------------------------------------------------------ meta save integration
   check(meta.default().settings ~= nil, "meta.default carries settings")
@@ -53,9 +49,9 @@ function M.run(check, near)
   local up = meta.load()
   check(type(up.settings) == "table" and up.settings.crt == true,
     "loading an old save backfills settings")
-  meta.save({ version = 2, settings = { music_vol = 0.25 } })
+  meta.save({ version = 2, settings = { crt = false } })
   local pm = meta.load()
-  check(near(pm.settings.music_vol, 0.25) and pm.settings.shake == true,
+  check(pm.settings.crt == false and pm.settings.shake == true,
     "a partial settings save is filled, existing value kept")
 
   -- --------------------------------------------------- high-contrast palette
