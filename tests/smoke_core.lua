@@ -24,6 +24,19 @@ local helpers = require("tests.helpers")
 
 local M = {}
 
+-- The last rect_fill drawn before call index `idx` that contains point (x, y) --
+-- i.e. the box a subsequent text call sits inside. Shared by the layout-fit
+-- asserts (menu unlock rows, upgrade-draft cards) to prove drawn text fits its box.
+local function find_enclosing_box(calls, idx, x, y)
+  for k = idx - 1, 1, -1 do
+    local prior = calls[k]
+    if prior.fn == "rect_fill" then
+      local a = prior.args
+      if a[1] <= x and x < a[1] + a[3] and a[2] <= y and y < a[2] + a[4] then return a end
+    end
+  end
+end
+
 function M.run(check, near)
   -- First balance pass cut each tier-spike *component* (the part above the
   -- per-wave baseline of 1.0) by 15%. Encode the derivation so the test verifies
@@ -507,17 +520,7 @@ function M.run(check, near)
       for j = 1, #meta.SHOP do
         local it = meta.SHOP[j]
         if text == it.name or text == it.desc or text == it.cost .. " bank" or text == "OWNED" then
-          local box
-          for k = i - 1, 1, -1 do
-            local prior = gfx_calls[k]
-            if prior.fn == "rect_fill" then
-              local args = prior.args
-              if args[1] <= x and x < args[1] + args[3] and args[2] <= y and y < args[2] + args[4] then
-                box = args
-                break
-              end
-            end
-          end
+          local box = find_enclosing_box(gfx_calls, i, x, y)
           local _, h = usagi.measure_text(text)
           check(box ~= nil and y + h <= box[2] + box[4], text .. " fits inside menu unlock row")
         end
@@ -575,6 +578,29 @@ function M.run(check, near)
   check(#State.run.powerups == pw0 + 1, "upgrade applied exactly one powerup on click")
   check(State.pending == "game", "upgrade returns to game after a choice")
   upgrade_s.draw(1 / 60)
+
+  -- layout fit: force the worst-case longest descriptions and assert every drawn
+  -- line stays inside its card box (regression: long effect text spilled out).
+  State.run.draft = {
+    { key = "ring", rarity = 2 }, -- "splash leaves a dmg ring" (the widest)
+    { key = "pierce", rarity = 3 }, -- "shots pierce +1 enemy"
+    { key = "airburst", rarity = 2 }, -- "flyers burst on death"
+  }
+  harness.reset_gfx()
+  upgrade_s.draw(1 / 60)
+  local up_calls, up_rows = harness.gfx_calls(), 0
+  for i = 1, #up_calls do
+    local call = up_calls[i]
+    if call.fn == "text" then
+      local text, x, y = call.args[1], call.args[2], call.args[3]
+      local box = find_enclosing_box(up_calls, i, x, y)
+      local w, h = usagi.measure_text(text)
+      up_rows = up_rows + 1
+      check(box ~= nil and x + w <= box[1] + box[3], "upgrade card text fits horizontally: " .. text)
+      check(box ~= nil and y + h <= box[2] + box[4], "upgrade card text fits vertically: " .. text)
+    end
+  end
+  check(up_rows >= 9, "upgrade scene renders the three cards' text rows")
 end
 
 return M

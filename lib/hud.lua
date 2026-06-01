@@ -37,27 +37,11 @@ local MAX_HINT_LINES = 2
 -- Orbital action-button label (cost is constant, so build it once).
 local ORBITAL_LABEL = "ORBITAL $" .. C.ORBITAL_COST
 
--- Greedy word-wrap to a pixel width, using the real font metrics.
-local function wrap(text, max_w)
-  local lines, cur = {}, ""
-  for word in text:gmatch("%S+") do
-    local trial = cur == "" and word or (cur .. " " .. word)
-    if usagi.measure_text(trial) <= max_w then
-      cur = trial
-    else
-      if cur ~= "" then lines[#lines + 1] = cur end
-      cur = word
-    end
-  end
-  if cur ~= "" then lines[#lines + 1] = cur end
-  return lines
-end
-
--- The hint text changes rarely, so cache the wrap result across frames.
+-- The hint text changes rarely, so cache the real-font word-wrap across frames.
 local last_hint, last_lines
 local function wrap_cached(text, max_w)
   if text ~= last_hint then
-    last_hint, last_lines = text, wrap(text, max_w)
+    last_hint, last_lines = text, ui.wrap(text, max_w)
   end
   return last_lines
 end

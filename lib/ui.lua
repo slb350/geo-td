@@ -24,4 +24,34 @@ function M.center_text(text, y, color, scale)
   gfx.text_ex(text, (usagi.GAME_W - w) * 0.5, y, scale, 0, color, 1)
 end
 
+-- Greedy word-wrap to a pixel width using the real font metrics. Returns a list
+-- of lines, each measuring <= max_w (a single word wider than max_w is kept whole
+-- on its own line rather than split mid-glyph). Shared by the HUD tooltip and the
+-- upgrade-draft cards so wrapped text never spills past its box.
+function M.wrap(text, max_w)
+  local lines, cur = {}, ""
+  for word in text:gmatch("%S+") do
+    local trial = cur == "" and word or (cur .. " " .. word)
+    if usagi.measure_text(trial) <= max_w then
+      cur = trial
+    else
+      if cur ~= "" then lines[#lines + 1] = cur end
+      cur = word
+    end
+  end
+  if cur ~= "" then lines[#lines + 1] = cur end
+  return lines
+end
+
+-- Trim `text` to the longest prefix that fits `max_w` pixels (no ellipsis -- the
+-- bundled font has no guaranteed glyph for one, and a monospace clip lands cleanly
+-- on a char boundary). For single-line fields that must not overrun their box.
+function M.truncate(text, max_w)
+  local s = text
+  while #s > 0 and usagi.measure_text(s) > max_w do
+    s = s:sub(1, #s - 1)
+  end
+  return s
+end
+
 return M

@@ -86,7 +86,12 @@ function M.draw(dt)
       gfx.rect_ex(r.x, r.y, r.w, r.h, 2, col)
       gfx.text(powerup.rarity_name(card), r.x + 8, r.y + 8, col)
       gfx.text(powerup.DEFS[card.key].name, r.x + 8, r.y + 28, gfx.COLOR_WHITE)
-      gfx.text(powerup.describe(card), r.x + 8, r.y + 48, pal.TEXT)
+      -- effect text wraps to the card's inner width so long descriptions
+      -- (e.g. "splash leaves a dmg ring") stay inside the box.
+      local lines = ui.wrap(powerup.describe(card), r.w - 16)
+      for li = 1, math.min(#lines, 2) do
+        gfx.text(lines[li], r.x + 8, r.y + 46 + (li - 1) * 12, pal.TEXT)
+      end
       gfx.text("[" .. i .. "]", r.x + 8, r.y + r.h - 16, pal.TEXT_DIM)
     end
   end

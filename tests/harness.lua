@@ -193,8 +193,13 @@ usagi = {
   PLATFORM = "test",
   IS_DEV = true,
   elapsed = 0,
+  -- The bundled monogram font renders MONOSPACE at runtime: every glyph
+  -- (letters, digits, punctuation, space) advances exactly 6px, with a 12px
+  -- line height. Verified against the real engine via `usagi.measure_text`.
+  -- Keep this matched to the engine so the layout-fit asserts catch real
+  -- overflow instead of passing on an understated width.
   measure_text = function(s)
-    return #s * 4, 12
+    return #s * 6, 12
   end,
   read_json = function(p)
     local f = assert(io.open("data/" .. p, "r"))

@@ -17,8 +17,8 @@ local PAD = 6
 local BX = C.HUD_X + PAD
 local BW = C.HUD_W - PAD * 2
 
-local EFF_Y = 36 -- effective-stat line (M1)
-local UP_Y, UP_H, UP_GAP = 52, 16, 3
+local EFF_Y = 36 -- effective-stat lines (M1): dmg/rate on EFF_Y, range on EFF_Y+12
+local UP_Y, UP_H, UP_GAP = 62, 16, 3
 local MOD_Y, MOD_H, MOD_GAP = 132, 15, 2
 local reroll_btn = { x = BX, y = 162, w = BW, h = 15 } -- charge module reroll (V2-M3)
 local tgt_btn = { x = BX, y = C.GAME_H - 40, w = BW, h = 14 } -- targeting override (M1)
@@ -57,24 +57,25 @@ function M.draw(run, t)
   gfx.text(t.def.name, BX, 8, t.color)
   gfx.text("$" .. run.money, BX, 22, pal.MONEY)
 
-  -- effective stats: base folded through global mods, upgrades, and the module
+  -- effective stats: base folded through global mods, upgrades, and the module.
+  -- Two lines (dmg/rate, then range) -- three stats with multi-digit values
+  -- overrun the 108px sidebar on one line.
   local eff = modifier.effective(run, t, t.eff)
-  gfx.text(
-    ("%d dmg  %.1f/s  %d rng"):format(math.floor(eff.damage + 0.5), eff.fire_rate, math.floor(eff.range + 0.5)),
-    BX,
-    EFF_Y,
-    pal.TEXT_DIM
-  )
+  gfx.text(("%d dmg  %.1f/s"):format(math.floor(eff.damage + 0.5), eff.fire_rate), BX, EFF_Y, pal.TEXT_DIM)
+  gfx.text(("%d range"):format(math.floor(eff.range + 0.5)), BX, EFF_Y + 12, pal.TEXT_DIM)
 
-  -- leveled upgrades
+  -- leveled upgrades. The cost tag is right-aligned in the row; the name is
+  -- truncated to the space left of it so a long name (Autoloader) + a wide cost
+  -- ($280) can't collide.
   local opts = modifier.upgrade_options(run, t)
   for i = 1, #opts do
     local o, r = opts[i], up_rect(i)
     gfx.rect_fill(r.x, r.y, r.w, r.h, pal.HUD_PANEL)
-    gfx.text(o.name, r.x + 3, r.y + 4, pal.TEXT)
     local tag = o.maxed and "MAX" or ("L" .. o.level .. " $" .. o.cost)
     local col = o.maxed and pal.GOOD or (o.afford and pal.MONEY or pal.BAD)
-    gfx.text(tag, r.x + r.w - usagi.measure_text(tag) - 3, r.y + 4, col)
+    local tag_x = r.x + r.w - usagi.measure_text(tag) - 3
+    gfx.text(ui.truncate(o.name, tag_x - (r.x + 3) - 3), r.x + 3, r.y + 4, pal.TEXT)
+    gfx.text(tag, tag_x, r.y + 4, col)
   end
 
   -- one geometry module socket
@@ -104,17 +105,20 @@ function M.draw(run, t)
     end
   end
 
-  -- active resonance (M4): the proof(s) this tower's circuit grants
+  -- active resonance (M4): the proof(s) this tower's circuit grants. Truncated to
+  -- the sidebar so a long proof name (Diamond Wake) or a multi-proof "+N" suffix
+  -- can't spill past the screen edge.
   if t.resonance and #t.resonance.names > 0 then
     local names = t.resonance.names
     local label = "RES: " .. names[1] .. (#names > 1 and (" +" .. (#names - 1)) or "")
-    gfx.text(label, BX, C.GAME_H - 54, gfx.COLOR_PINK)
+    gfx.text(ui.truncate(label, C.GAME_W - BX), BX, C.GAME_H - 54, gfx.COLOR_PINK)
   end
 
-  -- targeting override (M1): cycle the tower's acquisition policy/focus
+  -- targeting override (M1): cycle the tower's acquisition policy/focus. Short
+  -- "TGT:" prefix so the widest value ("strongest") fits the button box.
   gfx.rect_fill(tgt_btn.x, tgt_btn.y, tgt_btn.w, tgt_btn.h, pal.HUD_PANEL)
   local ov = t.targeting_override
-  gfx.text("TARGET: " .. tower.targeting_label(ov), tgt_btn.x + 3, tgt_btn.y + 3, ov and pal.MONEY or pal.TEXT)
+  gfx.text("TGT: " .. tower.targeting_label(ov), tgt_btn.x + 3, tgt_btn.y + 3, ov and pal.MONEY or pal.TEXT)
 
   gfx.text("RMB: close", BX, C.GAME_H - 12, pal.TEXT_DIM)
 end
