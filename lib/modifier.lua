@@ -80,6 +80,7 @@ function M.effective(run, t, out)
   out.fire_rate  = def.fire_rate * mods.rate_mult * up_mult(t, "rate_mult")
   out.proj_speed = def.proj_speed * mods.proj_mult
   out.crit, out.pierce, out.ricochet = 0, 0, 0
+  out.ring_extra, out.mark = 0, 0          -- resonance named behaviours (M4)
   local mod = t.module and M.MODULES[t.module]
   if mod then
     local e, v = mod.effect, mod.value
@@ -96,6 +97,8 @@ function M.effective(run, t, out)
     out.crit = out.crit + res.crit
     out.pierce = out.pierce + res.pierce
     out.ricochet = out.ricochet + res.ricochet
+    out.ring_extra = res.ring_extra
+    out.mark = res.mark
     out.damage = out.damage * (1 + res.dmg)
     range = range * (1 + res.range)
     splash = splash * (1 + res.splash)

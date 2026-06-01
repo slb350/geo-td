@@ -21,7 +21,8 @@ function M.spawn(run, x, y, opts)
   r.radius = opts.radius
   r.damage = opts.damage
   r.tower_id = opts.tower_id
-  r.ticks = C.RING_TICKS
+  r.ticks = opts.ticks or C.RING_TICKS    -- Diamond Wake resonance passes an extra tick
+  r.ticks0 = r.ticks                      -- starting count: normalizes the visual fade
   r.timer = C.RING_INTERVAL
   return r
 end
@@ -65,8 +66,10 @@ function M.draw(run)
   local list = run.rings
   for i = 1, list.n do
     local r = list[i]
-    -- dim, bloom-friendly pulse: a fading ring that shrinks as it spends ticks
-    local frac = r.ticks / C.RING_TICKS
+    -- dim, bloom-friendly pulse: a fading ring that shrinks as it spends ticks.
+    -- Normalized against the ring's OWN starting ticks so a Diamond Wake ring (4
+    -- ticks) still fades 1->0 instead of overshooting its damage radius.
+    local frac = r.ticks / r.ticks0
     gfx.circ(r.x, r.y, r.radius * (0.6 + 0.4 * frac), gfx.COLOR_ORANGE)
     gfx.circ(r.x, r.y, r.radius * 0.5 * frac, gfx.COLOR_YELLOW)
   end

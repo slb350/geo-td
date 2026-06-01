@@ -12,6 +12,7 @@ local modifier = require("lib.modifier")
 local target = require("lib.target")
 local resource = require("lib.resource")
 local resonance = require("lib.resonance")
+local enemy = require("lib.enemy")
 
 local DEFS = usagi.read_json("towers.json")
 
@@ -245,6 +246,23 @@ local function acquire(run, t, range)
   return best
 end
 
+-- Orbit Field resonance (M4): a Frost tower projects a continuous slow aura over
+-- GROUND enemies within `radius`. Reapplied each tick (a short slow_time), so it
+-- lapses the moment an enemy leaves the radius. Reuses enemy.slow (no new mechanic).
+local function apply_slow_aura(run, t, radius)
+  local r2 = radius * radius
+  local list = run.enemies
+  for i = 1, list.n do
+    local e = list[i]
+    if not e.dead and not e.fly and not e.arena then
+      local dx, dy = e.x - t.x, e.y - t.y
+      if dx * dx + dy * dy <= r2 then
+        enemy.slow(e, C.RESONANCE_SLOW_FACTOR, C.RESONANCE_SLOW_TIME)
+      end
+    end
+  end
+end
+
 function M.update(run, dt)
   resonance.update(run)            -- recompute only if the topology changed (M4)
   local towers = run.towers
@@ -284,10 +302,17 @@ function M.update(run, dt)
           tower = t,
           pierce = mods.pierce + eff.pierce,        -- global card + module socket
           ricochet = mods.ricochet + eff.ricochet,
+          ring_extra = eff.ring_extra,              -- Diamond Wake (M4)
+          mark = eff.mark,                          -- Green Vector (M4)
         })
         t.cooldown = 1 / eff.fire_rate
         t.flash = 0.06
         fx.shoot_sfx()
+      end
+      -- Orbit Field passive slow aura (M4) -- applies every active tick, even when
+      -- the tower has no firing target.
+      if t.resonance and t.resonance.slow_aura > 0 then
+        apply_slow_aura(run, t, t.resonance.slow_aura)
       end
     end
   end

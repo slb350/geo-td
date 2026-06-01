@@ -61,6 +61,16 @@ C.FLYER_BURST_R  = 42      -- radius (px) of a flyer's on-death burst
 -- data/upgrades.json); a geometry module is a one-per-tower qualitative socket.
 C.MODULE_COST    = 60      -- in-run cost to socket a geometry module on a tower
 
+-- Tower resonance named behaviours (M4): the qualitative proofs grant a behaviour,
+-- not just scalars. Orbit Field = a Frost slow aura (chills ground enemies near the
+-- tower); Diamond Wake = +1 tick on a Splash tower's lingering rings (even without
+-- the Aftershock card, at a default damage fraction); Green Vector = the Flak marks
+-- the flyers it hits, so a marked enemy takes amplified damage from ANY source.
+C.RESONANCE_SLOW_FACTOR = 0.55   -- Orbit Field slows a ground enemy to this speed
+C.RESONANCE_SLOW_TIME   = 0.25   -- ...refreshed each tick it stays in the aura
+C.RESONANCE_RING_FRAC   = 0.35   -- Diamond Wake ring damage (frac of the shot) w/o the card
+C.MARK_TIME             = 2.0    -- Green Vector mark duration (seconds)
+
 -- Boss telegraphs (M5): the warning window shown in the last N seconds before a
 -- shockwave / invuln / add-spawn fires. Purely a lead-in -- the effect still
 -- fires on the boss's existing cadence, so balance is unchanged.

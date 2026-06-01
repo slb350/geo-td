@@ -31,6 +31,8 @@ function M.spawn(run, kind, hp_scale, speed_scale, start_d)
   e.d = start_d or 0
   e.slow_t = 0
   e.slow_factor = 1
+  e.mark_t = 0           -- Green Vector mark (M4): amplifies damage taken while > 0
+  e.mark_mult = 1
   e.size = def.size
   e.armor = def.armor or 0
   e.regen = def.regen or 0
@@ -75,6 +77,7 @@ function M.damage(run, e, dmg)
   if e.dead then return false, 0 end
   local b = run.mods.brittle
   if b > 0 and e.slow_factor < 1 then dmg = dmg * (1 + b) end
+  if e.mark_t and e.mark_t > 0 then dmg = dmg * e.mark_mult end   -- Green Vector mark (M4)
   local died, applied = combat.apply_damage(e, dmg)
   if died then M.kill(run, e) end
   return died, applied
@@ -156,6 +159,7 @@ function M.update(run, dt)
       e.slow_t = e.slow_t - dt
       if e.slow_t <= 0 then e.slow_factor = 1 end
     end
+    if e.mark_t and e.mark_t > 0 then e.mark_t = e.mark_t - dt end   -- mark decay (M4)
     combat.tick_regen(e, dt)
     if not e.dead and e.arena then
       -- arena objects (M6) are fixed route hazards: they never move or leak

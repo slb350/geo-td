@@ -51,16 +51,20 @@ end
 local function accumulate(t, R)
   local res = t.resonance
   if not res then
-    res = { crit = 0, pierce = 0, ricochet = 0, range = 0, splash = 0, dmg = 0, names = {} }
+    res = { crit = 0, pierce = 0, ricochet = 0, range = 0, splash = 0, dmg = 0,
+            slow_aura = 0, ring_extra = 0, mark = 0, names = {} }
     t.resonance = res
   end
   local e = R.effect
-  res.crit     = res.crit + (e.crit or 0)
-  res.pierce   = res.pierce + (e.pierce or 0)
-  res.ricochet = res.ricochet + (e.ricochet or 0)
-  res.range    = res.range + (e.range or 0)
-  res.splash   = res.splash + (e.splash or 0)
-  res.dmg      = res.dmg + (e.dmg or 0)
+  res.crit       = res.crit + (e.crit or 0)
+  res.pierce     = res.pierce + (e.pierce or 0)
+  res.ricochet   = res.ricochet + (e.ricochet or 0)
+  res.range      = res.range + (e.range or 0)
+  res.splash     = res.splash + (e.splash or 0)
+  res.dmg        = res.dmg + (e.dmg or 0)
+  res.slow_aura  = res.slow_aura + (e.slow_aura or 0)   -- Orbit Field aura radius (M4)
+  res.ring_extra = res.ring_extra + (e.ring_extra or 0) -- Diamond Wake extra ring ticks
+  res.mark       = res.mark + (e.mark or 0)             -- Green Vector mark amount
   res.names[#res.names + 1] = R.name
 end
 

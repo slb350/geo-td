@@ -34,6 +34,8 @@ function M.spawn(run, x, y, target, opts)
   p.slow_time = opts.slow_time
   p.tower = opts.tower
   p.tower_id = opts.tower and opts.tower.id or nil
+  p.ring_extra = opts.ring_extra or 0     -- Diamond Wake: extra ring ticks (M4)
+  p.mark = opts.mark or 0                 -- Green Vector: mark-on-hit amount (M4)
   -- chain: pierce hops to a target ahead of the shot, ricochet to any nearest.
   -- The firing tower passes the effective counts (global cards + its module
   -- socket); pierce wins if both are present. `hits` is a reused set so a
@@ -88,6 +90,7 @@ local function resolve_hit(run, p)
     local _, applied = enemy.damage(run, t, p.damage)
     run_lib.credit_damage(run, p.tower_id, applied)
     if p.slow_factor then enemy.slow(t, p.slow_factor, p.slow_time) end
+    if p.mark > 0 then t.mark_t = C.MARK_TIME; t.mark_mult = 1 + p.mark end   -- Green Vector mark (M4)
     p.hits[t] = true
   end
   fx.hit_sfx()
@@ -106,11 +109,17 @@ local function resolve_hit(run, p)
         end
       end
     end
-    if run.mods.ring > 0 then
+    -- a lingering ring spawns from the Aftershock card OR a Diamond Wake splash
+    -- tower (M4); Diamond Wake also adds an extra tick and, without the card, uses
+    -- a default damage fraction.
+    local ring_mult = run.mods.ring
+    if ring_mult > 0 or p.ring_extra > 0 then
+      local mult = ring_mult > 0 and ring_mult or C.RESONANCE_RING_FRAC
       ring.spawn(run, p.x, p.y, {
         radius = p.splash,
-        damage = p.damage * run.mods.ring,
+        damage = p.damage * mult,
         tower_id = p.tower_id,
+        ticks = C.RING_TICKS + p.ring_extra,
       })
     end
   end
