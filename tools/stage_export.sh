@@ -14,9 +14,9 @@
 #   main.lua lib/ scenes/ data/ sfx/ music/ shaders/
 #
 # Usage:  bash tools/stage_export.sh [--target bundle|all|web|...]   (default: bundle)
-# Output: a .usagi bundle (default target) in a temp dir, path printed at the end.
-# Requires: the usagi binary + `strings`. No deletion is performed (temp dirs are
-# tidied with `trash` when available, else left for the OS to reap).
+# Output: artifact(s) land in ./export/ (the gitignored build dir) and PERSIST --
+#         only the throwaway staging copy is cleaned up (with `trash` if present).
+# Requires: the usagi binary + `strings`.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,9 +25,9 @@ TARGET="${1:-bundle}"; TARGET="${TARGET#--target=}"; [[ "$TARGET" == "--target" 
 
 RUNTIME=(main.lua lib scenes data sfx music shaders)
 
+# Only the staging copy is temporary; the export artifact persists in ./export/.
 STAGE="$(mktemp -d)"
-OUTDIR="$(mktemp -d)"
-cleanup() { command -v trash >/dev/null 2>&1 && trash "$STAGE" "$OUTDIR" 2>/dev/null || true; }
+cleanup() { command -v trash >/dev/null 2>&1 && trash "$STAGE" 2>/dev/null || true; }
 trap cleanup EXIT
 
 echo "staging runtime-only tree -> $STAGE"
@@ -44,20 +44,29 @@ if find "$STAGE" \( -name tests -o -name tools -o -name 'smoke*.lua' \
 fi
 echo "  staged: ${RUNTIME[*]}"
 
-OUT="$OUTDIR/usagi-geo-td.usagi"
-echo "exporting (--target $TARGET) ..."
+OUTROOT="$ROOT/export"        # gitignored build-output dir; artifacts persist here
+mkdir -p "$OUTROOT"
+echo "exporting (--target $TARGET) -> $OUTROOT"
 if [[ "$TARGET" == "bundle" ]]; then
-  "$USAGI" export "$STAGE" --target bundle -o "$OUT"
-  ARTIFACT="$OUT"
+  ARTIFACT="$OUTROOT/usagi-geo-td.usagi"
+  "$USAGI" export "$STAGE" --target bundle -o "$ARTIFACT"
 else
-  "$USAGI" export "$STAGE" --target "$TARGET" -o "$OUTDIR"
-  ARTIFACT="$(find "$OUTDIR" -type f | head -1)"
+  "$USAGI" export "$STAGE" --target "$TARGET" -o "$OUTROOT"
+  # Scan the portable .usagi if one was produced (e.g. by `all`); a single
+  # platform zip has no loose .usagi -- the primary gate above already covers it.
+  ARTIFACT="$(find "$OUTROOT" -name '*.usagi' -type f | head -1)"
+fi
+
+if [[ -z "${ARTIFACT:-}" ]]; then
+  echo "OK (primary gate): staging tree is clean; no .usagi artifact to scan for target '$TARGET'."
+  echo "artifacts in: $OUTROOT"
+  exit 0
 fi
 
 # Secondary gate (defense in depth, on the actual artifact): scan for SHIPPED
 # test/tool file paths. Matches precise `.lua/.py/.sh` filenames so it is not
 # fooled by legit runtime comments that mention "tests" / "tools/map_lab".
-echo "scanning bundle for forbidden file paths ..."
+echo "scanning $ARTIFACT for forbidden file paths ..."
 hits="$(strings "$ARTIFACT" | grep -nE \
   -e 'tests/[A-Za-z0-9_]+\.lua' \
   -e 'tools/[A-Za-z0-9_]+\.(lua|py|sh)' \
@@ -71,5 +80,4 @@ fi
 
 size="$(du -h "$ARTIFACT" | cut -f1)"
 echo "OK: no test/tool source in the bundle."
-echo "artifact: $ARTIFACT  ($size)"
-echo "  (temp dir -- copy it out before this script's cleanup if you want to keep it)"
+echo "artifact: $ARTIFACT  ($size)  (persisted in ./export/)"
