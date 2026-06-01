@@ -284,7 +284,11 @@ function M.draw(dt)
   elseif tab == "daily" then draw_daily(rows)
   elseif tab == "options" then draw_options(rows) end
 
-  ui.center_text("press Z / Space to play", C.GAME_H - 10, pal.TEXT_DIM, 1)
+  -- Label the BTN1 binding from its live mapping (Usagi's source-aware glyph:
+  -- "Z" on keyboard by default, the gamepad face button otherwise), so the
+  -- prompt stays honest after a remap. Guarded for the headless harness.
+  local play_btn = (input.mapping_for and input.mapping_for(input.BTN1)) or "Z"
+  ui.center_text("press " .. play_btn .. " / Space to play", C.GAME_H - 10, pal.TEXT_DIM, 1)
 end
 
 return M
