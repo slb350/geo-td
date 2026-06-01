@@ -63,6 +63,7 @@ function M.run(check, near)
   local t3 = tower.place(rc, 200, 165, "pellet"); modifier.socket_module(rc, t3, "triangle")
   resonance.update(rc)
   check(t1.resonance and near(t1.resonance.crit, 0.3), "three triangles form the Triad circuit (crit)")
+  check(near(t1.resonance.pierce, 1), "Triad's crit surge also pierces (a behaviour, not just a number)")
   check(names_of(t1.resonance)["Triad"], "Triad named proof is active")
 
   -- -------------------------------------- behaviour reaches the firing path
@@ -85,6 +86,7 @@ function M.run(check, near)
   tower.place(rg, 200, 165, "pellet"); modifier.socket_module(rg, rg.towers[3], "circle")
   resonance.update(rg)
   check(flak.resonance and near(flak.resonance.dmg, 0.5), "Green Vector grants the flak +damage")
+  check(near(flak.resonance.ricochet, 1), "Green Vector also chains the flak's shots (a behaviour)")
   rg.mods.dmg_mult = 2
   local ge = modifier.effective(rg, flak, flak.eff)
   check(near(ge.damage, tower.DEFS.flak.damage * 2 * 1.5),
