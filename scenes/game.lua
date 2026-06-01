@@ -214,19 +214,23 @@ local function draw_threat(run)
     run.threat_cache = c
   end
   local tp = c.tp
+  local y = 6
   if tp.boss then
     local def = boss.DEFS[tp.boss_kind]
-    gfx.text("NEXT: BOSS " .. ((def and def.name) or tp.boss_kind), 6, 6, gfx.COLOR_RED)
+    gfx.text("NEXT: BOSS " .. ((def and def.name) or tp.boss_kind), 6, y, gfx.COLOR_RED); y = y + 12
   else
-    gfx.text("NEXT W" .. n, 6, 6, pal.TEXT)
+    gfx.text("NEXT W" .. n, 6, y, pal.TEXT); y = y + 12
     if #tp.tag_list > 0 then
       local parts = {}
       for i = 1, #tp.tag_list do parts[i] = threat.TAG_LABEL[tp.tag_list[i]] end
-      gfx.text(table.concat(parts, " "), 6, 18, gfx.COLOR_ORANGE)
+      gfx.text(table.concat(parts, " "), 6, y, gfx.COLOR_ORANGE); y = y + 12
+    end
+    if tp.affix then                                   -- announce the affix so it can be countered (M5)
+      gfx.text("AFFIX: " .. tp.affix, 6, y, gfx.COLOR_YELLOW); y = y + 12
     end
   end
   if tp.route_event then
-    gfx.text("route shift after this wave", 6, tp.boss and 18 or 30, gfx.COLOR_PINK)
+    gfx.text("route shift after this wave", 6, y, gfx.COLOR_PINK)
   end
 end
 

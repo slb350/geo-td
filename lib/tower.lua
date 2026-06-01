@@ -249,10 +249,12 @@ function M.update(run, dt)
   for i = 1, #towers do
     local t = towers[i]
     if t.flash > 0 then t.flash = t.flash - dt end
-    if t.def.role == "support" then
-      -- support towers (Drill) don't acquire or fire; lib/resource extracts charge
-    elseif t.disabled_t > 0 then
+    if t.disabled_t > 0 then
+      -- a blackout disable ticks down on EVERY tower (incl. support Drills, whose
+      -- charge extraction in lib/resource is gated on the same disabled_t)
       t.disabled_t = t.disabled_t - dt
+    elseif t.def.role == "support" then
+      -- support towers (Drill) don't acquire or fire; lib/resource extracts charge
     else
       local def = t.def
       local eff = modifier.effective(run, t, t.eff)

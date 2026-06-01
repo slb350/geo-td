@@ -84,6 +84,20 @@ function M.run(check, near)
   resource.update(re, 1.0)
   check(re.charge == 0, "a Drill not adjacent to a prism generates nothing")
 
+  -- a blacked-out Drill (a Blackout contract can disable it) extracts nothing, and
+  -- its disable ticks down via tower.update like any tower -- not stuck forever
+  local rbk = run_mod.new(m, 5, "serpentine"); rbk.money = 99999
+  local bk = rbk.resource_nodes[1]
+  local bdrill = tower.place(rbk, bk.x, bk.y, "drill")
+  bdrill.disabled_t = 8; rbk.charge = 0
+  resource.update(rbk, 1.0)
+  check(rbk.charge == 0, "a blacked-out Drill generates no charge")
+  tower.update(rbk, 1.0)
+  check(near(bdrill.disabled_t, 7), "a support tower's disable ticks down (not stuck forever)")
+  bdrill.disabled_t = 0
+  resource.update(rbk, 1.0)
+  check(near(rbk.charge, C.DRILL_RATE), "once the disable clears, the Drill extracts again")
+
   -- ------------------------------------------------------------- Discharge
   local rdis = run_mod.new(m, 1, "serpentine")
   rdis.phase = "combat"; rdis.charge = 50

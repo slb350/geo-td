@@ -219,6 +219,20 @@ function M.run(check, near)
     end
   end
 
+  -- the build-phase preview ANNOUNCES the next wave's affix by name (M5 fix): the
+  -- affix was computed in threat.preview but not drawn, so it never reached the
+  -- player before the wave. Pre-seed the (per-wave) cache and assert it renders.
+  State.run = run_mod.new(State.meta, 8, "serpentine"); State.run.money = 9999
+  State.run.wave_index = 7; State.run.phase = "building"        -- next wave = 8
+  State.run.threat_cache = { wave = 8, tp = { boss = false, tag_list = {}, affix = "Overclock", route_event = false } }
+  harness.reset_gfx()
+  game_s.draw(1 / 60)
+  local announced = false
+  for _, c in ipairs(harness.gfx_calls()) do
+    if c.fn == "text" and type(c.args[1]) == "string" and c.args[1]:find("AFFIX: Overclock") then announced = true end
+  end
+  check(announced, "the build-phase preview announces the next wave's affix name")
+
   -- cleanup for the suites that follow
   State.run = nil; State.summary = nil; State.pending = nil
   State.ui.speed = 1

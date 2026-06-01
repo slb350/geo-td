@@ -62,7 +62,8 @@ function M.update(run, dt)
   local gen = 0
   for i = 1, #towers do
     local t = towers[i]
-    if t.def.role == "support" and M.near_node(run, t.x, t.y) then
+    -- a blacked-out Drill (disabled_t > 0, e.g. a Blackout contract) extracts nothing
+    if t.def.role == "support" and t.disabled_t <= 0 and M.near_node(run, t.x, t.y) then
       gen = gen + C.DRILL_RATE * dt
     end
   end
