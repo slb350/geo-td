@@ -5,11 +5,13 @@
 -- (seed, map, mode, plan) always yields identical metrics, because the only
 -- randomness is the run's seeded rng.
 --
--- It is a measurement tool, not the game: it has no UI, applies build actions
--- directly during each build phase (a `place` still goes through tower.can_place,
--- so an unaffordable or on-path action is rejected and recorded rather than
--- thrown), and does not drive interactive route-mutation events (those are
--- between-wave player choices; a later milestone can extend the driver).
+-- It is a measurement tool, not the game: it has no UI. A plan action carrying a
+-- `frame` is "combat-timed" and re-applies at that exact combat frame (abilities,
+-- and -- since building is allowed during a wave -- mid-wave place/sell/upgrade);
+-- every other action is applied during the matching wave's build phase. Both go
+-- through ONE apply_action, so a `place` still passes tower.can_place (an
+-- unaffordable / on-path action is rejected and recorded, not thrown). It does not
+-- drive interactive route-mutation events (those are between-wave player choices).
 
 local meta_m = require("lib.meta")
 local run_mod = require("lib.run")
@@ -108,6 +110,12 @@ local function apply_action(run, a)
     -- balance abstraction: apply a chosen card directly (bypasses the random
     -- 3-card draft) so a plan can pin a build's modifiers deterministically.
     powerup.apply(run, { key = a.powerup.key, rarity = a.powerup.rarity or 1 })
+  elseif a.orbital then
+    if not run_mod.orbital_strike(run) then return "orbital: rejected" end
+  elseif a.discharge then
+    if not run_mod.discharge(run) then return "discharge: rejected" end
+  elseif a.call_early then
+    if not run_mod.call_early(run) then return "call_early: rejected" end
   else
     return "unknown action"
   end
@@ -147,19 +155,6 @@ function M.run(opts)
   local survived, final_wave = true, 0
   local max_step_time = 0
 
-  local function apply_combat_action(a)
-    if a.orbital then
-      if not run_mod.orbital_strike(run) then return "orbital: rejected" end
-    elseif a.discharge then
-      if not run_mod.discharge(run) then return "discharge: rejected" end
-    elseif a.call_early then
-      if not run_mod.call_early(run) then return "call_early: rejected" end
-    else
-      return "unknown combat action"
-    end
-    return nil
-  end
-
   local n = 1
   while n <= waves do
     -- BUILD phase: apply this wave's scripted actions
@@ -185,7 +180,7 @@ function M.run(opts)
         for i = 1, #combat_actions do
           local a = combat_actions[i]
           if (a.frame or 0) == frame then
-            local err = apply_combat_action(a)
+            local err = apply_action(run, a) -- same applier as build; frame gates WHEN
             if err then errors[#errors + 1] = { wave = run.wave_index, err = err } end
           end
         end

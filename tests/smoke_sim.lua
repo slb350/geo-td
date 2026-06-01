@@ -7,6 +7,7 @@
 local sim = require("lib.sim")
 local helpers = require("tests.helpers")
 local meta = require("lib.meta")
+local run_mod = require("lib.run")
 
 local M = {}
 
@@ -114,6 +115,30 @@ function M.run(check, near)
   check(#id_run.errors == 0, "sim: sell-then-upgrade-by-id plan runs without errors")
   check(t2 and (t2.upgrades.dmg or 0) == 1, "sim: upgrade by stable id hits the intended tower after a sell")
   check(t3 and (t3.upgrades.dmg or 0) == 0, "sim: the array-shifted neighbor is NOT mis-upgraded")
+
+  -- building during a wave: a `frame`-stamped action is combat-timed and re-applies
+  -- mid-combat (not in a build phase). A frame-5 place adds a tower during wave 1.
+  check(run_mod.is_combat_timed({ frame = 5, place = {} }), "a frame-stamped action is combat-timed")
+  check(not run_mod.is_combat_timed({ place = {} }), "a frameless build action is not combat-timed")
+  local base = sim.run({
+    seed = 5,
+    map = "serpentine",
+    waves = 2,
+    money = 99999,
+    plan = { { wave = 1, place = { kind = "pellet", x = 200, y = 150 } } },
+  })
+  local mid = sim.run({
+    seed = 5,
+    map = "serpentine",
+    waves = 2,
+    money = 99999,
+    plan = {
+      { wave = 1, place = { kind = "pellet", x = 200, y = 150 } }, -- build phase
+      { wave = 1, frame = 5, place = { kind = "pellet", x = 110, y = 95 } }, -- mid-combat
+    },
+  })
+  check(#mid.errors == 0, "sim: a frame-stamped mid-wave place applies without error")
+  check(#mid.run.towers == #base.run.towers + 1, "sim: the mid-wave placement adds a tower during combat")
 end
 
 return M

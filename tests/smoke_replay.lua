@@ -21,6 +21,16 @@ local helpers = require("tests.helpers")
 
 local M = {}
 
+-- First on-field grid spot far enough from the path to build on -- the placement
+-- tests (build phase + during combat) just need any valid coordinate.
+local function find_buildable_spot(run)
+  for gx = 16, C.HUD_X - 16, 8 do
+    for gy = 16, C.GAME_H - 16, 8 do
+      if path.dist_to(run.path, gx, gy) > C.PLACE_MARGIN + 4 then return gx, gy end
+    end
+  end
+end
+
 -- Silence the mouse so a scene's init/update sees no click; returns the originals
 -- to hand back to restore_mouse. The test then arms a positioned click as needed.
 local function mock_quiet_mouse()
@@ -163,16 +173,7 @@ function M.run(check, near)
     State.ui.selected = "pellet"
     State.ui.sell_mode = false
     State.ui.inspect = nil
-    local bx, by
-    for gx = 16, C.HUD_X - 16, 8 do
-      for gy = 16, C.GAME_H - 16, 8 do
-        if path.dist_to(State.run.path, gx, gy) > C.PLACE_MARGIN + 4 then
-          bx, by = gx, gy
-          break
-        end
-      end
-      if bx then break end
-    end
+    local bx, by = find_buildable_spot(State.run)
     local before = #State.run.log
     input._clicks.left, input._clicks.mx, input._clicks.my = true, bx, by
     game_s.update(1 / 60)
@@ -185,34 +186,38 @@ function M.run(check, near)
     State.ui.selected = nil
   end
 
-  -- ------------------------------ combat field clicks do not mutate build state
+  -- ----------------- building DURING a wave: a combat field click places + records
+  -- a frame-stamped action (so the headless sim/replay reproduces it at that frame)
   do
     State.meta = meta.default()
     State.run = run_mod.new(State.meta, 9, "serpentine")
     State.run.money = 9999
     State.run.phase = "combat"
     State.run.wave_index = 3
+    State.run.combat_frame = 12
     State.ui.selected = "pellet"
     State.ui.sell_mode = false
     State.ui.inspect = nil
-    local bx, by
-    for gx = 16, C.HUD_X - 16, 8 do
-      for gy = 16, C.GAME_H - 16, 8 do
-        if path.dist_to(State.run.path, gx, gy) > C.PLACE_MARGIN + 4 then
-          bx, by = gx, gy
-          break
-        end
-      end
-      if bx then break end
-    end
+    -- keep the field non-empty so the combat step doesn't instantly clear the wave
+    State.run.enemies.n = 0
+    local mote = require("lib.enemy").spawn(State.run, "mote", 1, 1, 10)
+    mote.x, mote.y = 180, 90
+    local bx, by = find_buildable_spot(State.run)
     local towers_before, log_before = #State.run.towers, #State.run.log
     input._clicks.left, input._clicks.mx, input._clicks.my = true, bx, by
     game_s.update(1 / 60)
     input._clicks.left = false
-    check(#State.run.towers == towers_before, "combat field clicks do not place selected towers")
-    check(#State.run.log == log_before, "combat field clicks do not record build actions")
+    check(#State.run.towers == towers_before + 1, "a field click during combat places the tower")
+    check(#State.run.log == log_before + 1, "the mid-wave placement is recorded")
+    local rec = State.run.log[#State.run.log]
+    check(
+      rec.place and rec.place.kind == "pellet" and rec.wave == 3 and rec.frame == 12,
+      "the placement is stamped with the current combat wave + frame"
+    )
+    check(run_mod.is_combat_timed(rec), "a frame-stamped action counts as combat-timed")
     State.run = nil
     State.ui.selected = nil
+    State.pending = nil
   end
 
   -- ---------------------------------- scenes record interactive decisions

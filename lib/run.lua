@@ -141,30 +141,24 @@ function M.begin_wave(run)
   return n
 end
 
--- Record a player build action into the run's replay log -- the SAME shape lib/sim
--- replays ({place/upgrade/module/sell/powerup}). The wave stamped is the upcoming
--- wave whose build phase the action belongs to: +1 while building, +2 mid-combat
--- (a tower placed during a wave only contributes from the next build, which is when
--- the headless driver applies it). Only the interactive scenes call this; the sim
--- drives the core functions directly, so a replay/verify re-run never re-logs.
--- A replay action whose effect is timed to a specific combat frame (orbital /
--- discharge / call-early), as opposed to a build-phase action stamped to a wave.
--- The single source of truth: lib/sim's plan bucketing reads this too, so the two
--- sites can't enumerate a different set as combat abilities are added.
+-- A replay action is "combat-timed" when it carries a `frame`: it was recorded
+-- mid-combat and re-applies at that exact combat frame on replay (the abilities
+-- orbital / discharge / call-early, and -- since building is now allowed during a
+-- wave -- mid-wave place / sell / upgrade / module / targeting too). A build-phase
+-- action carries no frame and is stamped only to the upcoming wave. The single
+-- source of truth: lib/sim's plan bucketing reads this too, so the recorder and
+-- the replayer agree on which actions are timed without enumerating a type list.
 function M.is_combat_timed(action)
-  return action.orbital ~= nil or action.discharge ~= nil or action.call_early ~= nil
+  return action.frame ~= nil
 end
 
+-- Stamp a player decision into the replay log. Phase is the discriminator:
+--   * combat -> belongs to the CURRENT wave, frozen to the current combat frame,
+--     so the headless driver re-applies it at the same moment.
+--   * building -> belongs to the upcoming wave's build (wave_index + 1), no frame.
 function M.record(run, action)
-  local combat_timed = M.is_combat_timed(action)
-  if not action.wave then
-    if combat_timed then
-      action.wave = run.wave_index
-    else
-      action.wave = run.wave_index + (run.phase == "combat" and 2 or 1)
-    end
-  end
-  if combat_timed and action.frame == nil then action.frame = run.combat_frame or 0 end
+  if not action.wave then action.wave = run.wave_index + (run.phase == "combat" and 0 or 1) end
+  if run.phase == "combat" and action.frame == nil then action.frame = run.combat_frame or 0 end
   run.log[#run.log + 1] = action
   return action
 end

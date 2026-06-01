@@ -53,7 +53,9 @@ function M.init()
 end
 
 local function handle_field_click(run, ui, meta, mx, my)
-  if run.phase ~= "building" then return end
+  -- Building is allowed DURING a wave too (genre-standard). Placement/sell/inspect
+  -- work in both phases; run_lib.record stamps a combat-phase action with the
+  -- current frame so the headless sim/replay re-applies it at the same moment.
   if ui.sell_mode then
     local t = tower.at(run, mx, my)
     if t then
