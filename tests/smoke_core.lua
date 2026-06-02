@@ -73,6 +73,18 @@ function M.run(check, near)
   meta.save(legacy)
   check(meta.load().unlocks.tower_flak == false, "load back-fills a missing flak unlock")
 
+  -- save-backend health probe: web localStorage can be blocked and the engine
+  -- swallows the write, so persists() detects it via a RAW round-trip (a nil
+  -- read-back means the write did not stick).
+  check(meta.persists(meta.default()), "persists() is true when the save round-trips")
+  local real_load = usagi.load
+  usagi.load = function()
+    return nil
+  end -- simulate a blocked / no-op write
+  check(not meta.persists(meta.default()), "persists() is false when the read-back is nil")
+  usagi.load = real_load
+  meta.save(legacy) -- restore the blob the section saved, for any later reader
+
   -- ----------------------------------------------------------------- run setup
   -- Pin the geometry to Serpentine: the placement coords and boss fixtures below
   -- are tuned to that route. Layout variety is exercised separately just below.

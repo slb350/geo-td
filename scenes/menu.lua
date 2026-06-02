@@ -315,6 +315,12 @@ function M.draw(dt)
     draw_options(rows)
   end
 
+  -- Save-backend warning (web: localStorage blocked by privacy mode / Safari /
+  -- Brave / extensions). The engine swallows the write error, so without this the
+  -- player loses unlocks + bank between sessions with no indication. Probed once at
+  -- boot (main.lua); nil in the headless harness, so this stays off in tests.
+  if State.save_broken then ui.center_text("! progress won't save in this browser", C.GAME_H - 26, gfx.COLOR_RED, 1) end
+
   -- Label the BTN1 binding from its live mapping (Usagi's source-aware glyph:
   -- "Z" on keyboard by default, the gamepad face button otherwise), so the
   -- prompt stays honest after a remap. Guarded for the headless harness.

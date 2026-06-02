@@ -73,6 +73,20 @@ function M.save(meta)
   usagi.save(meta)
 end
 
+-- Probe whether the save backend actually persists a write. On web, usagi.save
+-- writes localStorage, which the browser can block (Safari/Brave by default, an
+-- enabled "block third-party cookies", private mode, or a privacy extension) --
+-- and the engine swallows that write error, so saving silently no-ops. Round-trip
+-- the real meta and read it back RAW (M.load would mask a nil with a default): a
+-- nil read-back means the write did not stick. Desktop file saves always round-
+-- trip, so this is a web-only signal in practice. Caveat: a session-ephemeral
+-- store (some Safari partitions) can pass this within one session yet still clear
+-- on close -- that case is undetectable from a single boot.
+function M.persists(meta)
+  M.save(meta) -- writes the real meta (no data loss -- it round-trips on success)
+  return usagi.load() ~= nil
+end
+
 -- Purchasable permanent unlocks.
 M.SHOP = {
   { id = "tower_rail", name = "Rail Tower", desc = "Long-range anti-air sniper", cost = 16 },

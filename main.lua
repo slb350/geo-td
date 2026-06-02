@@ -44,8 +44,14 @@ end
 
 function _init()
   local m = meta.load()
+  -- One-time probe: does the save backend actually persist? On web a browser can
+  -- block localStorage (privacy mode / Safari / Brave / extensions) and the engine
+  -- swallows the write error, so saving silently no-ops. The menu surfaces this so
+  -- a player isn't unknowingly losing unlocks/bank between sessions.
+  local save_broken = not meta.persists(m)
   State = {
     meta = m,
+    save_broken = save_broken,
     settings = m.settings, -- M9: live settings (a reference into the meta save)
     run = nil,
     ui = {
