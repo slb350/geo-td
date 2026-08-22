@@ -17,6 +17,9 @@ local speed = require("lib.speed")
 local threat = require("lib.threat")
 local inspect = require("lib.inspect")
 local game_s = require("scenes.game")
+local select_s = require("scenes.select")
+local uilib = require("lib.ui")
+local pal = require("lib.palette")
 
 local M = {}
 
@@ -290,6 +293,104 @@ function M.run(check, near)
     if c.fn == "text" and type(c.args[1]) == "string" and c.args[1]:find("AFFIX: Overclock") then announced = true end
   end
   check(announced, "the build-phase preview announces the next wave's affix name")
+
+  -- ------------------------------------------- off-canvas cursor (mouse_over)
+  -- input.mouse() keeps reporting a CLAMPED position once the cursor leaves the
+  -- window or sits on a letterbox bar, so without input.mouse_over() the field
+  -- preview keeps drawing at that stuck edge position. Assert the ghost tower
+  -- and the hovered-tower ring both go away, and come back, purely on that flag.
+  local hr = run_mod.new(m, 4242, "serpentine")
+  State.run = hr
+  hr.phase = "building"
+  hr.money = 500
+  State.ui.selected = "pellet"
+  State.ui.sell_mode = false
+  State.ui.inspect = nil
+
+  -- a spot on the field that is genuinely buildable, so the ghost has a reason to draw
+  local gx, gy
+  for x = 20, C.HUD_X - 20, 4 do
+    for y = 20, C.GAME_H - 20, 4 do
+      if tower.can_place(hr, x, y, "pellet") then
+        gx, gy = x, y
+        break
+      end
+    end
+    if gx then break end
+  end
+  check(gx ~= nil, "found a buildable spot for the ghost-preview check")
+
+  local function ghost_drawn(mx, my, over)
+    input._clicks.mx, input._clicks.my, input._clicks.over = mx, my, over
+    game_s.update(1 / 60)
+    harness.reset_gfx()
+    game_s.draw(1 / 60)
+    for _, c in ipairs(harness.gfx_calls()) do
+      -- draw_ghost's box: a rect of side 2*TOWER_R centred on the cursor
+      if c.fn == "rect" and c.args[3] == C.TOWER_R * 2 and c.args[4] == C.TOWER_R * 2 then return true end
+    end
+    return false
+  end
+
+  check(ghost_drawn(gx, gy, true), "ghost tower previews while the cursor is over the game area")
+  check(not ghost_drawn(gx, gy, false), "ghost tower is suppressed once the cursor leaves the game area")
+  check(ghost_drawn(gx, gy, true), "ghost tower returns when the cursor comes back")
+
+  -- hover_valid is the placement gate the click path reads, so it must drop too
+  input._clicks.mx, input._clicks.my, input._clicks.over = gx, gy, false
+  game_s.update(1 / 60)
+  check(not State.ui.hover_valid, "hover_valid is false while the cursor is off the game area")
+  input._clicks.over = true
+  game_s.update(1 / 60)
+  check(State.ui.hover_valid, "hover_valid returns once the cursor is back over the game area")
+
+  -- the hovered-tower range ring keys off the same flag
+  local ht = tower.place(hr, gx, gy, "pellet")
+  check(ht ~= nil, "placed a tower for the hover-ring check")
+  local function ring_drawn(over)
+    input._clicks.mx, input._clicks.my, input._clicks.over = gx, gy, over
+    State.ui.selected = nil -- so the ghost can't supply the draw calls
+    game_s.update(1 / 60)
+    harness.reset_gfx()
+    game_s.draw(1 / 60)
+    for _, c in ipairs(harness.gfx_calls()) do
+      if c.fn == "circ" and near(c.args[1], gx) and near(c.args[2], gy) then return true end
+    end
+    return false
+  end
+  check(ring_drawn(true), "hovered tower shows its range ring while the cursor is over the field")
+  check(not ring_drawn(false), "hovered tower ring is suppressed once the cursor leaves the field")
+
+  State.ui.selected = nil
+  input._clicks.over = true
+
+  -- ui.hover_pos: the shared draw-time hover position. Off-canvas it must return
+  -- a point that cannot land inside ANY ui rect, so highlight tests just fail.
+  local full = { x = 0, y = 0, w = C.GAME_W, h = C.GAME_H }
+  input._clicks.mx, input._clicks.my, input._clicks.over = 10, 10, true
+  local hx, hy = uilib.hover_pos()
+  check(hx == 10 and hy == 10, "ui.hover_pos reports the cursor while it is over the game area")
+  check(uilib.in_rect(hx, hy, full), "an on-canvas hover position is inside the screen rect")
+  input._clicks.over = false
+  hx, hy = uilib.hover_pos()
+  check(not uilib.in_rect(hx, hy, full), "an off-canvas hover position is outside every ui rect")
+  input._clicks.over = true
+
+  -- and the scene that uses it: a map tile must not light up on a clamped cursor
+  local function tile_highlighted(over)
+    input._clicks.mx, input._clicks.my, input._clicks.over = 10, 10, over
+    harness.reset_gfx()
+    select_s.init()
+    select_s.draw(1 / 60)
+    for _, c in ipairs(harness.gfx_calls()) do
+      if c.fn == "rect" and c.args[5] == pal.HUD_SEL then return true end
+    end
+    return false
+  end
+  local lit_when_over = tile_highlighted(true)
+  check(not tile_highlighted(false), "map tile does not highlight while the cursor is off the game area")
+  if lit_when_over then check(tile_highlighted(true), "map tile highlights again once the cursor returns") end
+  input._clicks.over = true
 
   -- cleanup for the suites that follow
   State.run = nil

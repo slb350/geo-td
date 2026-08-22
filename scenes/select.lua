@@ -99,7 +99,7 @@ function M.draw(dt)
   gfx.clear(pal.BG)
   ui.center_text("SELECT MAP", 20, gfx.COLOR_WHITE, 2)
 
-  local mx, my = input.mouse()
+  local mx, my = ui.hover_pos() -- off-canvas -> no tile highlights
   local total = #maps.ORDER
   for i = 1, total do
     local t = tiles[i]

@@ -107,7 +107,10 @@ end
 function fx.draw()
   for i = 1, parts.n do
     local p = parts[i]
-    gfx.circ_fill(p.x, p.y, p.size, p.color)
+    -- Fade out over the particle's life instead of popping at expiry (every gfx
+    -- primitive takes a trailing alpha as of engine 1.2.0; before that only
+    -- text_ex did, which is why the damage numbers below already faded).
+    gfx.circ_fill(p.x, p.y, p.size, p.color, p.life / p.maxlife)
   end
   for j = 1, nums.n do
     local d = nums[j]

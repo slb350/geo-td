@@ -2,12 +2,14 @@
 -- game_id = com.brandon.usagigeotd
 -- game_width = 480
 -- game_height = 270
+-- gif_length = 12
 --
 -- Engine config frontmatter (usagi 1.3.0+), replacing the deprecated `_config()`.
 -- Must stay on the very first lines: the engine reads this comment block until
 -- the first non-comment line and takes only the lines with an `=`.
 -- `game_id` is the save-data key -- changing it orphans every live player's save.
 -- `game_width`/`game_height` must match C.GAME_W/C.GAME_H in lib/const.lua.
+-- `gif_length` (seconds, default 5) sets F9 capture length, for trailer clips.
 -- Why frontmatter and not usagi.conf (it does not survive export): docs/EXPORT.md.
 --
 -- usagi-geo-td — geometric roguelike tower defense.

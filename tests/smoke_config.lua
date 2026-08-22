@@ -50,9 +50,27 @@ function M.run(check, _near)
   check(tonumber(conf.game_width) == C.GAME_W, "frontmatter game_width matches C.GAME_W")
   check(tonumber(conf.game_height) == C.GAME_H, "frontmatter game_height matches C.GAME_H")
 
-  -- Exactly the four intended keys: a prose line that happens to contain `=`
-  -- would be silently absorbed as config, so pin the count too.
-  check(n == 4, "frontmatter block declares exactly 4 config keys, got " .. n)
+  -- `gif_length` (seconds) sets F9 capture length for trailer clips. Unknown and
+  -- malformed keys are BOTH silent in the engine, so this suite is the only
+  -- place a typo'd key surfaces.
+  check(tonumber(conf.gif_length) == 12, "frontmatter sets the F9 gif capture length")
+
+  -- Pin the exact key SET, not just a count: a prose line that happens to carry
+  -- an `=` would otherwise be absorbed as live config with no engine warning.
+  local EXPECTED = { name = true, game_id = true, game_width = true, game_height = true, gif_length = true }
+  local extra = {}
+  for k in pairs(conf) do
+    if not EXPECTED[k] then extra[#extra + 1] = k end
+  end
+  table.sort(extra)
+  check(#extra == 0, "frontmatter declares no unexpected config keys, found: " .. table.concat(extra, ","))
+  local missing = {}
+  for k in pairs(EXPECTED) do
+    if conf[k] == nil then missing[#missing + 1] = k end
+  end
+  table.sort(missing)
+  check(#missing == 0, "frontmatter declares every expected config key, missing: " .. table.concat(missing, ","))
+  check(n == 5, "frontmatter block declares exactly 5 config keys, got " .. n)
 
   -- `_config()` is deprecated upstream; the engine logs a warning when present,
   -- and it silently loses to frontmatter anyway.

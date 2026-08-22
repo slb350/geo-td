@@ -10,6 +10,8 @@ local settings = require("lib.settings")
 local meta = require("lib.meta")
 local pal = require("lib.palette")
 local fx = require("lib.fx")
+local ring = require("lib.ring")
+local run_mod = require("lib.run")
 local menu_s = require("scenes.menu")
 
 local M = {}
@@ -132,6 +134,45 @@ function M.run(check, near)
   State.settings = nil
   State.ui.menu_tab = "shop"
   pal.set_contrast(false) -- leave the palette normal for later suites
+
+  -- ------------------------------------------------- alpha fades (engine 1.2.0)
+  -- Every gfx primitive takes an optional trailing alpha now, so effects that
+  -- expire can fade instead of popping out. Previously only text_ex could.
+  fx.clear()
+  fx.burst(50, 50, gfx.COLOR_ORANGE, 4)
+  local function particle_alpha()
+    harness.reset_gfx()
+    fx.draw()
+    for _, c in ipairs(harness.gfx_calls()) do
+      if c.fn == "circ_fill" then return c.args[5] end
+    end
+  end
+  local a0 = particle_alpha()
+  check(a0 ~= nil, "particles draw with an alpha argument")
+  check(a0 and a0 > 0.9, "a fresh particle draws at full opacity, got " .. tostring(a0))
+  fx.update(0.15)
+  local a1 = particle_alpha()
+  check(a1 and a1 < a0, "a particle fades as its life runs down (" .. tostring(a0) .. " -> " .. tostring(a1) .. ")")
+  fx.update(0.15)
+  local a2 = particle_alpha()
+  check(a2 == nil or a2 < a1, "the fade keeps decreasing toward expiry")
+  fx.clear()
+
+  -- splash rings: the comment always claimed "a fading ring"; now it really fades
+  local rr = run_mod.new(meta.default(), 7, "serpentine")
+  ring.spawn(rr, 40, 40, { radius = 20, ticks = 4, dmg = 1 })
+  local function ring_alpha()
+    harness.reset_gfx()
+    ring.draw(rr)
+    for _, c in ipairs(harness.gfx_calls()) do
+      if c.fn == "circ" then return c.args[5] end
+    end
+  end
+  local r0 = ring_alpha()
+  check(r0 ~= nil, "splash rings draw with an alpha argument")
+  rr.rings[1].ticks = 1
+  local r1 = ring_alpha()
+  check(r1 and r0 and r1 < r0, "a splash ring fades as it spends its ticks")
 end
 
 return M

@@ -7,6 +7,18 @@ function M.in_rect(px, py, r)
   return px >= r.x and px < r.x + r.w and py >= r.y and py < r.y + r.h
 end
 
+-- Cursor position for DRAW-TIME hover highlighting. `input.mouse()` keeps
+-- reporting a CLAMPED position once the cursor leaves the window or moves onto a
+-- letterbox bar, which would light whichever widget sits at that clamped edge.
+-- Off the drawn game area this returns a point far outside the screen, so the
+-- callers' `in_rect` tests simply fail and no highlight is drawn -- no nil
+-- handling needed at any call site.
+-- Click paths do NOT need this: a click outside the window never reaches the game.
+function M.hover_pos()
+  if not input.mouse_over() then return -1e4, -1e4 end
+  return input.mouse()
+end
+
 -- Measured line height of the bundled font (the `h` from measure_text, a font
 -- metric independent of the string), optionally scaled. Use this for laying out
 -- stacked text rows so vertical spacing tracks the real font instead of a magic

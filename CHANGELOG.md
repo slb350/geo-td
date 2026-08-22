@@ -1,5 +1,60 @@
 # Changelog
 
+## 2026-08-22 — Adopt Usagi 1.3.0 features
+
+Follow-on to the engine update below, applying the new API surface where it fits.
+
+### Off-canvas cursor no longer drives hover (`input.mouse_over`)
+
+`input.mouse()` keeps reporting a clamped position once the cursor leaves the
+window or moves onto a letterbox bar, so hover previews stuck to the clamped
+edge. `scenes/game.lua` now derives a `ui.hover_over` flag that gates the
+ghost-tower preview, the hovered-tower range ring, the aura tooltip and
+`ui.hover_valid`. Draw-time hover highlighting in the menu, select, route and
+contract scenes goes through a new `ui.hover_pos()`, which returns a
+far-off-screen point when the cursor is off the game area so every `in_rect`
+test just fails. Click paths are unchanged: a click outside the window never
+reaches the game.
+
+### Effects fade instead of popping (trailing `alpha`)
+
+Every `gfx` primitive takes an optional alpha as of 1.2.0; before that only
+`text_ex` did, which is why damage numbers already faded while particles did
+not. `fx` particles now fade over their life, and `ring` splash zones fade as
+they spend their ticks — the code already computed the fraction and used it only
+for radius, despite the comment claiming "a fading ring".
+
+Boss telegraphs were deliberately left opaque. They exist to be legible, and
+fading them would undercut the warning they carry.
+
+### `gif_length = 12`
+
+Raises F9 capture from the 5s default for trailer clips. Unverifiable headlessly
+(it only manifests on an actual recording) and the engine is silent for both
+unknown and malformed config keys, so `tests/smoke_config.lua` now pins the exact
+frontmatter key set rather than a bare count.
+
+`pixel_perfect` was evaluated and skipped: on a 2x-DPI display the v1.2.0 scaling
+rework already lands on an integer scale (`fit 3x`), identical with the flag on
+or off. Enabling it would only change resize/fullscreen behaviour to hard
+letterboxing — a taste call worth making by eye, not by default.
+
+### Test-file split
+
+`tests/smoke_core.lua` crossed the 600-line soft limit, so its scene-layer block
+moved to `tests/smoke_scenes.lua` (438 + 211 lines, both well under). It runs
+second because it installs the shared scene globals the later suites reuse. Check
+count is identical either side of the split, which is what proves nothing was
+lost or duplicated.
+
+### Verification
+
+Smoke 1103/1103 (22 checks added, each mutation-verified: off-canvas ghost and
+range-ring suppression, `hover_valid`, `ui.hover_pos` off-canvas, map-tile
+highlight, particle and ring fade curves, typo'd/dropped/extra frontmatter keys).
+All five export targets gated; the game and the exported bundle both boot clean
+at 480x270.
+
 ## 2026-08-22 — Usagi engine 1.1.0 → 1.3.0
 
 Updated the engine (`usagi update`) and re-synced the engine-managed files

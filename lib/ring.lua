@@ -75,8 +75,10 @@ function M.draw(run)
     -- Normalized against the ring's OWN starting ticks so a Diamond Wake ring (4
     -- ticks) still fades 1->0 instead of overshooting its damage radius.
     local frac = r.ticks / r.ticks0
-    gfx.circ(r.x, r.y, r.radius * (0.6 + 0.4 * frac), gfx.COLOR_ORANGE)
-    gfx.circ(r.x, r.y, r.radius * 0.5 * frac, gfx.COLOR_YELLOW)
+    -- frac drives opacity as well as radius now, so the ring actually fades out
+    -- rather than only shrinking (trailing alpha, engine 1.2.0).
+    gfx.circ(r.x, r.y, r.radius * (0.6 + 0.4 * frac), gfx.COLOR_ORANGE, frac)
+    gfx.circ(r.x, r.y, r.radius * 0.5 * frac, gfx.COLOR_YELLOW, frac)
   end
 end
 

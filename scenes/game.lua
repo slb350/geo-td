@@ -139,8 +139,13 @@ function M.update(dt)
   resonance.update(run) -- keep circuits fresh for the build-phase overlay + inspect
 
   local mx, my = input.mouse()
-  ui.hover_x, ui.hover_y = mx, my
-  ui.hover_valid = ui.selected ~= nil
+  -- input.mouse() keeps reporting a CLAMPED position once the cursor leaves the
+  -- window or moves onto a letterbox bar, so every hover consumer gates on this
+  -- derived flag -- otherwise the field preview sticks at the clamped edge.
+  local over = input.mouse_over()
+  ui.hover_x, ui.hover_y, ui.hover_over = mx, my, over
+  ui.hover_valid = over
+    and ui.selected ~= nil
     and not ui.sell_mode
     and mx < C.HUD_X
     and tower.can_place(run, mx, my, ui.selected)
@@ -340,7 +345,7 @@ end
 
 -- Hover tooltip naming an aura emitter's buff (the "kill the buffer" puzzle).
 local function draw_aura_tooltip(run, ui)
-  if ui.hover_x >= C.HUD_X then return end
+  if not ui.hover_over or ui.hover_x >= C.HUD_X then return end
   local e = enemy_at(run, ui.hover_x, ui.hover_y)
   if not (e and e.def.aura) then return end
   local label = e.def.aura.kind .. " aura"
@@ -363,7 +368,7 @@ function M.draw(dt)
     tower.draw(run, run.towers[i], false)
   end
   -- range ring for the tower under the cursor
-  local hovered = tower.at(run, ui.hover_x, ui.hover_y)
+  local hovered = ui.hover_over and tower.at(run, ui.hover_x, ui.hover_y)
   if hovered then tower.draw(run, hovered, true) end
 
   aura.draw(run) -- faint formation-aura buff-zone rings, under the enemies
@@ -373,7 +378,7 @@ function M.draw(dt)
   if run.boss then boss.draw(run) end
   proj.draw(run)
 
-  if ui.selected and not ui.sell_mode and ui.hover_x < C.HUD_X then draw_ghost(run, ui) end
+  if ui.hover_over and ui.selected and not ui.sell_mode and ui.hover_x < C.HUD_X then draw_ghost(run, ui) end
 
   fx.draw()
 

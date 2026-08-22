@@ -249,7 +249,7 @@ local function draw_daily(rows)
   -- the deterministic share code (recreates this exact daily from seed/map/mode)
   ui.center_text(todays_code(), PANEL.y + 66, pal.MONEY, 1)
   local b = rows[1]
-  local mx, my = input.mouse()
+  local mx, my = ui.hover_pos() -- off-canvas -> no button highlight
   local hov = ui.in_rect(mx, my, b)
   gfx.rect_fill(b.x, b.y, b.w, b.h, pal.GOOD)
   gfx.rect(b.x, b.y, b.w, b.h, hov and pal.HUD_SEL or pal.PATH_EDGE)

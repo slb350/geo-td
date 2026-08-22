@@ -106,7 +106,7 @@ function M.draw(dt)
 
   local cards = State.run.contract_draft or {}
   local ts = State.run.contract_tiles or {}
-  local mx, my = input.mouse()
+  local mx, my = ui.hover_pos() -- off-canvas -> no card highlights
   for i = 1, #cards do
     local t, card = ts[i], cards[i]
     local hover = ui.in_rect(mx, my, t)
