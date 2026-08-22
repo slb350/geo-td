@@ -29,6 +29,7 @@ end
 -- Suites in dependency order. smoke_core first (baseline + scene globals); the
 -- balance-lab suites (sim driver + balance fixtures) are the V2-M0 additions.
 require("tests.smoke_core").run(check, near)
+require("tests.smoke_config").run(check, near)
 require("tests.smoke_report").run(check, near)
 require("tests.smoke_cards").run(check, near)
 require("tests.smoke_modifier").run(check, near)

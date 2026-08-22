@@ -1,3 +1,15 @@
+-- name = usagi-geo-td
+-- game_id = com.brandon.usagigeotd
+-- game_width = 480
+-- game_height = 270
+--
+-- Engine config frontmatter (usagi 1.3.0+), replacing the deprecated `_config()`.
+-- Must stay on the very first lines: the engine reads this comment block until
+-- the first non-comment line and takes only the lines with an `=`.
+-- `game_id` is the save-data key -- changing it orphans every live player's save.
+-- `game_width`/`game_height` must match C.GAME_W/C.GAME_H in lib/const.lua.
+-- Why frontmatter and not usagi.conf (it does not survive export): docs/EXPORT.md.
+--
 -- usagi-geo-td — geometric roguelike tower defense.
 -- Entry point + scene dispatcher. All mutable state lives in the single
 -- capitalized global `State`, assigned only in `_init` (survives live reload).
@@ -14,7 +26,6 @@ local gameover = require("scenes.gameover")
 local meta = require("lib.meta")
 local settings = require("lib.settings")
 local pal = require("lib.palette")
-local C = require("lib.const")
 
 local SCENES = {
   menu = menu,
@@ -25,17 +36,6 @@ local SCENES = {
   contract = contract,
   gameover = gameover,
 }
-
-function _config()
-  -- Resolution is single-sourced from lib.const (the game-layout source of truth)
-  -- so _config and the C.GAME_* the HUD/field math read can't drift apart.
-  return {
-    name = "usagi-geo-td",
-    game_id = "com.brandon.usagigeotd",
-    game_width = C.GAME_W,
-    game_height = C.GAME_H,
-  }
-end
 
 -- Request a scene change; applied at the top of the next _update.
 function SwitchScene(key)

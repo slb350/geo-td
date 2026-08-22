@@ -13,6 +13,13 @@
 # *.md / dotfiles are not runtime surface):
 #   main.lua lib/ scenes/ data/ sfx/ music/ shaders/
 #
+# Engine config (name / game_id / resolution) rides in main.lua's FRONTMATTER
+# comment block, not a `usagi.conf`: `usagi export` (v1.3.0) does not copy
+# usagi.conf into the bundle, so a conf-configured build ships with NO config --
+# it falls back to 320x180 and a default save key, which would orphan every live
+# player's save. main.lua is bundled, so frontmatter survives. The save-key gate
+# below fails the export if that ever stops being true.
+#
 # Usage:  bash tools/stage_export.sh [--target bundle|all|web|...]   (default: bundle)
 # Output: artifact(s) land in ./export/ (the gitignored build dir) and PERSIST --
 #         only the throwaway staging copy is cleaned up (with `trash` if present).
@@ -42,6 +49,13 @@ if find "$STAGE" \( -name tests -o -name tools -o -name 'smoke*.lua' \
      -o -name 'baseline.lua' -o -name 'harness.lua' -o -name 'map_lab.lua' \) -print -quit | grep -q .; then
   echo "  ERROR: staging tree contains test/tool files -- runtime set is wrong" >&2; exit 1
 fi
+# Save-key gate: `game_id` is what the engine keys save data on (localStorage on
+# web), so the LIVE build's players' saves hang off this exact string. A dropped
+# or edited usagi.conf would ship a build that silently can't see their data.
+SAVE_KEY="com.brandon.usagigeotd"
+if ! grep -qE "^--[[:space:]]*game_id[[:space:]]*=[[:space:]]*$SAVE_KEY[[:space:]]*$" "$STAGE/main.lua"; then
+  echo "  ERROR: staged main.lua frontmatter does not set game_id = $SAVE_KEY (would orphan live saves)" >&2; exit 1
+fi
 echo "  staged: ${RUNTIME[*]}"
 
 OUTROOT="$ROOT/export"        # gitignored build-output dir; artifacts persist here
@@ -56,25 +70,25 @@ case "$TARGET" in
   bundle)
     ARTIFACT="$OUTROOT/$NAME.usagi"
     "$USAGI" export "$STAGE" --target bundle -o "$ARTIFACT"
+    ARTIFACTS=("$ARTIFACT")
     ;;
   all)
     "$USAGI" export "$STAGE" --target all -o "$OUTROOT"
-    ARTIFACT="$OUTROOT/$NAME.usagi"   # the portable bundle that `all` also emits
+    # `all` emits the bundle AND four platform zips; every one ships, so gate
+    # every one. Named explicitly rather than globbed: $OUTROOT persists, so a
+    # glob would also re-gate stale artifacts from earlier single-target runs.
+    ARTIFACTS=("$OUTROOT/$NAME.usagi")
+    for plat in linux macos windows web; do
+      [[ -f "$OUTROOT/$NAME-$plat.zip" ]] && ARTIFACTS+=("$OUTROOT/$NAME-$plat.zip")
+    done
     ;;
-  web)
-    # The web export hosts the canvas in an HTML shell. We ship a custom
-    # shell.html (the engine default + a right-click contextmenu suppressor so
-    # in-game RMB works on the web build). The engine's default `<project>/
-    # shell.html` lookup would resolve against $STAGE (which has no shell.html,
-    # and we keep it out of the runtime set), so pass it explicitly from $ROOT.
-    ARTIFACT="$OUTROOT/$NAME-$TARGET.zip"
-    SHELL_HTML="$ROOT/shell.html"
-    if [[ ! -f "$SHELL_HTML" ]]; then echo "  ERROR: missing $SHELL_HTML for web shell" >&2; exit 1; fi
-    "$USAGI" export "$STAGE" --target "$TARGET" --web-shell "$SHELL_HTML" -o "$ARTIFACT"
-    ;;
-  linux | macos | windows)
+  web | linux | macos | windows)
+    # `web` needs no --web-shell: engine v1.3.0's baked shell already suppresses
+    # the right-click menu, which is all our old custom shell.html added. See
+    # docs/EXPORT.md.
     ARTIFACT="$OUTROOT/$NAME-$TARGET.zip"
     "$USAGI" export "$STAGE" --target "$TARGET" -o "$ARTIFACT"
+    ARTIFACTS=("$ARTIFACT")
     ;;
   *)
     echo "  ERROR: unknown target '$TARGET' (use bundle|all|web|linux|macos|windows)" >&2
@@ -93,18 +107,51 @@ scan_forbidden() {  # read a byte stream on stdin, print any forbidden path hits
     -e '(^|/)smoke[A-Za-z0-9_]*\.lua' \
     -e '(^|/)(baseline|harness)\.lua' || true
 }
-echo "scanning $ARTIFACT for forbidden file paths ..."
-case "$ARTIFACT" in
-  *.usagi)   hits="$(strings "$ARTIFACT" | scan_forbidden)" ;;
-  *-web.zip) hits="$( (unzip -p "$ARTIFACT" '*.usagi' 2>/dev/null || true) | strings | scan_forbidden)" ;;  # scan the embedded bundle
-  *.zip)     hits="$(strings "$ARTIFACT" | scan_forbidden)" ;;  # fused exe zip (best effort; primary gate authoritative)
-esac
-if [[ -n "$hits" ]]; then
-  echo "  FAIL: artifact contains test/tool source:" >&2
-  echo "$hits" | sed 's/^/    /' >&2
-  exit 1
-fi
+# Both gates below read the artifact's bytes, so extract them ONCE to a temp file.
+# Every zip target must be decompressed first: the fused exe (and the embedded
+# .usagi in the web zip) is Deflated, so scanning the raw zip finds nothing --
+# which would silently weaken the forbidden scan and hard-fail the save-key gate.
+BYTES="$(mktemp)"
+cleanup_bytes() { command -v trash >/dev/null 2>&1 && trash "$BYTES" 2>/dev/null || true; }
+trap 'cleanup; cleanup_bytes' EXIT
 
-size="$(du -h "$ARTIFACT" | cut -f1)"
-echo "OK: no test/tool source in the artifact."
-echo "artifact: $ARTIFACT  ($size)  (persisted in ./export/)"
+gate_artifact() {  # $1 = artifact path; runs both content gates over its bytes
+  local art="$1"
+  # Both gates read the same bytes, so extract ONCE. Every zip must be
+  # decompressed first: the fused exe (and the embedded .usagi in the web zip)
+  # is Deflated, so scanning raw zip bytes finds nothing -- which would silently
+  # weaken the forbidden scan and hard-fail the save-key gate on a good build.
+  case "$art" in
+    *.zip) (unzip -p "$art" 2>/dev/null || true) | strings > "$BYTES" ;;
+    *)     strings "$art" > "$BYTES" ;;
+  esac
+
+  local hits
+  hits="$(scan_forbidden < "$BYTES")"
+  if [[ -n "$hits" ]]; then
+    echo "  FAIL: $art contains test/tool source:" >&2
+    echo "$hits" | sed 's/^/    /' >&2
+    exit 1
+  fi
+
+  # Positive counterpart to the scan above: the save key must actually be
+  # PRESENT in the shipped bytes, not merely present in the staging tree.
+  # Reading from a file (not a pipe) so `grep -q` exiting early can't SIGPIPE a
+  # writer into a false failure under `pipefail`. Anchored to the frontmatter
+  # line itself, not a bare substring, so prose that merely quotes the key
+  # can't satisfy the gate.
+  if ! grep -qE "^--[[:space:]]*game_id[[:space:]]*=[[:space:]]*$SAVE_KEY" "$BYTES"; then
+    echo "  FAIL: $art does not contain game_id $SAVE_KEY -- shipped saves would not resolve" >&2
+    exit 1
+  fi
+
+  echo "  OK  $(basename "$art")  ($(du -h "$art" | cut -f1))"
+}
+
+echo "gating ${#ARTIFACTS[@]} artifact(s) ..."
+for art in "${ARTIFACTS[@]}"; do
+  if [[ ! -f "$art" ]]; then echo "  ERROR: expected artifact missing: $art" >&2; exit 1; fi
+  gate_artifact "$art"
+done
+echo "OK: no test/tool source in any artifact; save key $SAVE_KEY present in all."
+echo "artifacts persisted in ./export/"
