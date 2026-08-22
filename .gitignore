@@ -38,3 +38,7 @@ luac.out
 *.log
 *.tmp
 .tmp/
+.env
+
+# Local trailer scratch (AI-gen media, for fun/inspo)
+trailer/
